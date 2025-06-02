@@ -3,6 +3,10 @@
     <MainSlider />
     <Announcement />
   </div>
+  <div>
+    <h1>Welcome to Our Website</h1>
+    <p>This is the home page where you can find the latest updates and announcements.</p>
+  </div>
 </template>
 
 <script setup>
