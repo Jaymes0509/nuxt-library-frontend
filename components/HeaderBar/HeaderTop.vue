@@ -5,7 +5,7 @@
       <div class="cat"><img src="/public/images/book-reading.gif"></div>
       <!-- 預設 logo -->
       <div class="logo">
-        <img src="/images/library-logo.png" alt="Logo" />
+        <img src="/public/images/libraryLogo.png" alt="Logo" />
         <div class="title">
           <h1>{{ title }}</h1>
           <p>{{ subtitle }}</p>
@@ -81,7 +81,7 @@ let links = [
   { label: '首頁', href: '/' },
   { label: '網站導覽', href: '' },
   { label: '無障礙專區', href: '' },
-  { label: '開放時間', href: '' },
+  { label: '開放時間', href: '/opening-hours' },
   { label: '意見信箱', href: '' },]
 </script>
 
@@ -154,6 +154,10 @@ let links = [
   font-size: 1rem;
 }
 
+.top-links a:hover {
+  color: skyblue;
+}
+
 .separator {
   /* margin: 0.25rem; */
   /* background-color: red; */
@@ -176,7 +180,7 @@ let links = [
 
 .lang-menu {
   position: absolute;
-  margin-top: 6px; 
+  margin-top: 6px;
   /* top: 100%; */
   flex-direction: column;
   background: white;

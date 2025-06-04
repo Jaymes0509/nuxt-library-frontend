@@ -3,7 +3,7 @@
     <div class="reservation-container">
       <!-- 頁面標題區 -->
       <div class="reservation-title-area">
-        <h1 class="reservation-title">書籍預約</h1>
+        <h1 class="reservation-title">我要預約</h1>
         <p class="reservation-subtitle">請填寫以下預約信息</p>
       </div>
 
