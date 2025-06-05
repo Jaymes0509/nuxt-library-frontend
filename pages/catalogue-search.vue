@@ -1,378 +1,418 @@
+
 <template>
-  <div class="w-full p-4 mx-auto">
-    <!-- 搜尋卡片 -->
-    <div ref="searchCard" class="mb-8 transition-all duration-300 max-w-4xl mx-auto">
-      <Card>
-        <CardHeader>
-          <CardTitle>圖書館藏書搜尋</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <!-- 搜尋條件列表 -->
-          <div
-            v-for="(condition, index) in searchConditions"
-            :key="index"
-            class="mb-4 flex items-center space-x-2"
-          >
-            <!-- 邏輯運算符（從第二個條件開始顯示） -->
-            <Select v-if="index > 0" v-model="condition.operator" class="w-24">
-              <SelectTrigger>
-                <SelectValue placeholder="邏輯" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="AND">AND</SelectItem>
-                <SelectItem value="OR">OR</SelectItem>
-                <SelectItem value="NOT">NOT</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <!-- 欄位下拉 -->
-            <Select v-model="condition.field">
-              <SelectTrigger>
-                <SelectValue placeholder="選擇欄位" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">所有欄位</SelectItem>
-                <SelectItem value="title">書名</SelectItem>
-                <SelectItem value="author">作者</SelectItem>
-                <SelectItem value="isbn">ISBN</SelectItem>
-                <SelectItem value="category">分類</SelectItem>
-                <SelectItem value="publisher">出版社</SelectItem>
-                <SelectItem value="year">出版年</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <!-- 關鍵字輸入 -->
-            <Input v-model="condition.value" placeholder="輸入關鍵字" />
-
-            <!-- 刪除條件按鈕 -->
-            <Button
-              variant="destructive"
-              @click="removeCondition(index)"
-              :disabled="searchConditions.length === 1"
-            >
-              <Trash2Icon class="h-5 w-5" />
-            </Button>
-          </div>
-
-          <!-- 新增條件、搜尋按鈕 -->
-          <div class="flex items-center space-x-2">
-            <Button @click="addCondition">新增搜尋條件</Button>
-            <Button @click="search">
-              <SearchIcon class="h-5 w-5" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+  <div class="container">
+    <h1>館藏查詢</h1>
+    <!-- Simple Search -->
+    <div v-if="!isAdvancedSearch" class="search-bar simple-search">
+      <input
+        v-model="simpleSearchQuery"
+        @keyup.enter="performSimpleSearch"
+        type="text"
+        placeholder="輸入關鍵字..."
+      />
+      <button class="btn btn-primary" @click="performSimpleSearch">搜尋</button>
+      <button class="btn btn-secondary" @click="toggleAdvancedSearch">進階搜尋</button>
     </div>
 
-    <!-- 搜尋結果表格 + 分頁選項 -->
-    <div v-if="results.length" class="mt-4">
-      <!-- 1. 分頁設定：每頁顯示筆數下拉 -->
-      <div class="flex items-center justify-between mb-2">
-        <!-- 每頁顯示幾筆：可自行調整 options 內容 -->
-        <div class="flex items-center space-x-2">
-          <span>每頁顯示：</span>
-          <select
-            v-model.number="itemsPerPage"
-            class="border rounded px-2 py-1"
-            @change="currentPage = 1"
-          >
-            <option :value="5">5 筆</option>
-            <option :value="10">10 筆</option>
-            <option :value="20">20 筆</option>
-            <option :value="50">50 筆</option>
-          </select>
-        </div>
+    <!-- Advanced Search -->
+    <div v-else class="advanced-search">
+      <div class="search-bar">
+        <h2>進階搜尋</h2>
+        <button class="btn btn-secondary" @click="toggleAdvancedSearch">返回單一搜尋</button>
+      </div>
+      <div v-for="(condition, index) in advancedSearchConditions" :key="index" class="condition">
+        <select v-model="condition.field">
+          <option value="title">書名</option>
+          <option value="author">作者</option>
+          <option value="isbn">ISBN</option>
+          <option value="publisher">出版社</option>
+          <option value="year">出版年</option>
+        </select>
+        <select v-model="condition.operator">
+          <option value="AND">AND</option>
+          <option value="OR">OR</option>
+          <option value="NOT">NOT</option>
+        </select>
+        <input v-model="condition.value" type="text" placeholder="輸入搜尋內容" />
+        <button
+          v-if="index > 0"
+          class="btn btn-danger"
+          @click="removeCondition(index)"
+        >
+          移除
+        </button>
+      </div>
+      <div class="search-bar">
+        <button
+          class="btn btn-primary"
+          :class="{ 'btn-disabled': advancedSearchConditions.length >= 6 }"
+          @click="addCondition"
+        >
+          新增條件
+        </button>
+        <button class="btn btn-primary" @click="performAdvancedSearch">搜尋</button>
+      </div>
+    </div>
 
-        <!-- 總共幾頁 & 總筆數提示 -->
-        <div class="text-sm text-gray-500">
-          共 {{ results.length }} 筆 &nbsp;｜&nbsp; 共 {{ totalPages }} 頁 &nbsp;｜
-          目前第 {{ currentPage }} 頁
+    <!-- Search Results -->
+    <div v-if="currentPageResults.length" class="results">
+      <h2>搜尋結果</h2>
+      <div v-for="book in currentPageResults" :key="book.isbn" class="result-item">
+        <div class="result-info">
+          <p><strong>書名:</strong> {{ book.title }}</p>
+          <p><strong>作者:</strong> {{ book.author }}</p>
+          <p><strong>出版年:</strong> {{ book.year }}</p>
+          <p><strong>ISBN:</strong> {{ book.isbn }}</p>
+          <p>
+            <strong>在架狀態:</strong>
+            <span :class="book.available ? 'availability' : 'unavailable'">
+              {{ book.available ? '是' : '否' }}
+            </span>
+          </p>
+          <p v-if="book.reserved">
+            <strong>預約狀態:</strong>
+            <span class="reserved">已預約</span>
+          </p>
+        </div>
+        <div class="result-actions">
+          <button
+            class="btn"
+            :class="book.favorite ? 'favorite' : 'not-favorite'"
+            @click="toggleFavorite(book)"
+          >
+            最愛
+          </button>
+          <button
+            class="btn"
+            :class="book.reserved ? 'reserved-btn' : 'not-reserved'"
+            @click="reserveBook(book)"
+            :disabled="false"
+          >
+            預約
+          </button>
         </div>
       </div>
-
-      <!-- 2. 實際表格：改為用 paginatedResults -->
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead @click="sort('title')" class="cursor-pointer">
-              書名
-              <span v-if="sortKey === 'title'">
-                {{ sortOrder === 'asc' ? '↑' : '↓' }}
-              </span>
-            </TableHead>
-            <TableHead @click="sort('author')" class="cursor-pointer">
-              作者
-              <span v-if="sortKey === 'author'">
-                {{ sortOrder === 'asc' ? '↑' : '↓' }}
-              </span>
-            </TableHead>
-            <TableHead @click="sort('publisher')" class="cursor-pointer">
-              出版社
-              <span v-if="sortKey === 'publisher'">
-                {{ sortOrder === 'asc' ? '↑' : '↓' }}
-              </span>
-            </TableHead>
-            <TableHead>出版年</TableHead>
-            <TableHead>ISBN</TableHead>
-            <TableHead>在架</TableHead>
-            <TableHead>預約人數</TableHead>
-            <TableHead>操作</TableHead>
-            <TableHead>最愛</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <!-- 這裡改成 paginatedResults -->
-          <TableRow v-for="result in paginatedResults" :key="result.id">
-            <TableCell>{{ result.title }}</TableCell>
-            <TableCell>{{ result.author }}</TableCell>
-            <TableCell>{{ result.publisher }}</TableCell>
-            <TableCell>{{ result.year }}</TableCell>
-            <TableCell>{{ result.isbn }}</TableCell>
-            <TableCell>
-              <!-- 只有當 reservations 為 0 且 available 為 true 才顯示「是」，否則顯示「否」 -->
-              {{ (result.reservations === 0 && result.available) ? '是' : '否' }}
-            </TableCell>
-            <TableCell>{{ result.reservations }}</TableCell>
-            <TableCell>
-              <Button :disabled="!(result.reservations === 0 && result.available)" @click="reserveBook(result.id)">
-                預約
-              </Button>
-            </TableCell>
-            <TableCell>
-              <Button variant="ghost" @click="toggleFavorite(result.id)">
-                <HeartIcon
-                  :class="{ 'fill-red-500': result.isFavorite }"
-                  class="h-5 w-5"
-                />
-              </Button>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-
-      <!-- 3. 分頁按鈕列：上一頁 / 頁碼 / 下一頁 -->
-      <div class="mt-4 flex items-center justify-center space-x-2">
-        <!-- 上一頁 -->
-        <Button
-          size="sm"
-          :disabled="currentPage === 1"
-          @click="currentPage--"
-        >
-          上一頁
-        </Button>
-
-        <!-- 動態生成頁碼按鈕 -->
-        <template v-for="page in totalPages" :key="page">
-          <Button
-            size="sm"
-            variant="outline"
-            :class="{'bg-blue-500 text-white': currentPage === page}"
-            @click="currentPage = page"
-          >
-            {{ page }}
-          </Button>
-        </template>
-
-        <!-- 下一頁 -->
-        <Button
-          size="sm"
-          :disabled="currentPage === totalPages"
-          @click="currentPage++"
-        >
-          下一頁
-        </Button>
+      <!-- Pagination -->
+      <div class="pagination">
+        <span>查詢結果: {{ searchResults.length }}筆</span>
+        <button @click="currentPage--" :disabled="currentPage === 1">上一頁</button>
+        <span>第 {{ currentPage }} 頁 / 共 {{ totalPages }} 頁</span>
+        <button @click="currentPage++" :disabled="currentPage === totalPages">下一頁</button>
       </div>
+    </div>
+    <div v-else-if="searched" class="no-results">
+      無搜尋結果
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from '@/components/card';
-import { Button } from '@/components/button';
-import { Input } from '@/components/input';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/select';
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from '@/components/table';
-import {
-  SearchIcon,
-  HeartIcon,
-  Trash2Icon,
-} from 'lucide-vue-next';
+import { ref, computed } from 'vue';
 
-const searchCard = ref(null);
+// State
+const simpleSearchQuery = ref('');
+const isAdvancedSearch = ref(false);
+const advancedSearchConditions = ref([
+  { field: 'title', operator: 'AND', value: '' },
+]);
+const searchResults = ref([]);
+const searched = ref(false);
+const currentPage = ref(1);
+const itemsPerPage = 5;
 
-// 原本的搜尋條件維護
-const searchConditions = ref([
-  { field: 'title', value: '', operator: null },
+// Mock book data
+const books = ref([
+  { title: 'JavaScript 入門', author: '張三', isbn: '1234567890', publisher: '技術出版社', year: '2020', available: true, reserved: false, favorite: false },
+  { title: 'Vue.js 實戰', author: '李四', isbn: '0987654321', publisher: '前端出版社', year: '2021', available: false, reserved: false, favorite: false },
+  { title: 'Python 程式設計', author: '王五', isbn: '1122334455', publisher: '技術出版社', year: '2019', available: true, reserved: false, favorite: false },
+  { title: 'HTML 基礎', author: '陳六', isbn: '9876543210', publisher: '基礎出版社', year: '2018', available: false, reserved: false, favorite: false },
+  { title: 'CSS 進階', author: '趙七', isbn: '4567891230', publisher: '進階出版社', year: '2022', available: true, reserved: false, favorite: false },
+  { title: 'Node.js 實戰', author: '孫八', isbn: '3216549870', publisher: '實戰出版社', year: '2023', available: false, reserved: false, favorite: false },
+  { title: 'React 入門', author: '吳九', isbn: '6543219870', publisher: '技術出版社', year: '2020', available: true, reserved: false, favorite: false },
 ]);
 
-// 所有資料、搜尋結果、排序設定
-const libraryData = ref(
-  Array.from({ length: 100 }, function(_, i) {
-    return {
-      id: i + 1,
-      title: '書名 ' + (i + 1),
-      author: '作者 ' + (i % 5),
-      isbn: '9780000' + i,
-      category: ['文學', '程式設計', '歷史'][i % 3],
-      publisher: '出版社 ' + (i % 4),
-      year: 2000 + (i % 24),
-      available: (i % 2 === 0),
-      reservations: (i % 3),
-      isFavorite: (i % 7 === 0),
-    };
-  })
-);
-const results = ref([]); // 存放篩選後的搜尋結果
+// Computed properties
+const totalPages = computed(() => Math.ceil(searchResults.value.length / itemsPerPage));
+const currentPageResults = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return searchResults.value.slice(start, end);
+});
 
-// 排序的關鍵欄位和方向
-const sortKey = ref('title');
-const sortOrder = ref('asc');
-
-// －－ 新增分頁相關的 －－
-// 每頁顯示筆數（可由下拉綁定）
-const itemsPerPage = ref(10);
-
-// 目前所在頁碼（從 1 開始）
-const currentPage = ref(1);
-
-// 計算「排序後但尚未分頁」的陣列
-const sortedResults = computed(function() {
-  if (!sortKey.value) {
-    return results.value;
+// Methods
+const toggleAdvancedSearch = () => {
+  isAdvancedSearch.value = !isAdvancedSearch.value;
+  if (!isAdvancedSearch.value) {
+    advancedSearchConditions.value = [{ field: 'title', operator: 'AND', value: '' }];
+    searchResults.value = [];
+    searched.value = false;
+    currentPage.value = 1;
   }
-  return results.value.slice().sort(function(a, b) {
-    const va = (a[sortKey.value] || '').toString().toLowerCase();
-    const vb = (b[sortKey.value] || '').toString().toLowerCase();
-    if (sortOrder.value === 'asc') {
-      return va.localeCompare(vb);
-    } else {
-      return vb.localeCompare(va);
+};
+
+const addCondition = () => {
+  if (advancedSearchConditions.value.length < 6) {
+    advancedSearchConditions.value.push({ field: 'title', operator: 'AND', value: '' });
+  }
+};
+
+const removeCondition = (index) => {
+  advancedSearchConditions.value.splice(index, 1);
+};
+
+const performSimpleSearch = () => {
+  const query = simpleSearchQuery.value.toLowerCase().trim();
+  if (!query) {
+    searchResults.value = [];
+    searched.value = true;
+    currentPage.value = 1;
+    return;
+  }
+  searchResults.value = books.value.filter(book =>
+    book.title.toLowerCase().includes(query) ||
+    book.author.toLowerCase().includes(query) ||
+    book.isbn.includes(query) ||
+    book.publisher.toLowerCase().includes(query) ||
+    book.year.includes(query)
+  );
+  searched.value = true;
+  currentPage.value = 1;
+};
+
+const performAdvancedSearch = () => {
+  let results = [...books.value];
+  advancedSearchConditions.value.forEach((condition, index) => {
+    const value = condition.value.toLowerCase().trim();
+    if (!value) return;
+
+    const filtered = results.filter(book => {
+      const fieldValue = book[condition.field].toLowerCase();
+      return fieldValue.includes(value);
+    });
+
+    if (condition.operator === 'AND' || index === 0) {
+      results = filtered;
+    } else if (condition.operator === 'OR') {
+      results = [...new Set([...results, ...filtered])];
+    } else if (condition.operator === 'NOT') {
+      results = results.filter(book => !filtered.includes(book));
     }
   });
-});
+  searchResults.value = results;
+  searched.value = true;
+  currentPage.value = 1;
+};
 
-// 計算總頁數
-const totalPages = computed(function() {
-  return Math.ceil(results.value.length / itemsPerPage.value) || 1;
-});
-
-// 計算「分頁後要顯示」的資料陣列
-const paginatedResults = computed(function() {
-  const start = (currentPage.value - 1) * itemsPerPage.value;
-  return sortedResults.value.slice(start, start + itemsPerPage.value);
-});
-
-// －－ 原本的函式（微調：search 時把 currentPage 重設） －－
-function addCondition() {
-  if (searchConditions.value.length < 6) {
-    searchConditions.value.push({ field: 'title', value: '', operator: 'AND' });
-  }
-}
-
-function removeCondition(index) {
-  if (searchConditions.value.length > 1) {
-    searchConditions.value.splice(index, 1);
-  }
-}
-
-function sort(key) {
-  if (sortKey.value === key) {
-    sortOrder.value = (sortOrder.value === 'asc') ? 'desc' : 'asc';
+const toggleFavorite = (book) => {
+  book.favorite = !book.favorite;
+  if (book.favorite) {
+    alert(`《${book.title}》已加入最愛！`);
   } else {
-    sortKey.value = key;
-    sortOrder.value = 'asc';
+    alert(`《${book.title}》已從最愛移除！`);
   }
-}
+};
 
-function reserveBook(id) {
-  // 找到對應的書籍，並且只有在 reservations === 0 且 available === true 時才允許預約
-  const book = libraryData.value.find(function(b) { return b.id === id; });
-  if (book && book.reservations === 0 && book.available) {
-    book.available = false;
-    book.reservations++;
-    search(); // 執行完「預約」後也要重新篩選一次以更新結果
+const reserveBook = (book) => {
+  book.reserved = !book.reserved;
+  if (book.reserved) {
+    alert(`已成功預約《${book.title}》！`);
+  } else {
+    alert(`已取消預約《${book.title}》！`);
   }
-}
-
-function toggleFavorite(id) {
-  const book = libraryData.value.find(function(b) { return b.id === id; });
-  if (book) {
-    book.isFavorite = !book.isFavorite;
-  }
-}
-
-function search() {
-  // 每次搜尋都把 currentPage 重設為 1
-  currentPage.value = 1;
-
-  const conditions = searchConditions.value;
-  results.value = libraryData.value.filter(function(book) {
-    var result = true;
-    for (var i = 0; i < conditions.length; i++) {
-      var field = conditions[i].field;
-      var value = conditions[i].value;
-      var operator = conditions[i].operator;
-
-      if (!value) {
-        continue;
-      }
-
-      var match;
-      if (field === 'all') {
-        // 全欄位比對
-        match = Object.values(book).some(function(v) {
-          return v.toString().toLowerCase().includes(value.toLowerCase());
-        });
-      } else {
-        match = book[field]
-          .toString()
-          .toLowerCase()
-          .includes(value.toLowerCase());
-      }
-
-      if (i === 0) {
-        result = match;
-      } else if (operator === 'AND') {
-        result = result && match;
-      } else if (operator === 'OR') {
-        result = result || match;
-      } else if (operator === 'NOT') {
-        result = result && !match;
-      }
-    }
-    return result;
-  });
-
-  // 滾到搜尋卡片頂端
-  searchCard.value.scrollIntoView({ behavior: 'smooth' });
-}
-
-// 如果你想在 itemsPerPage 改變時，也把 currentPage 重設，可以用 watch：
-watch(itemsPerPage, function() {
-  currentPage.value = 1;
-});
+};
 </script>
 
 <style scoped>
-/* 這裡可以添加自訂樣式 */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f0f0f0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  padding: 20px;
+}
+.container {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: auto;
+}
+.simple-search,
+.advanced-search {
+  max-width: 600px;
+}
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.search-bar input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+}
+.search-bar input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+.btn-secondary {
+  background-color: transparent;
+  color: #007bff;
+  text-decoration: underline;
+}
+.btn-secondary:hover {
+  color: #0056b3;
+}
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+.btn-danger:hover {
+  background-color: #b02a37;
+}
+.btn-disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+.favorite {
+  background-color: #ccc; 
+  color: #333;
+}
+.favorite:hover {
+  background-color: #b3b3b3; 
+}
+.not-favorite {
+  background-color: #dc3545; 
+  color: white;
+}
+.not-favorite:hover {
+  background-color: #b02a37;
+}
+.reserved-btn {
+  background-color: #ccc; 
+  color: #333;
+}
+.reserved-btn:hover {
+  background-color: #b3b3b3; 
+}
+.not-reserved {
+  background-color: #007bff; 
+  color: white;
+}
+.not-reserved:hover {
+  background-color: #0056b3;
+}
+.condition {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+.condition select,
+.condition input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+}
+.condition input {
+  flex: 1;
+}
+.results {
+  margin-top: 20px;
+}
+.result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #ddd;
+  margin: 0 50px;
+}
+
+.result-item:hover {
+  background-color: #96c0fdbe; 
+  transition: background-color 0.2s ease;
+}
+
+.result-item:last-child {
+  border-bottom: none;
+}
+.result-info {
+  flex: 1;
+}
+.result-info p {
+  margin: 0;
+  font-size: 14px;
+}
+.result-info p strong {
+  margin-right: 5px;
+}
+.availability {
+  color: green;
+}
+.unavailable {
+  color: red;
+}
+.reserved {
+  color: red;
+}
+.result-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+.pagination span {
+  font-size: 14px;
+}
+.pagination button {
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.pagination button:disabled {
+  background-color: #f0f0f0;
+  cursor: not-allowed;
+}
+.no-results {
+  color: #6c757d;
+  margin-top: 20px;
+}
+h2 {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
 </style>
+```
