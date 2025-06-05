@@ -13,7 +13,8 @@
             <ul class="menu-list">
                 <li v-for="item in menuItems" :key="item.label">
                     <div class="menu-item" :class="{ active: current === item.label }"
-                        @click="() => setCurrent(item.label)">
+                        @click="() => setCurrent(item.label)"
+                        :title="item.label">
                         <span>{{ item.label }}</span>
                         <span v-if="item.children">{{ open[item.label] ? '▾' : '▸' }}</span>
                     </div>
