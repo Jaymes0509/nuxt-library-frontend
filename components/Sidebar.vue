@@ -33,7 +33,10 @@
 
 <script setup>
 import { reactive, ref } from 'vue'
+<<<<<<< HEAD
 import BookSearch from '@/components/BookSearch.vue'
+=======
+>>>>>>> f17f4bba10f1c94f3d94df040354434b1a871b6d
 
 defineProps({ isOpen: Boolean })
 defineEmits(['update:isOpen'])
@@ -52,11 +55,11 @@ const menuItems = [
     {
         label: '認識本館',
         children: [
-            { label: '本館簡介', href: '#' },
-            { label: '服務對象', href: '#' },
+            { label: '本館簡介', href: '/about' },
+            { label: '服務對象', href: '/audience' },
             { label: '空間設施', href: '#' },
-            { label: '開放時間', href: '#' },
-            { label: '交通方式', href: '#' }
+            { label: '開放時間', href: '/opening-hours' },
+            { label: '本館位置', href: '/location' }
         ]
     },
     {
@@ -69,14 +72,14 @@ const menuItems = [
     {
         label: '館藏查詢',
         children: [
-            { label: '館藏查詢', href: '/Book-search' }
+            { label: '館藏查詢', href: '/catalogue-search' }
         ]
     },
     {
         label: '館藏預約',
         children: [
-            { label: '我要預約', href: '#' },
-            { label: '預約查詢', href: '#' }
+            { label: '我要預約', href: '/book-reservation' },
+            { label: '預約查詢', href: '/reservation-record' }
         ]
     },
     {
@@ -89,7 +92,7 @@ const menuItems = [
     {
         label: '申請服務',
         children: [
-            { label: '借閱證申請', href: '#' },
+            { label: '借閱證申請', href: '/card-application' },
             { label: '自習座位預約', href: '#' },
             { label: '團體討論室預約', href: '#' },
             { label: '場地租借', href: '#' },
@@ -100,8 +103,8 @@ const menuItems = [
     {
         label: '排行榜 & 評論',
         children: [
-            { label: '借閱排行榜', href: '#' },
-            { label: '書籍評論', href: '#' }
+            { label: '借閱排行榜', href: '/borrowing-rankings' },
+            { label: '讀者書評', href: '/book-review' }
         ]
     }
 ]
@@ -123,10 +126,9 @@ const menuItems = [
     height: 100%;
     transition: width 0.3s ease, padding 0.3s ease;
     position: relative;
-    overflow-y: visible;
+    /* overflow-y: auto; */
     /* ⭐ 加上垂直捲動條 */
     overflow-x: hidden;
-    z-index: 10;
 }
 
 .sidebar.closed {

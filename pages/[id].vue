@@ -94,7 +94,12 @@ function handleReserve() {
     query: {
       bookId: bookId.value,
       title: bookTitle.value,
+<<<<<<< HEAD
       author: bookAuthor.value
+=======
+      author: bookAuthor.value,
+      coverUrl: coverUrl.value
+>>>>>>> f17f4bba10f1c94f3d94df040354434b1a871b6d
     }
   })
 }
