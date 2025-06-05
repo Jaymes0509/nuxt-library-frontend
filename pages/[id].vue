@@ -94,7 +94,8 @@ function handleReserve() {
     query: {
       bookId: bookId.value,
       title: bookTitle.value,
-      author: bookAuthor.value
+      author: bookAuthor.value,
+      coverUrl: coverUrl.value
     }
   })
 }

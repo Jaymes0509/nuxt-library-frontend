@@ -21,5 +21,6 @@
   /* 加強文字置中 */
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 </style>
