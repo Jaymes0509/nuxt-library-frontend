@@ -1,6 +1,6 @@
 <template>
     <div class="borrow-bg">
-      <h1 class="borrow-title">續借查詢</h1>
+      <h1 class="borrow-title">續借功能</h1>
       <div class="borrow-main">
         <!-- 控制面板 -->
         <div class="borrow-control-panel">
@@ -110,7 +110,6 @@
               @click="currentPage--"
             >
               <span class="sr-only">上一頁</span>
-              <span style="display:inline-block;width:1em;">&#8592;</span>
             </button>
             <span>共{{ totalPages }}頁</span>
             <input
@@ -128,7 +127,6 @@
               @click="currentPage++"
             >
               <span class="sr-only">下一頁</span>
-              <span style="display:inline-block;width:1em;">&#8594;</span>
             </button>
           </div>
           <div class="borrow-pagination-info">
@@ -246,9 +244,9 @@
     // 取得當前到期日
     const currentDueDate = new Date(book.dueDate)
     
-    // 計算新的到期日（當前到期日 + 14天）
+    // 計算新的到期日（當前到期日 + 7天）
     const newDueDate = new Date(currentDueDate)
-    newDueDate.setDate(newDueDate.getDate() + 14)
+    newDueDate.setDate(newDueDate.getDate() + 7)
     
     // 更新書籍的到期日
     book.dueDate = newDueDate.toISOString().split('T')[0]
@@ -506,7 +504,8 @@
   }
   .borrow-pagination-btn {
     height: 32px;
-    width: 32px;
+    min-width: 32px;
+    padding: 0 8px;
     border: 1px solid #d1d5db;
     border-radius: 6px;
     background: #fff;
@@ -516,6 +515,8 @@
     justify-content: center;
     cursor: pointer;
     transition: background 0.2s;
+    font-size: 1rem;
+    line-height: 1;
   }
   .borrow-pagination-btn:disabled {
     opacity: 0.5;

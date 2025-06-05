@@ -79,10 +79,10 @@ const menuItems = [
         ]
     },
     {
-        label: '續借預約',
+        label: '書籍續借',
         children: [
-            { label: '我要續借', href: '#' },
-            { label: '續借查詢', href: '#' }
+            { label: '我要續借', href: '/borrow-continue' },
+            { label: '歷史查詢', href: '#' }
         ]
     },
     {
