@@ -173,7 +173,7 @@ function handleReserve() {
   userReservedCount.value++
   alert(`成功預約《${book.value?.title}》`)
   router.push({
-    path: '/reservation',
+    path: '/reservation-record',
     query: {
       bookId: book.value?.id,
       title: book.value?.title,

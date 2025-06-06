@@ -94,7 +94,7 @@ const coverUrl = computed(() =>
 // 處理預約按鈕點擊
 function handleReserve() {
   router.push({
-    path: '/reservation',
+    path: '/book-reservation',
     query: {
       bookId: bookId.value,
       title: bookTitle.value,

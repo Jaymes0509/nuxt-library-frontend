@@ -98,7 +98,6 @@
             @click="currentPage--"
           >
             <span class="sr-only">上一頁</span>
-            <span style="display:inline-block;width:1em;">&#8592;</span>
           </button>
           <span>共{{ totalPages }}頁</span>
           <input
@@ -116,7 +115,6 @@
             @click="currentPage++"
           >
             <span class="sr-only">下一頁</span>
-            <span style="display:inline-block;width:1em;">&#8594;</span>
           </button>
         </div>
         <div class="history-pagination-info">
@@ -307,11 +305,13 @@ function goToPage(page) {
   align-items: center;
   margin-bottom: 16px;
   gap: 16px;
+  flex-wrap: wrap;
 }
 .history-control-panel-left {
   display: flex;
   align-items: center;
   gap: 32px;
+  flex-wrap: wrap;
 }
 .history-control-panel-right {
   display: flex;
@@ -322,32 +322,48 @@ function goToPage(page) {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 .history-label {
   font-size: 1rem;
   color: #222;
 }
 .history-select {
-  width: 120px;
+  min-width: 120px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  padding: 4px 8px;
+  padding: 8px 16px;
   font-size: 1rem;
   background: #fff;
   color: #18181b;
+  cursor: pointer;
+  transition: background 0.2s;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-align-last: center;
 }
+
+.history-select:hover {
+  background: #f3f4f6;
+}
+
 .history-sort-btn {
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  padding: 4px 8px;
+  padding: 8px 16px;
   background: #fff;
   color: #18181b;
   font-size: 1rem;
   cursor: pointer;
   transition: background 0.2s;
-}
-.history-sort-btn:hover {
-  background: #f3f4f6;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 .history-view-btn {
   display: inline-flex;
@@ -519,7 +535,8 @@ function goToPage(page) {
 }
 .history-pagination-btn {
   height: 32px;
-  width: 32px;
+  min-width: 32px;
+  padding: 0 8px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   background: #fff;
@@ -529,6 +546,8 @@ function goToPage(page) {
   justify-content: center;
   cursor: pointer;
   transition: background 0.2s;
+  font-size: 1rem;
+  line-height: 1;
 }
 .history-pagination-btn:disabled {
   opacity: 0.5;
@@ -547,9 +566,94 @@ function goToPage(page) {
   color: #18181b;
   background: #fff;
 }
+
+/* 隱藏 Chrome, Safari, Edge, Opera 的箭頭 */
+.history-pagination-input::-webkit-outer-spin-button,
+.history-pagination-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 隱藏 Firefox 的箭頭 */
+.history-pagination-input[type=number] {
+  -moz-appearance: textfield;
+}
+
 .history-pagination-info {
   font-size: 0.95rem;
   color: #4b5563;
   text-align: center;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .history-control-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .history-control-panel-left {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .history-control-panel-right {
+    justify-content: center;
+  }
+
+  .history-grid-header,
+  .history-grid-row {
+    grid-template-columns: 1.5fr 1fr 1fr 1fr 0.8fr;
+    font-size: 0.9rem;
+  }
+
+  .history-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .history-bg {
+    padding: 16px 16px 80px 16px;
+  }
+
+  .history-grid-header,
+  .history-grid-row {
+    grid-template-columns: 1.2fr 1fr 0.8fr;
+    font-size: 0.85rem;
+  }
+
+  .history-grid-header > div,
+  .history-grid-row > div {
+    padding: 8px;
+  }
+
+  .history-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .history-pagination-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .history-select,
+  .history-sort-btn,
+  .history-view-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .history-row {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .history-label {
+    text-align: center;
+  }
 }
 </style>

@@ -1,113 +1,146 @@
-
 <template>
-  <div class="container">
-    <h1>館藏查詢</h1>
-    <!-- Simple Search -->
-    <div v-if="!isAdvancedSearch" class="search-bar simple-search">
-      <input
-        v-model="simpleSearchQuery"
-        @keyup.enter="performSimpleSearch"
-        type="text"
-        placeholder="輸入關鍵字..."
-      />
-      <button class="btn btn-primary" @click="performSimpleSearch">搜尋</button>
-      <button class="btn btn-secondary" @click="toggleAdvancedSearch">進階搜尋</button>
-    </div>
+  <div class="search-bg">
+    <h1 class="search-title">館藏查詢</h1>
+    <div class="search-main">
+      <!-- 控制面板 -->
+      <div class="search-control-panel">
+        <div class="search-control-panel-left">
+          <!-- 簡單搜尋 -->
+          <div v-if="!isAdvancedSearch" class="search-row">
+            <input
+              v-model="simpleSearchQuery"
+              @keyup.enter="performSimpleSearch"
+              type="text"
+              placeholder="輸入關鍵字..."
+              class="search-input"
+            />
+            <button class="search-btn search-btn-primary" @click="performSimpleSearch">搜尋</button>
+            <button class="search-btn search-btn-secondary" @click="toggleAdvancedSearch">進階搜尋</button>
+          </div>
 
-    <!-- Advanced Search -->
-    <div v-else class="advanced-search">
-      <div class="search-bar">
-        <h2>進階搜尋</h2>
-        <button class="btn btn-secondary" @click="toggleAdvancedSearch">返回單一搜尋</button>
-      </div>
-      <div v-for="(condition, index) in advancedSearchConditions" :key="index" class="condition">
-        <select v-model="condition.field">
-          <option value="title">書名</option>
-          <option value="author">作者</option>
-          <option value="isbn">ISBN</option>
-          <option value="publisher">出版社</option>
-          <option value="year">出版年</option>
-        </select>
-        <select v-model="condition.operator">
-          <option value="AND">AND</option>
-          <option value="OR">OR</option>
-          <option value="NOT">NOT</option>
-        </select>
-        <input v-model="condition.value" type="text" placeholder="輸入搜尋內容" />
-        <button
-          v-if="index > 0"
-          class="btn btn-danger"
-          @click="removeCondition(index)"
-        >
-          移除
-        </button>
-      </div>
-      <div class="search-bar">
-        <button
-          class="btn btn-primary"
-          :class="{ 'btn-disabled': advancedSearchConditions.length >= 6 }"
-          @click="addCondition"
-        >
-          新增條件
-        </button>
-        <button class="btn btn-primary" @click="performAdvancedSearch">搜尋</button>
-      </div>
-    </div>
-
-    <!-- Search Results -->
-    <div v-if="currentPageResults.length" class="results">
-      <h2>搜尋結果</h2>
-      <div v-for="book in currentPageResults" :key="book.isbn" class="result-item">
-        <div class="result-info">
-          <p><strong>書名:</strong> {{ book.title }}</p>
-          <p><strong>作者:</strong> {{ book.author }}</p>
-          <p><strong>出版年:</strong> {{ book.year }}</p>
-          <p><strong>ISBN:</strong> {{ book.isbn }}</p>
-          <p>
-            <strong>在架狀態:</strong>
-            <span :class="book.available ? 'availability' : 'unavailable'">
-              {{ book.available ? '是' : '否' }}
-            </span>
-          </p>
-          <p v-if="book.reserved">
-            <strong>預約狀態:</strong>
-            <span class="reserved">已預約</span>
-          </p>
-        </div>
-        <div class="result-actions">
-          <button
-            class="btn"
-            :class="book.favorite ? 'favorite' : 'not-favorite'"
-            @click="toggleFavorite(book)"
-          >
-            最愛
-          </button>
-          <button
-            class="btn"
-            :class="book.reserved ? 'reserved-btn' : 'not-reserved'"
-            @click="reserveBook(book)"
-            :disabled="false"
-          >
-            預約
-          </button>
+          <!-- 進階搜尋 -->
+          <div v-else class="advanced-search">
+            <div class="search-row">
+              <h2>進階搜尋</h2>
+              <button class="search-btn search-btn-secondary" @click="toggleAdvancedSearch">返回單一搜尋</button>
+            </div>
+            <div v-for="(condition, index) in advancedSearchConditions" :key="index" class="search-condition">
+              <select v-model="condition.field" class="search-select">
+                <option value="title">書名</option>
+                <option value="author">作者</option>
+                <option value="isbn">ISBN</option>
+                <option value="publisher">出版社</option>
+                <option value="year">出版年</option>
+              </select>
+              <select v-model="condition.operator" class="search-select">
+                <option value="AND">AND</option>
+                <option value="OR">OR</option>
+                <option value="NOT">NOT</option>
+              </select>
+              <input v-model="condition.value" type="text" placeholder="輸入搜尋內容" class="search-input" />
+              <button
+                v-if="index > 0"
+                class="search-btn search-btn-danger"
+                @click="removeCondition(index)"
+              >
+                移除
+              </button>
+            </div>
+            <div class="search-row">
+              <button
+                class="search-btn search-btn-primary"
+                :class="{ 'search-btn-disabled': advancedSearchConditions.length >= 6 }"
+                @click="addCondition"
+              >
+                新增條件
+              </button>
+              <button class="search-btn search-btn-primary" @click="performAdvancedSearch">搜尋</button>
+            </div>
+          </div>
         </div>
       </div>
-      <!-- Pagination -->
-      <div class="pagination">
-        <span>查詢結果: {{ searchResults.length }}筆</span>
-        <button @click="currentPage--" :disabled="currentPage === 1">上一頁</button>
-        <span>第 {{ currentPage }} 頁 / 共 {{ totalPages }} 頁</span>
-        <button @click="currentPage++" :disabled="currentPage === totalPages">下一頁</button>
+
+      <!-- 搜尋結果 -->
+      <div v-if="currentPageResults.length" class="search-results">
+        <div v-for="book in currentPageResults" :key="book.isbn" class="search-result-item">
+          <div class="search-result-info">
+            <h3 class="search-result-title">{{ book.title }}</h3>
+            <p class="search-result-author">{{ book.author }}</p>
+            <div class="search-result-details">
+              <p>出版年：{{ book.year }}</p>
+              <p>ISBN：{{ book.isbn }}</p>
+              <p>
+                在架狀態：
+                <span :class="book.available ? 'availability' : 'unavailable'">
+                  {{ book.available ? '是' : '否' }}
+                </span>
+              </p>
+            </div>
+            <div class="search-result-actions">
+              <button
+                class="search-btn"
+                :class="book.favorite ? 'favorite' : 'not-favorite'"
+                @click="toggleFavorite(book)"
+              >
+                最愛
+              </button>
+              <button
+                class="search-btn"
+                :class="book.reserved ? 'reserved-btn' : 'not-reserved'"
+                @click="reserveBook(book)"
+                :disabled="false"
+              >
+                詳情
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 分頁控制 -->
+        <div class="search-pagination">
+          <div class="search-pagination-controls">
+            <button 
+              class="search-pagination-btn"
+              :disabled="currentPage === 1"
+              @click="currentPage--"
+            >
+              上一頁
+            </button>
+            <span>共{{ totalPages }}頁</span>
+            <input
+              type="number"
+              :value="currentPage"
+              class="search-pagination-input"
+              min="1"
+              :max="totalPages"
+              @change="e => currentPage = parseInt(e.target.value) || 1"
+            />
+            <span>/{{ totalPages }}頁</span>
+            <button 
+              class="search-pagination-btn"
+              :disabled="currentPage >= totalPages"
+              @click="currentPage++"
+            >
+              下一頁
+            </button>
+          </div>
+          <div class="search-pagination-info">
+            顯示第 {{ (currentPage - 1) * itemsPerPage + 1 }} 到 {{ Math.min(currentPage * itemsPerPage, searchResults.length) }} 筆，共 {{ searchResults.length }} 筆
+          </div>
+        </div>
       </div>
-    </div>
-    <div v-else-if="searched" class="no-results">
-      無搜尋結果
+      <div v-else-if="searched" class="search-no-results">
+        無搜尋結果
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 // State
 const simpleSearchQuery = ref('');
@@ -118,21 +151,37 @@ const advancedSearchConditions = ref([
 const searchResults = ref([]);
 const searched = ref(false);
 const currentPage = ref(1);
-const itemsPerPage = 5;
+const itemsPerPage = 10;
 
 // Mock book data
-const books = ref([
-  { title: 'JavaScript 入門', author: '張三', isbn: '1234567890', publisher: '技術出版社', year: '2020', available: true, reserved: false, favorite: false },
-  { title: 'Vue.js 實戰', author: '李四', isbn: '0987654321', publisher: '前端出版社', year: '2021', available: false, reserved: false, favorite: false },
-  { title: 'Python 程式設計', author: '王五', isbn: '1122334455', publisher: '技術出版社', year: '2019', available: true, reserved: false, favorite: false },
-  { title: 'HTML 基礎', author: '陳六', isbn: '9876543210', publisher: '基礎出版社', year: '2018', available: false, reserved: false, favorite: false },
-  { title: 'CSS 進階', author: '趙七', isbn: '4567891230', publisher: '進階出版社', year: '2022', available: true, reserved: false, favorite: false },
-  { title: 'Node.js 實戰', author: '孫八', isbn: '3216549870', publisher: '實戰出版社', year: '2023', available: false, reserved: false, favorite: false },
-  { title: 'React 入門', author: '吳九', isbn: '6543219870', publisher: '技術出版社', year: '2020', available: true, reserved: false, favorite: false },
-]);
+const books = [
+  '哈利波特：神秘的魔法石', '哈利波特：消失的密室', '哈利波特：阿茲卡班的逃犯',
+  '魔戒首部曲：魔戒現身', '魔戒二部曲：雙城奇謀', '魔戒三部曲：王者再臨',
+  '三體', '三體Ⅱ黑暗森林', '三體Ⅲ死神永生', '挪威的森林',
+  '1984', '美麗新世界', '動物農莊', '華氏451度',
+  '追風箏的孩子', '群山回唱', '燦爛千陽', '小王子',
+  '百年孤寂', '霍爾的移動城堡', '神隱少女', '天空之城'
+].map((title, index) => {
+  return {
+    title,
+    author: [
+      'J.K. 羅琳', '托爾金', '劉慈欣', '村上春樹',
+      '喬治·歐威爾', '赫胥黎', '卡勒德·胡賽尼', '安東尼·聖修伯里',
+      '加西亞·馬奎斯', '宮崎駿'
+    ][index % 10],
+    isbn: `978${Math.random().toString().slice(2, 12)}`,
+    publisher: ['技術出版社', '前端出版社', '基礎出版社', '進階出版社', '實戰出版社'][index % 5],
+    year: `${2018 + (index % 6)}`,
+    available: index % 3 === 0,
+    reserved: false,
+    favorite: false,
+    coverUrl: null
+  };
+});
 
 // Computed properties
 const totalPages = computed(() => Math.ceil(searchResults.value.length / itemsPerPage));
+
 const currentPageResults = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
   const end = start + itemsPerPage;
@@ -168,7 +217,7 @@ const performSimpleSearch = () => {
     currentPage.value = 1;
     return;
   }
-  searchResults.value = books.value.filter(book =>
+  searchResults.value = books.filter(book =>
     book.title.toLowerCase().includes(query) ||
     book.author.toLowerCase().includes(query) ||
     book.isbn.includes(query) ||
@@ -180,7 +229,7 @@ const performSimpleSearch = () => {
 };
 
 const performAdvancedSearch = () => {
-  let results = [...books.value];
+  let results = [...books];
   advancedSearchConditions.value.forEach((condition, index) => {
     const value = condition.value.toLowerCase().trim();
     if (!value) return;
@@ -213,206 +262,352 @@ const toggleFavorite = (book) => {
 };
 
 const reserveBook = (book) => {
-  book.reserved = !book.reserved;
-  if (book.reserved) {
-    alert(`已成功預約《${book.title}》！`);
-  } else {
-    alert(`已取消預約《${book.title}》！`);
-  }
+  router.push({
+    path: `/${book.isbn}`,
+    query: {
+      title: book.title,
+      author: book.author,
+      coverUrl: book.coverUrl
+    }
+  });
 };
 </script>
 
 <style scoped>
-body {
-  font-family: Arial, sans-serif;
-  background-color: #f0f0f0;
+.search-bg {
+  padding: 24px 24px 100px 24px;
+  background: #fff;
+}
+
+.search-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: #18181b;
+}
+
+.search-main {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  margin: 0;
-  padding: 20px;
+  flex-direction: column;
+  gap: 24px;
 }
-.container {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: auto;
-}
-.simple-search,
-.advanced-search {
-  max-width: 600px;
-}
-.search-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-.search-bar input {
-  flex: 1;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 16px;
-}
-.search-bar input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
-}
-.btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-}
-.btn-primary {
-  background-color: #007bff;
-  color: white;
-}
-.btn-primary:hover {
-  background-color: #0056b3;
-}
-.btn-secondary {
-  background-color: transparent;
-  color: #007bff;
-  text-decoration: underline;
-}
-.btn-secondary:hover {
-  color: #0056b3;
-}
-.btn-danger {
-  background-color: #dc3545;
-  color: white;
-}
-.btn-danger:hover {
-  background-color: #b02a37;
-}
-.btn-disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-.favorite {
-  background-color: #ccc; 
-  color: #333;
-}
-.favorite:hover {
-  background-color: #b3b3b3; 
-}
-.not-favorite {
-  background-color: #dc3545; 
-  color: white;
-}
-.not-favorite:hover {
-  background-color: #b02a37;
-}
-.reserved-btn {
-  background-color: #ccc; 
-  color: #333;
-}
-.reserved-btn:hover {
-  background-color: #b3b3b3; 
-}
-.not-reserved {
-  background-color: #007bff; 
-  color: white;
-}
-.not-reserved:hover {
-  background-color: #0056b3;
-}
-.condition {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
-  align-items: center;
-}
-.condition select,
-.condition input {
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 16px;
-}
-.condition input {
-  flex: 1;
-}
-.results {
-  margin-top: 20px;
-}
-.result-item {
+
+.search-control-panel {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #ddd;
-  margin: 0 50px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.result-item:hover {
-  background-color: #96c0fdbe; 
-  transition: background-color 0.2s ease;
-}
-
-.result-item:last-child {
-  border-bottom: none;
-}
-.result-info {
+.search-control-panel-left {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
-.result-info p {
-  margin: 0;
-  font-size: 14px;
-}
-.result-info p strong {
-  margin-right: 5px;
-}
-.availability {
-  color: green;
-}
-.unavailable {
-  color: red;
-}
-.reserved {
-  color: red;
-}
-.result-actions {
+
+.search-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  margin-top: 20px;
+
+.search-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: #fff;
+  color: #18181b;
 }
-.pagination span {
-  font-size: 14px;
+
+.search-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
-.pagination button {
-  padding: 5px 10px;
-  border: 1px solid #ccc;
-  background-color: #fff;
+
+.search-select {
+  min-width: 120px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 1rem;
+  background: #fff;
+  color: #18181b;
   cursor: pointer;
-  border-radius: 4px;
 }
-.pagination button:disabled {
-  background-color: #f0f0f0;
+
+.search-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.search-btn-primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.search-btn-primary:hover {
+  background: #1d4ed8;
+}
+
+.search-btn-secondary {
+  background: transparent;
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.search-btn-secondary:hover {
+  color: #1d4ed8;
+}
+
+.search-btn-danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.search-btn-danger:hover {
+  background: #b91c1c;
+}
+
+.search-btn-disabled {
+  background: #9ca3af;
   cursor: not-allowed;
 }
-.no-results {
-  color: #6c757d;
-  margin-top: 20px;
+
+.search-condition {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
 }
-h2 {
-  font-size: 20px;
-  margin-bottom: 10px;
+
+.search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.search-result-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  background: #fff;
+  transition: all 0.2s;
+}
+
+.search-result-item:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.search-result-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-result-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #18181b;
+  margin: 0;
+}
+
+.search-result-author {
+  color: #6b7280;
+  margin: 0;
+}
+
+.search-result-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 8px 0;
+}
+
+.search-result-details p {
+  margin: 0;
+  color: #4b5563;
+}
+
+.search-result-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.availability {
+  color: #16a34a;
+  font-weight: 500;
+}
+
+.unavailable {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.favorite {
+  background: #16a34a;
+  color: #fff;
+}
+
+.not-favorite {
+  background: #6b7280;
+  color: #fff;
+}
+
+.reserved-btn {
+  background: #dc2626;
+  color: #fff;
+}
+
+.not-reserved {
+  background: #2563eb;
+  color: #fff;
+}
+
+.search-pagination {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.search-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-pagination-btn {
+  height: 32px;
+  min-width: 32px;
+  padding: 0 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  color: #18181b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.search-pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.search-pagination-btn:hover {
+  background: #f3f4f6;
+}
+
+.search-pagination-input {
+  height: 32px;
+  width: 48px;
+  text-align: center;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: #18181b;
+  background: #fff;
+}
+
+/* 隱藏 Chrome, Safari, Edge, Opera 的箭頭 */
+.search-pagination-input::-webkit-outer-spin-button,
+.search-pagination-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 隱藏 Firefox 的箭頭 */
+.search-pagination-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.search-pagination-info {
+  font-size: 0.95rem;
+  color: #4b5563;
+  text-align: center;
+}
+
+.search-no-results {
+  text-align: center;
+  padding: 48px;
+  color: #6b7280;
+  font-size: 1.1rem;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .search-control-panel {
+    flex-direction: column;
+  }
+
+  .search-result-details {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 640px) {
+  .search-bg {
+    padding: 16px;
+  }
+
+  .search-row {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .search-btn {
+    width: 100%;
+  }
+
+  .search-condition {
+    flex-direction: column;
+  }
+
+  .search-select {
+    width: 100%;
+  }
+
+  .search-pagination-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-title {
+    font-size: 1.5rem;
+  }
+
+  .search-result-actions {
+    flex-direction: column;
+  }
 }
 </style>
-```
