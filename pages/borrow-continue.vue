@@ -1,6 +1,6 @@
 <template>
     <div class="borrow-bg">
-      <h1 class="borrow-title">續借功能</h1>
+      <h1 class="borrow-title">歷史紀錄</h1>
       <div class="borrow-main">
         <!-- 控制面板 -->
         <div class="borrow-control-panel">
@@ -51,6 +51,7 @@
               <div>作者</div>
               <div>借閱日</div>
               <div>到期日</div>
+              <div>續借次數</div>
               <div>功能</div>
             </div>
             <div class="borrow-grid-body">
@@ -62,15 +63,25 @@
                 <div>{{ book.title }}</div>
                 <div>{{ book.author }}</div>
                 <div>{{ book.borrowDate }}</div>
-                <div>{{ book.dueDate }}</div>
+                <div :class="{ 
+                  'text-red-600 font-medium': isOverdue(book.dueDate) && !book.isReturned,
+                  'text-green-600 font-medium': book.isReturned
+                }">
+                  {{ formatDueDate(book.dueDate, book.isReturned) }}
+                </div>
+                <div>{{ book.renewCount }}/2</div>
                 <div>
                   <button 
                     @click="renewBook(book)" 
                     class="borrow-detail-btn"
-                    :class="{ 'borrow-detail-btn-disabled': book.hasRenewed }"
-                    :disabled="book.hasRenewed"
+                    :class="{ 
+                      'borrow-detail-btn-disabled': !canRenew(book.dueDate) || book.renewCount >= 2 || book.isReturned,
+                      'borrow-detail-btn-overdue': isOverdue(book.dueDate) && !book.isReturned,
+                      'borrow-detail-btn-returned': book.isReturned
+                    }"
+                    :disabled="!canRenew(book.dueDate) || book.renewCount >= 2 || book.isReturned || isOverdue(book.dueDate)"
                   >
-                    {{ book.hasRenewed ? '已續借' : '續借' }}
+                    {{ getButtonText(book) }}
                   </button>
                 </div>
               </div>
@@ -86,15 +97,25 @@
                 <p class="borrow-grid-author">{{ book.author }}</p>
                 <div class="borrow-grid-dates">
                   <p>借閱日：{{ book.borrowDate }}</p>
-                  <p>到期日：{{ book.dueDate }}</p>
+                  <p :class="{ 
+                    'text-red-600 font-medium': isOverdue(book.dueDate) && !book.isReturned,
+                    'text-green-600 font-medium': book.isReturned
+                  }">
+                    到期日：{{ formatDueDate(book.dueDate, book.isReturned) }}
+                  </p>
+                  <p>續借次數：{{ book.renewCount }}/2</p>
                 </div>
                 <button 
                   class="borrow-detail-btn"
-                  :class="{ 'borrow-detail-btn-disabled': book.hasRenewed }"
+                  :class="{ 
+                    'borrow-detail-btn-disabled': !canRenew(book.dueDate) || book.renewCount >= 2 || book.isReturned,
+                    'borrow-detail-btn-overdue': isOverdue(book.dueDate) && !book.isReturned,
+                    'borrow-detail-btn-returned': book.isReturned
+                  }"
                   @click="renewBook(book)"
-                  :disabled="book.hasRenewed"
+                  :disabled="!canRenew(book.dueDate) || book.renewCount >= 2 || book.isReturned || isOverdue(book.dueDate)"
                 >
-                  {{ book.hasRenewed ? '已續借' : '續借' }}
+                  {{ getButtonText(book) }}
                 </button>
               </div>
             </div>
@@ -140,6 +161,52 @@
   <script setup>
   import { ref, computed, watch } from 'vue'
   
+  // 檢查是否可以續借（到期日前3天）
+  function canRenew(dueDate) {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const dueDateObj = new Date(dueDate)
+    const diffTime = dueDateObj.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays <= 3 && diffDays > 0
+  }
+  
+  // 檢查是否逾期
+  function isOverdue(dueDate) {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const dueDateObj = new Date(dueDate)
+    return today > dueDateObj
+  }
+  
+  // 格式化到期日顯示
+  function formatDueDate(dueDate, isReturned) {
+    if (isReturned) {
+      return '已歸還'
+    }
+    if (isOverdue(dueDate)) {
+      return `${dueDate} (逾期)`
+    }
+    return dueDate
+  }
+  
+  // 取得按鈕文字
+  function getButtonText(book) {
+    if (book.isReturned) {
+      return '已歸還'
+    }
+    if (isOverdue(book.dueDate)) {
+      return '已逾期'
+    }
+    if (book.renewCount >= 2) {
+      return '已達上限'
+    }
+    if (!canRenew(book.dueDate)) {
+      return '尚未到續借時間'
+    }
+    return '續借'
+  }
+  
   // 視圖模式
   const viewMode = ref('table') // 'table' 或 'grid'
   
@@ -177,15 +244,54 @@
     return `https://via.placeholder.com/300x400/${color}/FFFFFF?text=${encodeURIComponent('書籍封面')}`
   }
   
-  const borrowedBooks = ref(Array.from({ length: 50 }, (_, i) => ({
-    id: String(i + 1),
-    title: books[i % books.length],
-    author: authors[i % authors.length],
-    borrowDate: new Date(2025, 4, i % 28 + 1).toISOString().split('T')[0],
-    dueDate: new Date(2025, 5, i % 28 + 1).toISOString().split('T')[0],
-    coverUrl: null, // 這裡之後可以放資料庫的圖片URL
-    hasRenewed: false // 追蹤是否已經續借過
-  })))
+  const borrowedBooks = ref(Array.from({ length: 50 }, (_, i) => {
+    const isReturned = i % 10 === 0 // 每10本書將有1本是已歸還的狀態
+    
+    // 取得今天的日期
+    const today = new Date()
+    const baseDate = new Date(today)
+    baseDate.setDate(baseDate.getDate() - 30) // 從30天前開始
+
+    // 根據索引設置不同的借閱情況
+    let borrowDate, dueDate, renewCount
+    
+    if (i % 8 === 0) { // 即將到期（1-2天內）
+      borrowDate = new Date(today)
+      borrowDate.setDate(borrowDate.getDate() - 28) // 28天前借的
+      dueDate = new Date(today)
+      dueDate.setDate(dueDate.getDate() + 2) // 還有2天到期
+      renewCount = 0
+    } else if (i % 8 === 1) { // 已經逾期
+      borrowDate = new Date(today)
+      borrowDate.setDate(borrowDate.getDate() - 35) // 35天前借的
+      dueDate = new Date(today)
+      dueDate.setDate(dueDate.getDate() - 5) // 5天前就到期了
+      renewCount = Math.min(2, Math.floor(Math.random() * 3)) // 0-2次續借
+    } else if (i % 8 === 2 || i % 8 === 3) { // 剛借不久
+      borrowDate = new Date(today)
+      borrowDate.setDate(borrowDate.getDate() - 5) // 5天前借的
+      dueDate = new Date(today)
+      dueDate.setDate(dueDate.getDate() + 25) // 還有25天到期
+      renewCount = 0
+    } else { // 已續借過的（一般借閱中）
+      borrowDate = new Date(today)
+      borrowDate.setDate(borrowDate.getDate() - 20) // 20天前借的
+      dueDate = new Date(today)
+      dueDate.setDate(dueDate.getDate() + 10) // 還有10天到期
+      renewCount = 1 // 已續借1次
+    }
+
+    return {
+      id: String(i + 1),
+      title: books[i % books.length],
+      author: authors[i % authors.length],
+      borrowDate: borrowDate.toISOString().split('T')[0],
+      dueDate: dueDate.toISOString().split('T')[0],
+      coverUrl: null,
+      renewCount,
+      isReturned
+    }
+  }))
   
   // 排序功能
   function toggleSortOrder() {
@@ -235,23 +341,37 @@
   
   // 續借功能
   function renewBook(book) {
-    // 檢查是否已經續借過
-    if (book.hasRenewed) {
-      alert('此書已續借過，無法再次續借')
+    if (book.isReturned) {
+      alert('此書已歸還')
+      return
+    }
+    
+    if (book.renewCount >= 2) {
+      alert('此書已達到續借上限，無法再次續借')
+      return
+    }
+
+    if (isOverdue(book.dueDate)) {
+      alert('此書已逾期，無法續借')
+      return
+    }
+
+    if (!canRenew(book.dueDate)) {
+      alert('尚未到續借時間（到期前3天內才能續借）')
       return
     }
 
     // 取得當前到期日
     const currentDueDate = new Date(book.dueDate)
     
-    // 計算新的到期日（當前到期日 + 7天）
+    // 計算新的到期日（當前到期日 + 30天）
     const newDueDate = new Date(currentDueDate)
-    newDueDate.setDate(newDueDate.getDate() + 7)
+    newDueDate.setDate(newDueDate.getDate() + 30)
     
     // 更新書籍的到期日
     book.dueDate = newDueDate.toISOString().split('T')[0]
-    // 標記已續借
-    book.hasRenewed = true
+    // 增加續借次數
+    book.renewCount++
   }
   
   // 添加 goToPage 函數
@@ -376,7 +496,7 @@
   .borrow-grid-header,
   .borrow-grid-row {
     display: grid;
-    grid-template-columns: 2fr 1.5fr 1.5fr 1.5fr 1fr;
+    grid-template-columns: 2fr 1.5fr 1fr 1fr 0.8fr 0.8fr;
     align-items: center;
   }
   .borrow-grid-header {
@@ -417,8 +537,8 @@
     text-align: left;
     justify-content: flex-start;
   }
-  .borrow-grid-row:hover {
-    background: #f3f4f6;
+  .borrow-grid-row > div:last-child {
+    justify-content: flex-end;
   }
   .borrow-grid {
     display: grid;
@@ -452,6 +572,8 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    height: 100%;
+    position: relative;
   }
   .borrow-grid-title {
     font-weight: 600;
@@ -468,6 +590,7 @@
     font-size: 0.9rem;
     color: #4b5563;
     margin-bottom: 8px;
+    flex-grow: 1;
   }
   .borrow-detail-btn {
     background: #2563eb;
@@ -478,6 +601,8 @@
     font-size: 0.95rem;
     cursor: pointer;
     transition: background 0.2s;
+    width: 100%;
+    margin-top: auto;
   }
   .borrow-detail-btn:hover {
     background: #1d4ed8;
@@ -488,6 +613,28 @@
   }
   .borrow-detail-btn-disabled:hover {
     background: #9ca3af;
+  }
+  .borrow-detail-btn-overdue {
+    background: #dc2626;
+  }
+  .borrow-detail-btn-overdue:hover {
+    background: #b91c1c;
+  }
+  .borrow-detail-btn-returned {
+    background: #16a34a;
+    cursor: not-allowed;
+  }
+  .borrow-detail-btn-returned:hover {
+    background: #16a34a;
+  }
+  .text-red-600 {
+    color: #dc2626;
+  }
+  .text-green-600 {
+    color: #16a34a;
+  }
+  .font-medium {
+    font-weight: 500;
   }
   .borrow-pagination {
     display: flex;
