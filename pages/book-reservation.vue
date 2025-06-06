@@ -198,7 +198,7 @@ function handleReserve() {
   height: 100%;
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
-  background: #fff;
+  background: transparent;
 }
 
 /* 滾動條預設為透明 */
@@ -224,6 +224,7 @@ function handleReserve() {
 
 .reservation-bg {
   padding: 32px 0 100px 0;
+  background: transparent;
 }
 .reservation-container {
   max-width: 700px;
@@ -244,12 +245,13 @@ function handleReserve() {
   color: #4b5563;
 }
 .reservation-notfound {
-  background: #f3f4f6;
+  background: rgba(243, 244, 246, 0.6);
+  backdrop-filter: blur(10px);
   border-radius: 12px;
-  box-shadow: 0 2px 8px #0001;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   padding: 24px;
   text-align: center;
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgba(229, 231, 235, 0.4);
 }
 .reservation-notfound-inner {
   padding: 24px;
@@ -273,15 +275,17 @@ function handleReserve() {
   color: #6b7280;
 }
 .reservation-card {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
   border-radius: 12px;
-  box-shadow: 0 2px 8px #0001;
-  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(229, 231, 235, 0.4);
 }
 .reservation-bookinfo {
-  background: #f3f4f6;
+  background: rgba(243, 244, 246, 0.6);
+  backdrop-filter: blur(10px);
   padding: 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.4);
 }
 .reservation-bookinfo-title {
   font-size: 1.1rem;
@@ -340,10 +344,11 @@ function handleReserve() {
   box-shadow: 0 0 0 2px #2563eb22;
 }
 .reservation-notice {
-  background: #f3f4f6;
+  background: rgba(243, 244, 246, 0.6);
+  backdrop-filter: blur(10px);
   border-radius: 8px;
   padding: 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgba(229, 231, 235, 0.4);
 }
 .reservation-notice-title {
   font-size: 1rem;

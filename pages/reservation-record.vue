@@ -260,7 +260,7 @@ function goToPage(page) {
   height: 100%;
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
-  background: #fff;
+  background: transparent;
 }
 
 /* 滾動條預設為透明 */
@@ -286,7 +286,7 @@ function goToPage(page) {
 
 .history-bg {
   padding: 24px 24px 100px 24px;
-  background: #fff;
+  background: transparent;
 }
 .history-title {
   font-size: 2rem;
@@ -407,9 +407,11 @@ function goToPage(page) {
   display: flex;
   flex-direction: column;
   width: 100%;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgba(229, 231, 235, 0.4);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 .history-grid-header,
 .history-grid-row {
@@ -418,7 +420,8 @@ function goToPage(page) {
   align-items: center;
 }
 .history-grid-header {
-  background: #f3f4f6;
+  background: rgba(243, 244, 246, 0.6);
+  backdrop-filter: blur(10px);
   color: #222;
   font-weight: 600;
   padding: 12px 0;
@@ -464,16 +467,17 @@ function goToPage(page) {
   gap: 16px;
 }
 .history-grid-card {
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgba(229, 231, 235, 0.4);
   border-radius: 8px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
   transition: box-shadow 0.2s;
 }
 .history-grid-card:hover {
-  box-shadow: 0 4px 16px #0002;
-  background: #f3f4f6;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  background: rgba(243, 244, 246, 0.8);
 }
 .history-grid-img-wrap {
   aspect-ratio: 3/4;

@@ -120,7 +120,7 @@ function handleReserve() {
   height: 100%;
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
-  background: #fff;
+  background: transparent;
 }
 
 /* 滾動條預設為透明 */
@@ -146,5 +146,19 @@ function handleReserve() {
 
 .grid {
   display: grid;
+}
+
+.bg-white.rounded-lg.border.p-6.space-y-4 {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(229, 231, 235, 0.4);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.bg-white.rounded-lg.border.p-6 {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(229, 231, 235, 0.4);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 </style> 

@@ -276,7 +276,7 @@ const reserveBook = (book) => {
 <style scoped>
 .search-bg {
   padding: 24px 24px 100px 24px;
-  background: #fff;
+  background: transparent;
 }
 
 .search-title {
@@ -290,6 +290,7 @@ const reserveBook = (book) => {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  background: transparent;
 }
 
 .search-control-panel {
@@ -319,10 +320,11 @@ const reserveBook = (book) => {
   flex: 1;
   min-width: 200px;
   padding: 8px 16px;
-  border: 1px solid #d1d5db;
+  border: 1px solid rgba(209, 213, 219, 0.4);
   border-radius: 6px;
   font-size: 1rem;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
   color: #18181b;
 }
 
@@ -334,11 +336,12 @@ const reserveBook = (book) => {
 
 .search-select {
   min-width: 120px;
-  border: 1px solid #d1d5db;
+  border: 1px solid rgba(209, 213, 219, 0.4);
   border-radius: 6px;
   padding: 8px 16px;
   font-size: 1rem;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
   color: #18181b;
   cursor: pointer;
 }
@@ -403,15 +406,17 @@ const reserveBook = (book) => {
 }
 
 .search-result-item {
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgba(229, 231, 235, 0.4);
   border-radius: 8px;
   padding: 16px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
   transition: all 0.2s;
 }
 
 .search-result-item:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  background: rgba(243, 244, 246, 0.8);
 }
 
 .search-result-info {
@@ -499,9 +504,10 @@ const reserveBook = (book) => {
   height: 32px;
   min-width: 32px;
   padding: 0 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid rgba(209, 213, 219, 0.4);
   border-radius: 6px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
   color: #18181b;
   display: flex;
   align-items: center;
@@ -518,18 +524,19 @@ const reserveBook = (book) => {
 }
 
 .search-pagination-btn:hover {
-  background: #f3f4f6;
+  background: rgba(243, 244, 246, 0.8);
 }
 
 .search-pagination-input {
   height: 32px;
   width: 48px;
   text-align: center;
-  border: 1px solid #d1d5db;
+  border: 1px solid rgba(209, 213, 219, 0.4);
   border-radius: 6px;
   font-size: 1rem;
   color: #18181b;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
 }
 
 /* 隱藏 Chrome, Safari, Edge, Opera 的箭頭 */
@@ -555,6 +562,10 @@ const reserveBook = (book) => {
   padding: 48px;
   color: #6b7280;
   font-size: 1.1rem;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(229, 231, 235, 0.4);
+  border-radius: 8px;
 }
 
 /* 響應式設計 */
