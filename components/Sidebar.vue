@@ -1,34 +1,34 @@
 <template>
-    <aside class="sidebar" :class="{ closed: !isOpen }">
+    <div class="sidebar-container">
+        <aside class="sidebar" :class="{ closed: !isOpen }">
+            <img src="/images/book-flip.gif" alt="翻書動畫" class="bg-book" />
 
-        <!-- <button class="toggle-btn" @click="$emit('update:isOpen', !isOpen)">
-            {{ isOpen ? '« 收合' : '» 展開' }}
-        </button> -->
+            <nav v-show="isOpen">
+                <ul class="menu-list">
+                    <li v-for="item in menuItems" :key="item.label">
+                        <div class="menu-item" :class="{ active: current === item.label }"
+                            @click="() => setCurrent(item.label)">
+                            <span>{{ item.label }}</span>
+                            <span v-if="item.children">{{ open[item.label] ? '▾' : '▸' }}</span>
+                        </div>
 
-        <!-- ✅ 背景圖（獨立控制透明） -->
-        <!-- 圖片來源：https://www.aigei.com，僅供展示用 -->
-        <img src="/images/book-flip.gif" alt="翻書動畫" class="bg-book" />
-
-        <nav v-show="isOpen">
-            <ul class="menu-list">
-                <li v-for="item in menuItems" :key="item.label">
-                    <div class="menu-item" :class="{ active: current === item.label }"
-                        @click="() => setCurrent(item.label)">
-                        <span>{{ item.label }}</span>
-                        <span v-if="item.children">{{ open[item.label] ? '▾' : '▸' }}</span>
-                    </div>
-
-                    <ul v-if="item.children && open[item.label]" class="submenu">
-                        <li v-for="child in item.children" :key="child.label">
-                            <NuxtLink v-if="child.href" :to="child.href" :title="child.label" class="submenu-link">
-                                {{ child.label }}
-                            </NuxtLink>
-                        </li>
-                    </ul>
-                </li>
-            </ul>
-        </nav>
-    </aside>
+                        <ul v-if="item.children && open[item.label]" class="submenu">
+                            <li v-for="child in item.children" :key="child.label">
+                                <NuxtLink v-if="child.href" :to="child.href" :title="child.label" class="submenu-link">
+                                    {{ child.label }}
+                                </NuxtLink>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+        <div class="toggle-area" @click="$emit('update:isOpen', !isOpen)">
+            <div class="toggle-icon">
+                {{ isOpen ? '«' : '»' }}
+            </div>
+        </div>
+    </div>
 </template>
 
 <script setup>
@@ -104,34 +104,61 @@ const menuItems = [
         ]
     }
 ]
-
-// function toggle(label) {
-//     if (menuItems.find(item => item.label === label)?.children) {
-//         open[label] = !open[label]
-//     }
-// }
 </script>
 
 <style scoped>
+.sidebar-container {
+    position: relative;
+    height: 100%;
+}
+
 .sidebar {
     width: 150px;
-    /* max-height: 100vh; */
-    /* ⭐ 限制 sidebar 最大高度為視窗高 */
     padding: 20px;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
     height: 100%;
     transition: width 0.3s ease, padding 0.3s ease;
     position: relative;
-    /* overflow-y: auto; */
-    /* ⭐ 加上垂直捲動條 */
     overflow-x: hidden;
+    background: #fff;
 }
 
 .sidebar.closed {
     width: 0;
-    /* 不清掉 padding-top or padding-bottom，避免垂直縮小 */
     padding-left: 0;
     padding-right: 0;
+}
+
+.toggle-area {
+    position: absolute;
+    top: 50%;
+    left: 190px;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 64px;
+    background: linear-gradient(180deg, #1e3c72, #2a5298);
+    border: none;
+    border-radius: 0 3px 3px 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    z-index: 99;
+    transition: left 0.3s ease, opacity 0.2s;
+}
+
+.sidebar.closed + .toggle-area {
+    left: 0;
+}
+
+.toggle-icon {
+    font-size: 12px;
+    line-height: 1;
+}
+
+.toggle-area:hover {
+    opacity: 0.85;
 }
 
 .sidebar nav {
@@ -183,7 +210,6 @@ const menuItems = [
     border-radius: 8px;
     text-decoration: none;
     color: black;
-    /* background-color: lightgray; */
     white-space: nowrap;
 }
 
@@ -197,23 +223,6 @@ const menuItems = [
     color: #000;
 }
 
-/* .toggle-btn {
-    position: absolute;
-    top: 0;
-    right: -65px;
-    z-index: 9999;
-    background: linear-gradient(135deg, #ff9900, #ff3300);
-    color: black;
-    font-family: "Hachi Maru Pop";
-    font-weight: bold;
-    border: none;
-    padding: 6px 12px;
-    cursor: pointer;
-    border-radius: 4px;
-    white-space: nowrap;
-} */
-
-/* ✅ 背景圖透明控制 */
 .bg-book {
     position: absolute;
     top: 100px;
@@ -221,11 +230,8 @@ const menuItems = [
     width: 100%;
     height: 80%;
     object-fit: cover;
-    /* ✅ 等同 background-size: cover */
     object-position: center;
-    /* ✅ 等同 background-position: center */
     opacity: 0.1;
-    /* ✅ 淡化圖片 */
     z-index: 0;
     pointer-events: none;
 }
