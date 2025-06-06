@@ -1,4 +1,6 @@
 <template>
+  <div class="scroll-wrapper">
+    <div class="intro">
   <div class="p-6 max-w-4xl mx-auto">
     <div class="mb-6">
       <Button variant="outline" class="mb-4" @click="router.back()">
@@ -60,6 +62,8 @@
           </div>
           <div class="mt-6">
             <Button class="w-full" @click="handleReserve">預約借閱</Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -102,6 +106,44 @@ function handleReserve() {
 </script>
 
 <style scoped>
+.scroll-wrapper {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.intro {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  background: #fff;
+}
+
+/* 滾動條預設為透明 */
+.intro::-webkit-scrollbar {
+  width: 8px;
+}
+
+.intro::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+/* 滑鼠靠近 wrapper 時顯示滾動條 */
+.scroll-wrapper:hover .intro::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* 滑鼠靠近時滾動條背景也顯示 */
+.scroll-wrapper:hover .intro {
+  scrollbar-color: rgba(0, 0, 0, 0.4) transparent;
+}
+
 .grid {
   display: grid;
 }

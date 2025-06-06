@@ -5,7 +5,7 @@
                 <img src="/images/libraryCard.jpg" alt="借閱證圖片" />
                 <h1>借閱證申請</h1>
             </div>
-            <h1 class="section-title">申辦說明</h1>
+            <h1 class="section-title">{{ step === 1 ? '申辦說明' : '個人資料填寫' }}</h1>
 
             <!-- 步驟一：申請說明 + 同意聲明 -->
             <div v-if="step === 1" class="instructions">
@@ -41,9 +41,18 @@
             <!-- ✅ 步驟二：申請表單 -->
             <form v-else @submit.prevent="submitForm" class="form">
                 <label>姓名：<input v-model="form.name" required /></label>
-                <label>電子郵件：<input v-model="form.email" type="email" required /></label>
+                <!-- 性別 -->
+                <div class="gender-row">
+                    <label class="gender-label">性別：</label>
+                    <div class="gender-radio">
+                        <label><input type="radio" value="男" v-model="form.gender" name="gender" required />男
+                            Male</label>
+                        <label><input type="radio" value="女" v-model="form.gender" name="gender" />女 Female</label>
+                    </div>
+                </div>
                 <label>身分證字號：<input v-model="form.idNumber" required /></label>
                 <label>出生日期：<input v-model="form.birthDate" type="date" required /></label>
+                <label>電子郵件：<input v-model="form.email" type="email" required /></label>
                 <label>聯絡電話：<input v-model="form.phone" type="tel" required /></label>
 
                 <button type="button" @click="step = 1" class="back-button">← 回上一頁</button>
@@ -64,10 +73,14 @@ const agreed = ref(false)
 
 const form = reactive({
     name: '',
-    email: '',
+    gender: '',
     idNumber: '',
     birthDate: '',
-    phone: ''
+    nationality: '',
+    education: '',
+    occupation: '',
+    phone: '',
+    email: ''
 })
 
 const submitted = ref(false)
@@ -223,10 +236,47 @@ a:hover {
 }
 
 .form {
-    display: flex;
+    display: block;
     flex-direction: column;
     gap: 12px;
 }
+
+.gender-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.gender-label {
+    min-width: 80px;
+    font-weight: bold;
+}
+
+.gender-radio {
+    display: flex;
+    gap: 1rem;
+}
+
+.gender-radio label {
+    width: 100px;
+    display: flex;
+    align-items: center;
+    font-weight: normal;
+    gap: 4px;
+    line-height: 1;
+    /* 防止文字行高造成偏移 */
+    padding: 2px 0;
+    /* 可選：微調上下距離 */
+}
+
+.gender-radio input[type="radio"] {
+    position: relative;
+    vertical-align: middle;
+    /* top: 0px; */
+    /* 或 transform: translateY(1px); */
+}
+
+
 
 label {
     display: flex;
