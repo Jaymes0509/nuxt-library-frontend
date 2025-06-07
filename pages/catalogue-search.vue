@@ -150,9 +150,6 @@
         </div>
       </div>
     </div>
-    <div v-else-if="searched" class="no-results">
-      無搜尋結果
-    </div>
   </div>
 </template>
 
@@ -175,15 +172,30 @@ const sortConfig = ref({
 });
 
 // Mock book data
-const books = ref([
-  { title: 'JavaScript 入門', author: '張三', isbn: '1234567890', publisher: '技術出版社', year: '2020', available: true, reserved: false, favorite: false },
-  { title: 'Vue.js 實戰', author: '李四', isbn: '0987654321', publisher: '前端出版社', year: '2021', available: false, reserved: false, favorite: false },
-  { title: 'Python 程式設計', author: '王五', isbn: '1122334455', publisher: '技術出版社', year: '2019', available: true, reserved: false, favorite: false },
-  { title: 'HTML 基礎', author: '陳六', isbn: '9876543210', publisher: '基礎出版社', year: '2018', available: false, reserved: false, favorite: false },
-  { title: 'CSS 進階', author: '趙七', isbn: '4567891230', publisher: '進階出版社', year: '2022', available: true, reserved: false, favorite: false },
-  { title: 'Node.js 實戰', author: '孫八', isbn: '3216549870', publisher: '實戰出版社', year: '2023', available: false, reserved: false, favorite: false },
-  { title: 'React 入門', author: '吳九', isbn: '6543219870', publisher: '技術出版社', year: '2020', available: true, reserved: false, favorite: false },
-]);
+const books = [
+  '哈利波特：神秘的魔法石', '哈利波特：消失的密室', '哈利波特：阿茲卡班的逃犯',
+  '魔戒首部曲：魔戒現身', '魔戒二部曲：雙城奇謀', '魔戒三部曲：王者再臨',
+  '三體', '三體Ⅱ黑暗森林', '三體Ⅲ死神永生', '挪威的森林',
+  '1984', '美麗新世界', '動物農莊', '華氏451度',
+  '追風箏的孩子', '群山回唱', '燦爛千陽', '小王子',
+  '百年孤寂', '霍爾的移動城堡', '神隱少女', '天空之城'
+].map((title, index) => {
+  return {
+    title,
+    author: [
+      'J.K. 羅琳', '托爾金', '劉慈欣', '村上春樹',
+      '喬治·歐威爾', '赫胥黎', '卡勒德·胡賽尼', '安東尼·聖修伯里',
+      '加西亞·馬奎斯', '宮崎駿'
+    ][index % 10],
+    isbn: `978${Math.random().toString().slice(2, 12)}`,
+    publisher: ['技術出版社', '前端出版社', '基礎出版社', '進階出版社', '實戰出版社'][index % 5],
+    year: `${2018 + (index % 6)}`,
+    available: index % 3 === 0,
+    reserved: false,
+    favorite: false,
+    coverUrl: null
+  };
+});
 
 // Computed properties
 const totalPages = computed(() => Math.ceil(searchResults.value.length / itemsPerPage.value));
@@ -232,7 +244,7 @@ const performSimpleSearch = () => {
     currentPage.value = 1;
     return;
   }
-  searchResults.value = books.value.filter(book =>
+  searchResults.value = books.filter(book =>
     book.title.toLowerCase().includes(query) ||
     book.author.toLowerCase().includes(query) ||
     book.isbn.includes(query) ||
@@ -244,7 +256,7 @@ const performSimpleSearch = () => {
 };
 
 const performAdvancedSearch = () => {
-  let results = [...books.value];
+  let results = [...books];
   advancedSearchConditions.value.forEach((condition, index) => {
     const value = condition.value.toLowerCase().trim();
     if (!value) return;
@@ -289,15 +301,23 @@ watch(itemsPerPage, () => {
 </script>
 
 <style scoped>
-body {
-  font-family: Arial, sans-serif;
-  background-color: #f0f0f0;
+.search-bg {
+  padding: 24px 24px 100px 24px;
+  background: transparent;
+}
+
+.search-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: #18181b;
+}
+
+.search-main {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  margin: 0;
-  padding: 20px;
+  flex-direction: column;
+  gap: 24px;
+  background: transparent;
 }
 .container {
   background-color: white;
@@ -406,11 +426,10 @@ F
 .result-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #ddd;
-  margin: 0 50px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 .result-item:hover {
   background-color: #96c0fdbe; 
@@ -422,27 +441,16 @@ F
 }
 .result-info {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
-.result-info p {
-  margin: 0;
-  font-size: 14px;
-}
-.result-info p strong {
-  margin-right: 5px;
-}
-.availability {
-  color: green;
-}
-.unavailable {
-  color: red;
-}
-.reserved {
-  color: red;
-}
-.result-actions {
+
+.search-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 .result-control-panel {
   display: flex;
@@ -529,8 +537,10 @@ F
   color: #6c757d;
   margin-top: 20px;
 }
-h2 {
-  font-size: 20px;
-  margin-bottom: 10px;
+
+.search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 </style>

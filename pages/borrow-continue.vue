@@ -405,11 +405,13 @@
     align-items: center;
     margin-bottom: 16px;
     gap: 16px;
+    flex-wrap: wrap;
   }
   .borrow-control-panel-left {
     display: flex;
     align-items: center;
     gap: 32px;
+    flex-wrap: wrap;
   }
   .borrow-control-panel-right {
     display: flex;
@@ -420,32 +422,46 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-wrap: wrap;
   }
   .borrow-label {
     font-size: 1rem;
     color: #222;
   }
   .borrow-select {
-    width: 120px;
+    min-width: 120px;
     border: 1px solid #d1d5db;
     border-radius: 6px;
-    padding: 4px 8px;
+    padding: 8px 16px;
     font-size: 1rem;
     background: #fff;
     color: #18181b;
+    cursor: pointer;
+    transition: background 0.2s;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    text-align-last: center;
+  }
+  .borrow-select:hover {
+    background: #f3f4f6;
   }
   .borrow-sort-btn {
     border: 1px solid #d1d5db;
     border-radius: 6px;
-    padding: 4px 8px;
+    padding: 8px 16px;
     background: #fff;
     color: #18181b;
     font-size: 1rem;
     cursor: pointer;
     transition: background 0.2s;
-  }
-  .borrow-sort-btn:hover {
-    background: #f3f4f6;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
   }
   .borrow-view-btn {
     display: inline-flex;
@@ -682,9 +698,91 @@
     color: #18181b;
     background: #fff;
   }
+  /* 隱藏 Chrome, Safari, Edge, Opera 的箭頭 */
+  .borrow-pagination-input::-webkit-outer-spin-button,
+  .borrow-pagination-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  
+  /* 隱藏 Firefox 的箭頭 */
+  .borrow-pagination-input[type=number] {
+    -moz-appearance: textfield;
+  }
   .borrow-pagination-info {
     font-size: 0.95rem;
     color: #4b5563;
     text-align: center;
+  }
+  /* 響應式設計 */
+  @media (max-width: 768px) {
+    .borrow-control-panel {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .borrow-control-panel-left {
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .borrow-control-panel-right {
+      justify-content: center;
+    }
+
+    .borrow-grid-header,
+    .borrow-grid-row {
+      grid-template-columns: 1.5fr 1fr 1fr 1fr 0.8fr 0.8fr;
+      font-size: 0.9rem;
+    }
+
+    .borrow-grid {
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+  }
+
+  @media (max-width: 640px) {
+    .borrow-bg {
+      padding: 16px 16px 80px 16px;
+    }
+
+    .borrow-grid-header,
+    .borrow-grid-row {
+      grid-template-columns: 1.2fr 1fr 0.8fr;
+      font-size: 0.85rem;
+    }
+
+    .borrow-grid-header > div,
+    .borrow-grid-row > div {
+      padding: 8px;
+    }
+
+    .borrow-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .borrow-pagination-controls {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .borrow-select,
+    .borrow-sort-btn,
+    .borrow-view-btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .borrow-row {
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%;
+    }
+
+    .borrow-label {
+      text-align: center;
+    }
   }
   </style>
