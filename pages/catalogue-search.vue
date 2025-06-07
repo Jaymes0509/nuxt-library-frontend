@@ -1,17 +1,18 @@
-
 <template>
   <div class="container">
     <h1>館藏查詢</h1>
     <!-- Simple Search -->
-    <div v-if="!isAdvancedSearch" class="search-bar simple-search">
-      <input
-        v-model="simpleSearchQuery"
-        @keyup.enter="performSimpleSearch"
-        type="text"
-        placeholder="輸入關鍵字..."
-      />
-      <button class="btn btn-primary" @click="performSimpleSearch">搜尋</button>
-      <button class="btn btn-secondary" @click="toggleAdvancedSearch">進階搜尋</button>
+    <div v-if="!isAdvancedSearch" class="simple-search">
+      <div class="search-bar">
+        <input
+          v-model="simpleSearchQuery"
+          @keyup.enter="performSimpleSearch"
+          type="text"
+          placeholder="輸入關鍵字..."
+        />
+        <button class="btn btn-primary" @click="performSimpleSearch">搜尋</button>
+        <button class="btn btn-secondary" @click="toggleAdvancedSearch">進階搜尋</button>
+      </div>
     </div>
 
     <!-- Advanced Search -->
@@ -21,17 +22,17 @@
         <button class="btn btn-secondary" @click="toggleAdvancedSearch">返回單一搜尋</button>
       </div>
       <div v-for="(condition, index) in advancedSearchConditions" :key="index" class="condition">
+        <select v-if="index > 0" v-model="condition.operator">
+          <option value="AND">AND</option>
+          <option value="OR">OR</option>
+          <option value="NOT">NOT</option>
+        </select>
         <select v-model="condition.field">
           <option value="title">書名</option>
           <option value="author">作者</option>
           <option value="isbn">ISBN</option>
           <option value="publisher">出版社</option>
           <option value="year">出版年</option>
-        </select>
-        <select v-model="condition.operator">
-          <option value="AND">AND</option>
-          <option value="OR">OR</option>
-          <option value="NOT">NOT</option>
         </select>
         <input v-model="condition.value" type="text" placeholder="輸入搜尋內容" />
         <button
@@ -57,10 +58,34 @@
     <!-- Search Results -->
     <div v-if="currentPageResults.length" class="results">
       <h2>搜尋結果</h2>
+      <div class="result-control-panel">
+        <div class="result-control-panel-left">
+          <div class="result-row">
+            <span class="result-label">每頁顯示：</span>
+            <select v-model="itemsPerPage" class="result-select">
+              <option v-for="size in pageSizes" :key="size" :value="size">{{ size }} 筆</option>
+            </select>
+          </div>
+          <div class="result-row">
+            <span class="result-label">排序：</span>
+            <select v-model="sortConfig.field" class="result-select">
+              <option value="title_desc">書名↓</option>
+              <option value="title_asc">書名↑</option>
+              <option value="author_desc">作者↓</option>
+              <option value="author_asc">作者↑</option>
+              <option value="publisher_desc">出版社↓</option>
+              <option value="publisher_asc">出版社↑</option>
+              <option value="year_desc">出版年↓</option>
+              <option value="year_asc">出版年↑</option>
+            </select>
+          </div>
+        </div>
+      </div>
       <div v-for="book in currentPageResults" :key="book.isbn" class="result-item">
         <div class="result-info">
           <p><strong>書名:</strong> {{ book.title }}</p>
           <p><strong>作者:</strong> {{ book.author }}</p>
+          <p><strong>出版設:</strong> {{ book.publisher }}</p>
           <p><strong>出版年:</strong> {{ book.year }}</p>
           <p><strong>ISBN:</strong> {{ book.isbn }}</p>
           <p>
@@ -83,21 +108,46 @@
             最愛
           </button>
           <button
-            class="btn"
-            :class="book.reserved ? 'reserved-btn' : 'not-reserved'"
-            @click="reserveBook(book)"
-            :disabled="false"
+            class="btn bookinfo-btn"
+            
+            @click=""
+            
           >
-            預約
+            更多資訊
           </button>
         </div>
       </div>
       <!-- Pagination -->
-      <div class="pagination">
-        <span>查詢結果: {{ searchResults.length }}筆</span>
-        <button @click="currentPage--" :disabled="currentPage === 1">上一頁</button>
-        <span>第 {{ currentPage }} 頁 / 共 {{ totalPages }} 頁</span>
-        <button @click="currentPage++" :disabled="currentPage === totalPages">下一頁</button>
+      <div class="result-pagination">
+        <div class="result-pagination-controls">
+          <button 
+            class="pagination-btn"
+            :disabled="currentPage === 1"
+            @click="currentPage--"
+          >
+            <span class="sr-only">上一頁</span>
+          </button>
+          <span>共{{ totalPages }}頁</span>
+          <input
+            type="number"
+            :value="currentPage"
+            class="pagination-input"
+            min="1"
+            :max="totalPages"
+            @change="e => goToPage(parseInt(e.target.value))"
+          />
+          <span>/{{ totalPages }}頁</span>
+          <button 
+            class="pagination-btn"
+            :disabled="currentPage >= totalPages"
+            @click="currentPage++"
+          >
+            <span class="sr-only">下一頁</span>
+          </button>
+        </div>
+        <div class="pagination-info">
+          顯示第 {{ (currentPage - 1) * itemsPerPage + 1 }} 到 {{ Math.min(currentPage * itemsPerPage, searchResults.length) }} 筆，共 {{ searchResults.length }} 筆
+        </div>
       </div>
     </div>
     <div v-else-if="searched" class="no-results">
@@ -107,7 +157,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue'
 
 // State
 const simpleSearchQuery = ref('');
@@ -118,7 +168,11 @@ const advancedSearchConditions = ref([
 const searchResults = ref([]);
 const searched = ref(false);
 const currentPage = ref(1);
-const itemsPerPage = 5;
+const pageSizes = ref([10, 25, 50]);
+const itemsPerPage = ref(10);
+const sortConfig = ref({
+  field: 'title_asc'
+});
 
 // Mock book data
 const books = ref([
@@ -132,11 +186,21 @@ const books = ref([
 ]);
 
 // Computed properties
-const totalPages = computed(() => Math.ceil(searchResults.value.length / itemsPerPage));
+const totalPages = computed(() => Math.ceil(searchResults.value.length / itemsPerPage.value));
 const currentPageResults = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
-  return searchResults.value.slice(start, end);
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return sortedResults.value.slice(start, end);
+});
+
+const sortedResults = computed(() => {
+  const [field, order] = sortConfig.value.field.split('_');
+  return [...searchResults.value].sort((a, b) => {
+    const modifier = order === 'asc' ? 1 : -1;
+    if (a[field] < b[field]) return -1 * modifier;
+    if (a[field] > b[field]) return 1 * modifier;
+    return 0;
+  });
 });
 
 // Methods
@@ -212,14 +276,16 @@ const toggleFavorite = (book) => {
   }
 };
 
-const reserveBook = (book) => {
-  book.reserved = !book.reserved;
-  if (book.reserved) {
-    alert(`已成功預約《${book.title}》！`);
-  } else {
-    alert(`已取消預約《${book.title}》！`);
+const goToPage = (page) => {
+  const pageNum = parseInt(page);
+  if (pageNum && !isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages.value) {
+    currentPage.value = pageNum;
   }
 };
+
+watch(itemsPerPage, () => {
+  currentPage.value = 1;
+});
 </script>
 
 <style scoped>
@@ -296,6 +362,7 @@ body {
   background-color: #ccc;
   cursor: not-allowed;
 }
+F
 .favorite {
   background-color: #ccc; 
   color: #333;
@@ -310,18 +377,11 @@ body {
 .not-favorite:hover {
   background-color: #b02a37;
 }
-.reserved-btn {
-  background-color: #ccc; 
-  color: #333;
-}
-.reserved-btn:hover {
-  background-color: #b3b3b3; 
-}
-.not-reserved {
+.bookinfo-btn {
   background-color: #007bff; 
   color: white;
 }
-.not-reserved:hover {
+.bookinfo-btn:hover {
   background-color: #0056b3;
 }
 .condition {
@@ -352,12 +412,11 @@ body {
   border-bottom: 1px solid #ddd;
   margin: 0 50px;
 }
-
 .result-item:hover {
   background-color: #96c0fdbe; 
   transition: background-color 0.2s ease;
+  cursor: pointer;
 }
-
 .result-item:last-child {
   border-bottom: none;
 }
@@ -385,26 +444,86 @@ body {
   align-items: center;
   gap: 10px;
 }
-.pagination {
+.result-control-panel {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
-  gap: 10px;
-  margin-top: 20px;
+  margin-bottom: 16px;
+  gap: 16px;
 }
-.pagination span {
-  font-size: 14px;
+.result-control-panel-left {
+  display: flex;
+  align-items: center;
+  gap: 32px;
 }
-.pagination button {
-  padding: 5px 10px;
-  border: 1px solid #ccc;
-  background-color: #fff;
+.result-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.result-label {
+  font-size: 1rem;
+  color: #222;
+}
+.result-select {
+  width: 120px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 1rem;
+  background: #fff;
+  color: #18181b;
+}
+.result-pagination {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.result-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pagination-btn {
+  height: 32px;
+  min-width: 32px;
+  padding: 0 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  color: #18181b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  border-radius: 4px;
+  transition: background 0.2s;
+  font-size: 1rem;
+  line-height: 1;
 }
-.pagination button:disabled {
-  background-color: #f0f0f0;
+.pagination-btn:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
+}
+.pagination-btn:hover {
+  background: #f3f4f6;
+}
+.pagination-input {
+  height: 32px;
+  width: 48px;
+  text-align: center;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: #18181b;
+  background: #fff;
+}
+.pagination-info {
+  font-size: 0.95rem;
+  color: #4b5563;
+  text-align: center;
 }
 .no-results {
   color: #6c757d;
@@ -415,4 +534,3 @@ h2 {
   margin-bottom: 10px;
 }
 </style>
-```
