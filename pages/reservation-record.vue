@@ -580,7 +580,8 @@ function goToPage(page) {
 
 /* 隱藏 Firefox 的箭頭 */
 .history-pagination-input[type=number] {
-  -moz-appearance: textfield;
+  appearance: none;
+-webkit-appearance: none;
 }
 
 .history-pagination-info {
