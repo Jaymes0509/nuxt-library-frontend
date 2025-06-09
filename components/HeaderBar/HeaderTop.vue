@@ -1,4 +1,4 @@
-<template>
+  <template>
   <div class="top-bar">
     <slot name="logo">
       <!-- 本動畫來源：https://www.aigei.com/s?type=gif_moving_graph&q=看書 -->
@@ -82,7 +82,7 @@ let links = [
   { label: '網站導覽', href: '' },
   { label: '無障礙專區', href: '' },
   { label: '開放時間', href: '/opening-hours' },
-  { label: '意見信箱', href: '' },]
+  { label: '意見信箱', href: '/feedback' },]
 </script>
 
 <style scoped>
