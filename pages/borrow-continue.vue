@@ -386,7 +386,7 @@
   <style scoped>
   .borrow-bg {
     padding: 24px 24px 100px 24px;
-    background: #fff;
+    background: transparent;
   }
   .borrow-title {
     font-size: 2rem;

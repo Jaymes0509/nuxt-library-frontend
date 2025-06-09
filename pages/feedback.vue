@@ -1,36 +1,24 @@
 <template>
     <div class="scroll-wrapper">
-        <div class="library-card">
+        <div class="feedback">
             <div class="title-row">
                 <img src="/images/libraryCard.jpg" alt="借閱證圖片" />
-                <h1>借閱證申請</h1>
+                <h1>意見信箱</h1>
             </div>
             <h1 class="section-title"> {{
-                step === 1 ? '申辦說明' :
-                    step === 2 ? '個人資料填寫' :
-                        step === 3 ? '申請成功' :
-                            '重複申請警告'
+                step === 1 ? '使用說明' :
+                    step === 2 ? '讀者意見' :
+                        '感謝您'
             }}</h1>
 
-            <!-- 步驟一：申請說明 + 同意聲明 -->
+            <!-- 步驟一：使用聲明 -->
             <div v-if="step === 1" class="instructions">
                 <ol>
-                    <li>申辦對象：未曾申辦過本館個人借閱證之中華民國國民及持有居留證之非本國籍讀者</li>
-                    <li>使用範圍：借閱證可借用本館內館藏資源(圖書、視聽資料、館內設備等)，並能使用本館所有線上資源。</li>
-                    <li>領取：網路申請辦證後，請於本館開放時間內攜帶身分證明文件至櫃台領取。
-                        <ul>
-                            <li>中華民國國民應持個人身分證、駕照或戶口名簿(未滿十二歲之兒童由家長或法定監護人檢具身分證正本及戶口名簿正本代為辦理)。</li>
-                            <li>非本國籍人士持護照或居留證。</li>
-                        </ul>
-                    </li>
-                    <li>借閱說明：借閱證每人限辦乙張，個人借閱證可借閱圖書30冊、期刊5冊、視聽資料5件，圖書、期刊借期30天，可續借兩次。漫畫及視聽資料借期14天，不得續借。</li>
-                    <li>遺失補發：
-                        <ul>
-                            <li>掛失登記：借閱證如遺失時，應立即向本館辦理掛失登記，若因未掛失或轉借而發生冒用情事，應自行負責相關賠償之責。</li>
-                            <li>遺失補發: 檢具相關身分證明文件，須繳交行政規費新臺幣參拾元整(繳付工本費30元整)，申請補發</li>
-                            <li>讀者資料如有變更，應即向本館辦理異動手續。</li>
-                        </ul>
-                    </li>
+                    <li>親愛的讀者，您好~</li>
+                    <li>感謝您使用本館意見信箱留言，針對您的寶貴建議，我們會儘快回覆處理情形和進度，謝謝您的意見！</li>
+                    <li>儘量以一件mail反映一件事情，以利案件處理，並簡潔、明確說明。</li>
+                    <li>案件確定成立後，原則上辦理期限為七個工作天(不含週六日 及 例假日)。</li>
+                    <li>請您於留言時提供正確之E-MAIL帳號、電話、真實姓名，俾系統自動回覆您信件收件編號及回覆內容亦將以E-MAIL的方式傳送給您。</li>
                 </ol>
 
                 <label class="consent">
@@ -39,11 +27,12 @@
                 </label>
 
                 <button :disabled="!agreed" @click="step = 2" class="start-button">
-                    開始申請網路辦證
+                    前往意見留言
                 </button>
             </div>
 
             <!-- ✅ 步驟二：申請表單 -->
+
             <form v-if="step === 2" @submit.prevent="submitForm" class="form">
                 <div class="form-group">
                     <label class="form-label">姓名：</label>
@@ -51,74 +40,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">性別：</label>
-                    <div class="gender-radio">
-                        <label><input type="radio" value="男" v-model="form.gender" required />男 Male</label>
-                        <label><input type="radio" value="女" v-model="form.gender" />女 Female</label>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">身分證字號：</label>
-                    <input v-model="form.idNumber" required />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">出生日期：</label>
-                    <input v-model="form.birthDate" type="date" required />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">國別：</label>
-                    <select v-model="form.nationality" required>
-                        <option disabled value="">請選擇國別</option>
-                        <option v-for="country in countries" :key="country" :value="country">{{ country }}</option>
-                    </select>
-                </div>
-
-                <div class="form-group education-row">
-                    <label class="form-label">學歷：</label>
-                    <div class="education-options">
-                        <label v-for="edu in educationOptions" :key="edu.value">
-                            <input type="radio" :value="edu.value" v-model="form.education" name="education" required />
-                            {{ edu.label }}
-                        </label>
-                    </div>
-                </div>
-
-
-                <div class="form-group">
-                    <label class="form-label">職業：</label>
-                    <select v-model="form.occupation" required>
-                        <option disabled value="">請選擇職業</option>
-                        <option v-for="job in occupations" :key="job" :value="job">{{ job }}</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">通訊地址：</label>
-                    <div class="address-row">
-
-                        <select v-model="form.addressCounty" required>
-                            <option disabled value="">請選擇縣市</option>
-                            <option v-for="county in counties" :key="county">{{ county }}</option>
-                        </select>
-
-                        <select v-model="form.addressTown" required>
-                            <option disabled value="">請選擇鄉鎮</option>
-                            <option v-for="town in towns" :key="town">{{ town }}</option>
-                        </select>
-                        <input type="text" v-model="form.addressZip" placeholder="郵遞區號 Zip" required />
-                    </div>
-                    <div class="address-detail">
-                        <input type="text" v-model="form.addressDetail" placeholder="地址 Address" required />
-                    </div>
-                </div>
-
-
-                <div class="form-group">
-                    <label class="form-label">電子郵件：</label>
-                    <input v-model="form.email" type="email" required />
+                    <label class="form-label">借閱證號：<br>(非必填)</br></label>
+                    <input v-model="form.cardNumber" />
                 </div>
 
                 <div class="form-group">
@@ -127,11 +50,38 @@
                 </div>
 
                 <div class="form-group">
-                    <button type="button" @click="step = 1" class="back-button">← 回上一頁</button>
-                    <button type="submit">送出申請</button>
+                    <label class="form-label">電子郵件：</label>
+                    <input v-model="form.email" type="email" required />
                 </div>
-            </form>
 
+                <div class="form-group">
+                    <label class="form-label">主旨：</label>
+                    <input v-model="form.subject" required />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">內容：</label>
+                    <textarea v-model="form.content" required rows="6" cols="50"></textarea>
+                </div>
+
+                <div class="form-group captcha">
+                    <label>驗證碼：</label>
+                    <div class="captcha-row">
+                        <img :src="captchaUrl" alt="驗證碼" />
+                        <button type="button" @click="refreshCaptcha">🔄</button>
+                        <input v-model="form.captcha" required />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <button type="button" @click="step = 1" class="back-button">← 回上一頁</button>
+                    <button type="submit">確認送出</button>
+                    <button type="button" @click="resetForm">🔁 重新填寫</button>
+                </div>
+
+
+                <!-- <p v-if="submitted" class="success">✅ 申請成功！我們將直接與您聯繫。</p> -->
+            </form>
             <!-- 步驟三：成功畫面 -->
             <div v-if="step === 3" class="success-step">
                 <h2>✅ 申請成功！</h2>
@@ -140,6 +90,7 @@
                 <p v-if="loading">即將返回首頁...</p>
 
                 <button v-if="!loading" @click="delayedGoHome">回首頁</button>
+                <!-- <button @click="delayedGoHome">回首頁</button> -->
             </div>
 
             <div v-if="step === 4" class="already-applied-step">
@@ -174,126 +125,40 @@ const alreadyApplied = ref(false)
 
 const form = reactive({
     name: '',
-    gender: '',
-    idNumber: '',
-    birthDate: '',
-    nationality: '',
-    education: '',
-    occupation: '',
-    addressCounty: '',
-    addressTown: '',
-    addressZip: '',
-    addressDetail: '',
-    email: '',
+    cardNumber: '',
     phone: '',
+    email: '',
+    subject: '',
+    content: '',
+    captcha: ''
 })
 
-const countries = [
-    "中華民國 Republic of China",
-    "美國 United States of America",
-    "加拿大 Canada",
-    "英國 United Kingdom",
-    "法國 France",
-    "德國 Germany",
-    "日本 Japan",
-    "南韓 South Korea",
-    "香港 Hong Kong",
-    "印度 Republic of India",
-    "新加坡 Singapore",
-    "馬來西亞 Malaysia",
-    "越南 Vietnam",
-    "泰國 Thailand",
-    "菲律賓 The Philippines",
-    "印尼 Republic of Indonesia",
-    "非洲各國 African countries",
-    "中美洲各國 Central American countries",
-    "南美洲各國 South American countries",
-    "俄羅斯 Russia",
-    "中國 China",
-    "歐洲各國 European countries",
-    "中東各國 Middle Eastern countries",
-    "其他 Other"
-]
+const captchaUrl = ref(getCaptchaUrl());
 
-const educationOptions = [
-    { value: '學齡前', label: '學齡前 Preschool' },
-    { value: '國小', label: '國小 Elementary' },
-    { value: '國中 (初中)', label: '國中 (初中) Junior High School' },
-    { value: '高中 (高職)', label: '高中 (高職) Senior High School' },
-    { value: '專科', label: '專科 Junior College' },
-    { value: '大學', label: '大學 University/College' },
-    { value: '碩士', label: '碩士 Master' },
-    { value: '博士', label: '博士 Doctor' },
-    { value: '其他', label: '其他 Other' }
-]
+function getCaptchaUrl() {
+    return `http://localhost:8080/api/captcha?ts=${Date.now()}`; // 防止快取
+}
 
-const occupations = [
-    '本國學生;僑生 Domestic Student / Overseas Chinese student',
-    '外籍學生 Foreign student',
-    '中小學教師 Primary or secondary school teacher',
-    '大專教師',
-    '公務員 Civil servant',
-    '軍警人員 Military Personnel / Police',
-    '自由業 Freelancer',
-    '新聞業 Journalist',
-    '文化業 Cultural worker',
-    '農林漁牧業 Agricultural, forestry, fishing or animal husbandry worker',
-    '工業 Industrial worker',
-    '商 Business worker',
-    '醫藥業 Medical worker',
-    '社會團體 Social group member',
-    '社會工作者 Social Worker',
-    '宗教事業 Religious Worker',
-    '交通事業 Transport workers',
-    '家庭管理 Domestic worker',
-    '退休人員 Retired',
-    '職業(無) Not Employed'
-]
+function refreshCaptcha() {
+    captchaUrl.value = getCaptchaUrl();
+}
 
-const counties = ref([])
+function resetForm() {
+    form.name = '';
+    form.cardNumber = '';
+    form.phone = '';
+    form.email = '';
+    form.subject = '';
+    form.content = '';
+    form.captcha = '';
+    refreshCaptcha();
+}
 
-onMounted(async () => {
-    try {
-        const data = await $fetch('/api/zipcodes/counties')
-        counties.value = data || []
-        console.log('縣市資料：', counties.value)
-    } catch (error) {
-        console.error('載入縣市失敗：', error)
-    }
-})
 
-const towns = ref([])
 
-watch(() => form.addressCounty, async (newCounty) => {
-    if (!newCounty) return
 
-    try {
-        const data = await $fetch('/api/zipcodes/towns', {
-            query: { county: newCounty }
-        })
-        towns.value = data || []
-        form.addressTown = ''
-        form.addressZip = ''
-    } catch (error) {
-        console.error('載入鄉鎮失敗：', error)
-    }
-})
 
-watch(() => form.addressTown, async (newTown) => {
-    if (!form.addressCounty || !newTown) return
 
-    try {
-        const data = await $fetch('/api/zipcodes/zip', {
-            query: {
-                county: form.addressCounty,
-                town: newTown
-            }
-        })
-        form.addressZip = data || ''
-    } catch (error) {
-        console.error('取得郵遞區號失敗：', error)
-    }
-})
 
 
 const submitted = ref(false)
@@ -343,7 +208,7 @@ const submitForm = async () => {
     flex-direction: column;
 }
 
-.library-card {
+.feedback {
     flex: 1;
     max-width: 1000px;
     /* max-height: 1000px; */
@@ -361,23 +226,23 @@ const submitForm = async () => {
 
 
 /* 滾動條預設為透明 */
-.library-card::-webkit-scrollbar {
+.feedback::-webkit-scrollbar {
     width: 8px;
 }
 
-.library-card::-webkit-scrollbar-thumb {
+.feedback::-webkit-scrollbar-thumb {
     background-color: transparent;
     border-radius: 4px;
     transition: background-color 0.3s ease;
 }
 
 /* 滑鼠靠近 wrapper 時顯示滾動條 */
-.scroll-wrapper:hover .library-card::-webkit-scrollbar-thumb {
+.scroll-wrapper:hover .feedback::-webkit-scrollbar-thumb {
     background-color: rgba(0, 0, 0, 0.4);
 }
 
 /* 滑鼠靠近時滾動條背景也顯示 */
-.scroll-wrapper:hover .library-card {
+.scroll-wrapper:hover .feedback {
     scrollbar-color: rgba(0, 0, 0, 0.4) transparent;
 }
 

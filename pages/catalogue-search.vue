@@ -303,7 +303,6 @@ watch(itemsPerPage, () => {
 <style scoped>
 .search-bg {
   padding: 24px 24px 100px 24px;
-  background: transparent;
 }
 
 .search-title {
@@ -317,10 +316,9 @@ watch(itemsPerPage, () => {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  background: transparent;
 }
 .container {
-  background-color: white;
+  background: transparent;
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
