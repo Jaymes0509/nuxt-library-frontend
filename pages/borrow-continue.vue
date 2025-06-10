@@ -368,15 +368,7 @@ function renewBook(book) {
   // 取得當前到期日
   const currentDueDate = new Date(book.dueDate)
   
-<<<<<<< HEAD
-<<<<<<< HEAD
-  <style scoped>
-  .borrow-bg {
-    padding: 24px 24px 100px 24px;
-    background: transparent;
-=======
-=======
->>>>>>> 17bdc710985866e3e744a1063a294c6a194e7b72
+
   // 計算新的到期日（當前到期日 + 30天）
   const newDueDate = new Date(currentDueDate)
   newDueDate.setDate(newDueDate.getDate() + 30)
@@ -392,10 +384,7 @@ function goToPage(page) {
   const pageNum = parseInt(page)
   if (pageNum && !isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages.value) {
     currentPage.value = pageNum
-<<<<<<< HEAD
->>>>>>> 9617b536bd178d7c16c0040e2a3fbc43eda129c0
-=======
->>>>>>> 17bdc710985866e3e744a1063a294c6a194e7b72
+
   }
 }
 </script>
