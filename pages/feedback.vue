@@ -98,6 +98,11 @@
                 <p>系統判定您已辦理借閱證，請勿重複申請。如有疑問請洽客服。</p>
                 <button @click="delayedGoHome">回首頁</button>
             </div>
+            <div v-if="step === 4" class="already-applied-step">
+                <h2>⚠️ 您已申請過借閱證</h2>
+                <p>系統判定您已辦理借閱證，請勿重複申請。如有疑問請洽客服。</p>
+                <button @click="delayedGoHome">回首頁</button>
+            </div>
 
         </div>
 
