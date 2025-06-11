@@ -17,41 +17,98 @@
 
     <!-- Advanced Search -->
     <div v-else class="advanced-search">
-      <div class="search-bar">
-        <h2>進階搜尋</h2>
-        <button class="btn btn-secondary" @click="toggleAdvancedSearch">返回單一搜尋</button>
-      </div>
-      <div v-for="(condition, index) in advancedSearchConditions" :key="index" class="condition">
-        <select v-if="index > 0" v-model="condition.operator">
-          <option value="AND">AND</option>
-          <option value="OR">OR</option>
-          <option value="NOT">NOT</option>
-        </select>
-        <select v-model="condition.field">
-          <option value="title">書名</option>
-          <option value="author">作者</option>
-          <option value="isbn">ISBN</option>
-          <option value="publisher">出版社</option>
-          <option value="year">出版年</option>
-        </select>
-        <input v-model="condition.value" type="text" placeholder="輸入搜尋內容" />
-        <button
-          v-if="index > 0"
-          class="btn btn-danger"
-          @click="removeCondition(index)"
-        >
-          移除
-        </button>
-      </div>
-      <div class="search-bar">
-        <button
-          class="btn btn-primary"
-          :class="{ 'btn-disabled': advancedSearchConditions.length >= 6 }"
-          @click="addCondition"
-        >
-          新增條件
-        </button>
-        <button class="btn btn-primary" @click="performAdvancedSearch">搜尋</button>
+      <div class="search-layout">
+        <!-- 左側：進階搜尋條件 -->
+        <div class="search-conditions">
+          <div class="search-bar">
+            <h2>進階搜尋</h2>
+            <button class="btn btn-secondary" @click="toggleAdvancedSearch">返回單一搜尋</button>
+          </div>
+          <div v-for="(condition, index) in advancedSearchConditions" :key="index" class="condition">
+            <select v-if="index > 0" v-model="condition.operator">
+              <option value="AND">AND</option>
+              <option value="OR">OR</option>
+              <option value="NOT">NOT</option>
+            </select>
+            <select v-model="condition.field">
+              <option value="title">書名</option>
+              <option value="author">作者</option>
+              <option value="isbn">ISBN</option>
+              <option value="publisher">出版社</option>
+              <option value="year">出版年</option>
+            </select>
+            <input v-model="condition.value" type="text" placeholder="輸入搜尋內容" />
+            <button
+              v-if="index > 0"
+              class="btn btn-danger"
+              @click="removeCondition(index)"
+            >
+              移除
+            </button>
+          </div>
+          <div class="search-bar">
+            <button
+              class="btn btn-primary"
+              :class="{ 'btn-disabled': advancedSearchConditions.length >= 6 }"
+              @click="addCondition"
+            >
+              新增條件
+            </button>
+            <button class="btn btn-primary" @click="performAdvancedSearch">搜尋</button>
+          </div>
+        </div>
+
+        <!-- 右側：過濾條件 -->
+        <div class="advanced-filters">
+          <div class="filter-section">
+            <!-- 出版年 -->
+            <div class="condition">
+              <label>出版年</label>
+              <input
+                v-model="yearFrom"
+                type="number"
+                placeholder="從"
+                style="width:100px;"
+              />
+              <span>至</span>
+              <input
+                v-model="yearTo"
+                type="number"
+                placeholder="至"
+                style="width:100px;"
+              />
+            </div>
+            <hr>
+            <!-- 分類法 -->
+            <div class="condition">
+              <label>分類法</label>
+              <select v-model="selectedClassification">
+                <option value="">全部</option>
+                <option
+                  v-for="opt in classificationOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </option>
+              </select>
+            </div>
+            <hr>
+            <!-- 語言 -->
+            <div class="condition">
+              <label>語言</label>
+              <select v-model="selectedLanguages" multiple style="height:100px;">
+                <option
+                  v-for="lang in languageOptions"
+                  :key="lang.value"
+                  :value="lang.value"
+                >
+                  {{ lang.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -82,6 +139,9 @@
         </div>
       </div>
       <div v-for="book in currentPageResults" :key="book.isbn" class="result-item">
+        <div class="result-image">
+          <img :src="`https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`" alt="Book cover" />
+        </div>
         <div class="result-info">
           <p><strong>書名:</strong> {{ book.title }}</p>
           <p><strong>作者:</strong> {{ book.author }}</p>
@@ -94,19 +154,15 @@
               {{ book.available ? '是' : '否' }}
             </span>
           </p>
-          <p v-if="book.reserved">
-            <strong>預約狀態:</strong>
-            <span class="reserved">已預約</span>
-          </p>
         </div>
         <div class="result-actions">
-          <button
+          <!-- <button
             class="btn"
             :class="book.favorite ? 'favorite' : 'not-favorite'"
             @click="toggleFavorite(book)"
           >
             最愛
-          </button>
+          </button> -->
           <button
             class="btn bookinfo-btn"
             
@@ -267,14 +323,14 @@ const performAdvancedSearch = () => {
   currentPage.value = 1;
 };
 
-const toggleFavorite = (book) => {
-  book.favorite = !book.favorite;
-  if (book.favorite) {
-    alert(`《${book.title}》已加入最愛！`);
-  } else {
-    alert(`《${book.title}》已從最愛移除！`);
-  }
-};
+// const toggleFavorite = (book) => {
+//   book.favorite = !book.favorite;
+//   if (book.favorite) {
+//     alert(`《${book.title}》已加入最愛！`);
+//   } else {
+//     alert(`《${book.title}》已從最愛移除！`);
+//   }
+// };
 
 const goToPage = (page) => {
   const pageNum = parseInt(page);
@@ -292,43 +348,48 @@ watch(itemsPerPage, () => {
 body {
   font-family: Arial, sans-serif;
   background-color: #f0f0f0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
   margin: 0;
   padding: 20px;
+  align-items: center;
 }
-.container {
+
+ .container {
+  width: 100%; /* 確保容器能適應螢幕 */
+  max-width: 1200px; /* 可選：設定最大寬度，防止過寬 */
+  margin: 0 auto;
   background-color: transparent;
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: auto;
-}
+} 
+
 .simple-search,
 .advanced-search {
-  max-width: 600px;
+  max-width: 100%;
 }
+
 .search-bar {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 20px;
+  flex-wrap: wrap;
 }
+
 .search-bar input {
   flex: 1;
+  min-width: 200px;
+  max-width: 600px;
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 16px;
 }
+
 .search-bar input:focus {
   outline: none;
   border-color: #007bff;
   box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
 }
+
 .btn {
   padding: 8px 16px;
   border: none;
@@ -336,60 +397,75 @@ body {
   cursor: pointer;
   font-size: 16px;
 }
+
 .btn-primary {
   background-color: #007bff;
   color: white;
 }
+
 .btn-primary:hover {
   background-color: #0056b3;
 }
+
 .btn-secondary {
   background-color: transparent;
   color: #007bff;
   text-decoration: underline;
 }
+
 .btn-secondary:hover {
   color: #0056b3;
 }
+
 .btn-danger {
   background-color: #dc3545;
   color: white;
 }
+
 .btn-danger:hover {
   background-color: #b02a37;
 }
+
 .btn-disabled {
   background-color: #ccc;
   cursor: not-allowed;
 }
-F
+
 .favorite {
-  background-color: #ccc; 
+  background-color: #ccc;
   color: #333;
 }
+
 .favorite:hover {
-  background-color: #b3b3b3; 
+  background-color: #b3b3b3;
 }
+
 .not-favorite {
-  background-color: #dc3545; 
+  background-color: #dc3545;
   color: white;
 }
+
 .not-favorite:hover {
   background-color: #b02a37;
 }
+
 .bookinfo-btn {
-  background-color: #007bff; 
+  background-color: #007bff;
   color: white;
 }
+
 .bookinfo-btn:hover {
   background-color: #0056b3;
 }
+
 .condition {
   display: flex;
   gap: 10px;
   margin-bottom: 10px;
   align-items: center;
+  flex-wrap: wrap;
 }
+
 .condition select,
 .condition input {
   padding: 8px;
@@ -397,12 +473,16 @@ F
   border-radius: 4px;
   font-size: 16px;
 }
+
 .condition input {
   flex: 1;
+  min-width: 150px;
 }
+
 .results {
   margin-top: 20px;
 }
+
 .result-item {
   display: flex;
   justify-content: space-between;
@@ -411,60 +491,77 @@ F
   background-color: #f8f9fa;
   border-bottom: 1px solid #ddd;
   margin: 0 50px;
+  gap: 10px;
 }
+
 .result-item:hover {
-  background-color: #96c0fdbe; 
+  background-color: #96c0fdbe;
   transition: background-color 0.2s ease;
   cursor: pointer;
 }
+
 .result-item:last-child {
   border-bottom: none;
 }
+
 .result-info {
   flex: 1;
 }
+
 .result-info p {
   margin: 0;
-  font-size: 14px;
+  font-size: 16px;
 }
+
 .result-info p strong {
   margin-right: 5px;
 }
+
 .availability {
   color: green;
 }
+
 .unavailable {
   color: red;
 }
+
 .reserved {
   color: red;
 }
+
 .result-actions {
   display: flex;
   align-items: center;
   gap: 10px;
 }
+
 .result-control-panel {
   display: flex;
   justify-content: flex-start;
   align-items: center;
   margin-bottom: 16px;
   gap: 16px;
+  flex-wrap: wrap;
 }
+
 .result-control-panel-left {
   display: flex;
   align-items: center;
   gap: 32px;
+  flex-wrap: wrap;
 }
+
 .result-row {
   display: flex;
   align-items: center;
   gap: 12px;
 }
+
 .result-label {
   font-size: 1rem;
   color: #222;
 }
+
 .result-select {
   width: 120px;
   border: 1px solid #d1d5db;
@@ -474,6 +571,7 @@ F
   background: #fff;
   color: #18181b;
 }
+
 .result-pagination {
   display: flex;
   flex-direction: column;
@@ -482,11 +580,13 @@ F
   gap: 8px;
   margin-top: 16px;
 }
+
 .result-pagination-controls {
   display: flex;
   align-items: center;
   gap: 8px;
 }
+
 .pagination-btn {
   height: 32px;
   min-width: 32px;
@@ -503,13 +603,16 @@ F
   font-size: 1rem;
   line-height: 1;
 }
+
 .pagination-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
 .pagination-btn:hover {
   background: #f3f4f6;
 }
+
 .pagination-input {
   height: 32px;
   width: 48px;
@@ -520,17 +623,135 @@ F
   color: #18181b;
   background: #fff;
 }
+
 .pagination-info {
   font-size: 0.95rem;
   color: #4b5563;
   text-align: center;
 }
+
 .no-results {
   color: #6c757d;
   margin-top: 20px;
 }
+
 h2 {
   font-size: 20px;
   margin-bottom: 10px;
+}
+
+/* 佈局樣式 */
+.search-layout {
+  display: flex;
+  gap: 20px;
+}
+
+.search-conditions {
+  flex: 1;
+  max-width: 600px;
+}
+
+.advanced-filters {
+  min-width: 200px;
+  padding: 15px;
+  border-radius: 4px;
+}
+
+.filter-section h3 {
+  font-size: 18px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.condition label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+/* RWD 樣式 */
+@media (max-width: 768px) {
+  .search-layout {
+    flex-direction: column;
+  }
+
+  .search-conditions,
+  .advanced-filters {
+    max-width: 100%;
+    min-width: auto;
+  }
+
+  .advanced-filters {
+    order: 2; /* 確保 advanced-filters 移到下方 */
+  }
+
+  .search-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-bar input,
+  .search-bar button {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .condition {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .condition select,
+  .condition input {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .result-item {
+    flex-direction: row;
+    align-items: flex-start;
+    margin: 0 10px;
+  }
+
+  .result-actions {
+    margin-top: 10px;
+  }
+
+  .result-control-panel {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .result-control-panel-left {
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 10px;
+  }
+
+  .search-bar input {
+    min-width: 150px;
+  }
+
+  .result-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .result-select {
+    width: 100%;
+  }
+
+  .pagination-controls {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .pagination-input {
+    width: 60px;
+  }
 }
 </style>
