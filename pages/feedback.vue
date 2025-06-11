@@ -73,19 +73,17 @@
                     </div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group-buttons">
                     <button type="button" @click="step = 1" class="back-button">← 回上一頁</button>
                     <button type="submit">確認送出</button>
-                    <button type="button" @click="resetForm">🔁 重新填寫</button>
+                    <button type="button" @click="resetForm" class="reset-button">🔁 重新填寫</button>
                 </div>
-
-
-                <!-- <p v-if="submitted" class="success">✅ 申請成功！我們將直接與您聯繫。</p> -->
             </form>
+
             <!-- 步驟三：成功畫面 -->
             <div v-if="step === 3" class="success-step">
-                <h2>✅ 申請成功！</h2>
-                <p>我們已收到您的申請，將盡快與您聯絡!</p>
+                <h2>✅ 意見送出成功！</h2>
+                <p>感謝您的意見留言，本館將受理與了解，再回覆您的問題，謝謝!</p>
                 <div v-if="loading" class="loading-spinner"></div>
                 <p v-if="loading">即將返回首頁...</p>
 
@@ -98,12 +96,6 @@
                 <p>系統判定您已辦理借閱證，請勿重複申請。如有疑問請洽客服。</p>
                 <button @click="delayedGoHome">回首頁</button>
             </div>
-            <div v-if="step === 4" class="already-applied-step">
-                <h2>⚠️ 您已申請過借閱證</h2>
-                <p>系統判定您已辦理借閱證，請勿重複申請。如有疑問請洽客服。</p>
-                <button @click="delayedGoHome">回首頁</button>
-            </div>
-
         </div>
 
     </div>
@@ -384,6 +376,15 @@ a:hover {
     min-width: 200px;
 }
 
+.form-group-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-left: 5rem;
+    margin: 0 auto 2rem;   
+}
+
+
 .education-row {
     display: flex;
     align-items: flex-start;
@@ -482,6 +483,15 @@ button[type='submit']:hover {
 }
 
 .back-button {
+    margin: 1rem;
+    padding: 8px 14px;
+    background-color: lightgray;
+    border: 1px solid #999;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.reset-button {
     margin: 1rem;
     padding: 8px 14px;
     background-color: lightgray;

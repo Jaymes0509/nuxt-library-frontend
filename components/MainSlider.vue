@@ -52,6 +52,7 @@ onMounted(() => {
 .slider {
   flex: 1;
   /* ✅ 自動撐滿父層寬度 */
+  width: 100%;
   height: 100%;
   /* ✅ 撐滿容器高度 */
   display: flex;

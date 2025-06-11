@@ -463,7 +463,7 @@ a:hover {
 
 .start-button {
     display: block;
-    margin: 0 auto 2rem;
+    margin: 0 auto 2rem;                                                                                                                                                                 
     background-color: orange;
     color: black;
     padding: 12px 16px;

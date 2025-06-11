@@ -111,7 +111,7 @@
             class="btn bookinfo-btn"
             
             @click=""
-            
+    
           >
             更多資訊
           </button>
