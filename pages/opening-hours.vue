@@ -5,17 +5,25 @@
                 <img src="public\images\clock.png" alt="時鐘" />
                 <h1>開放時間</h1>
             </div>
-            <p class="description">
-                國立公共資訊圖書館創立於1955年，為全國指標性圖書館之一，致力於推廣閱讀、資訊素養教育與數位服務。
-                館藏豐富多元，涵蓋圖書、期刊、報紙、視聽資料與數位資源，提供市民終身學習與知識探索的空間。
-            </p>
-
+            <ul>
+                <li v-for="item in hours" :key="item.day">
+                    {{ item.day }}：{{ item.open }} - {{ item.close }}
+                </li>
+            </ul>
         </div>
     </div>
 </template>
 
 <script setup>
-
+const hours = [
+    { day: '星期一', open: '休館', close: '' },
+    { day: '星期二', open: '09:00', close: '21:00' },
+    { day: '星期三', open: '09:00', close: '21:00' },
+    { day: '星期四', open: '09:00', close: '21:00' },
+    { day: '星期五', open: '09:00', close: '21:00' },
+    { day: '星期六', open: '09:00', close: '21:00' },
+    { day: '星期日', open: '09:00', close: '17:00' }
+]
 </script>
 
 <style scoped>
@@ -29,17 +37,18 @@
 .hours {
     flex: 1;
     max-width: 1000px;
-    /* max-height: 1000px; */
     margin: 0 auto;
-    padding: 0 10px 100px;
+    padding: 1rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* width: 100%; */
     height: 100%;
-    scrollbar-width: thin;
-    /* for Firefox */
-    scrollbar-color: transparent transparent;
+}
+
+.hours li {
+    font-family: "Hachi Maru Pop";
+    font-weight: bold;
+    margin-bottom: 1rem;
 }
 
 /* 滾動條預設為透明 */
