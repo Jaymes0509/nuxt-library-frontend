@@ -1,97 +1,164 @@
 <template>
-  <div class="bg-white p-8 w-full text-center">
-    <!-- 第一層入口（僅在未選擇 step 時顯示） -->
-    <div v-if="!step">
-      <!-- 頁面標題區 -->
-      <div class="mb-10 border-b pb-4">
-        <div class="flex justify-center items-center mb-2">
-          <span class="text-4xl mr-2">📚</span>
-          <h1 class="text-3xl font-bold">讀者書評</h1>
-        </div>
-        <div class="flex justify-center">
-          <div class="text-blue-800 text-lg font-semibold border-l-4 border-blue-600 pl-3 inline-block">
-            功能總覽
+  <div class="scroll-wrapper">
+    <div class="intro">
+  <div class="p-6 max-w-4xl mx-auto">
+    <div class="mb-6">
+      <Button variant="outline" class="mb-4" @click="router.back()">
+        <ChevronLeftIcon class="h-4 w-4 mr-2" />
+        返回
+      </Button>
+      <h1 class="text-3xl font-bold mb-2">{{ bookTitle }}</h1>
+      <p class="text-lg text-gray-600">作者：{{ bookAuthor }}</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- 左側：書本封面 -->
+      <div class="aspect-[3/4] relative bg-gray-100 rounded-lg overflow-hidden">
+        <img :src="coverUrl" :alt="bookTitle" class="object-cover w-full h-full" />
+      </div>
+
+      <!-- 右側：書本詳細信息 -->
+      <div class="md:col-span-2 space-y-6">
+        <!-- 基本信息 -->
+        <div class="bg-white rounded-lg border p-6 space-y-4">
+          <h2 class="text-xl font-semibold mb-4">基本信息</h2>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-500">ISBN</p>
+              <p>978-3-16-148410-0</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">出版社</p>
+              <p>某某出版社</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">出版日期</p>
+              <p>2024-01-01</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">頁數</p>
+              <p>300</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- 功能選單卡片 -->
-      <div class="flex justify-center gap-12 mb-12">
-        <div class="bg-blue-100 hover:bg-blue-200 transition-all p-6 rounded-2xl shadow w-72 cursor-pointer text-center"
-          @click="goToWrite">
-          <div class="text-4xl mb-2">📝</div>
-          <div class="text-xl font-bold mb-1">撰寫心得</div>
-          <div class="text-sm text-gray-700">針對您借閱的書籍，留下寶貴評論與評分</div>
+        <!-- 簡介 -->
+        <div class="bg-white rounded-lg border p-6">
+          <h2 class="text-xl font-semibold mb-4">內容簡介</h2>
+          <p class="text-gray-600 leading-relaxed">
+            這是一個模擬的書本簡介。在這裡，我們可以看到這本書的詳細介紹和內容概要。
+            實際應用中，這裡應該顯示真實的書本簡介內容。書本簡介可以包含多個段落，
+            描述書本的主要內容、特色、作者背景等信息。
+          </p>
         </div>
 
-        <div
-          class="bg-green-100 hover:bg-green-200 transition-all p-6 rounded-2xl shadow w-72 cursor-pointer text-center"
-          @click="step = 'read'">
-          <div class="text-4xl mb-2">📖</div>
-          <div class="text-xl font-bold mb-1">閱讀心得</div>
-          <div class="text-sm text-gray-700">查看其他讀者對書籍的評價與心得內容</div>
+        <!-- 借閱狀態 -->
+        <div class="bg-white rounded-lg border p-6">
+          <h2 class="text-xl font-semibold mb-4">借閱狀態</h2>
+          <div class="space-y-2">
+            <p><span class="text-gray-500">當前狀態：</span><Badge>可借閱</Badge></p>
+            <p><span class="text-gray-500">館藏數量：</span>5本</p>
+            <p><span class="text-gray-500">可借閱數量：</span>3本</p>
+          </div>
+          <div class="mt-6">
+            <Button class="w-full" @click="handleReserve">預約借閱</Button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-
-    <!-- 第二層內容：返回按鈕 -->
-    <div v-if="step" class="text-left max-w-5xl mx-auto mb-6">
-      <button class="text-blue-600 underline mb-4" @click="step = null">← 返回功能總覽</button>
-    </div>
-
-    <!-- 撰寫心得 -->
-    <div v-if="step === 'write'" class="max-w-5xl mx-auto text-left">
-      <!-- 空白佔位，待日後設計介面 -->
-    </div>
-
-    <!-- 閱讀心得 -->
-    <div v-if="step === 'read'" class="max-w-4xl mx-auto">
-      <h2 class="text-xl font-bold mb-4">讀者書評列表</h2>
-      <div class="flex justify-end mb-4">
-        <label class="mr-2">排序：</label>
-        <select v-model="sortOption" class="border rounded px-2 py-1">
-          <option value="latest">最新</option>
-          <option value="rating">評分最高</option>
-        </select>
-      </div>
-      <div v-for="review in sortedReviews" :key="review.id" class="border rounded p-4 mb-4">
-        <div class="flex justify-between items-center mb-2">
-          <h3 class="font-semibold">{{ review.reviewer }}</h3>
-          <span>⭐ {{ review.rating }} 分</span>
-        </div>
-        <p class="text-gray-700">{{ review.comment }}</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import Button from '@/components/button/Button.vue'
+import Badge from '@/components/badge/Badge.vue'
+import { ChevronLeftIcon } from 'lucide-vue-next'
 
-const step = ref(null)
+const route = useRoute()
 const router = useRouter()
-const user = useCookie('user')
-const sortOption = ref('latest')
 
-const goToWrite = () => {
-  // if (!user.value) {
-  //   alert('請先登入會員後才能撰寫書評')
-  // } else {
-    step.value = 'write'
-  // }
+// 從路由參數獲取書本信息
+const bookTitle = computed(() => route.query.title || '未知書名')
+const bookAuthor = computed(() => route.query.author || '未知作者')
+const bookId = computed(() => route.params.id)
+
+// 模擬封面圖片
+const coverUrl = computed(() => 
+  route.query.coverUrl || `https://via.placeholder.com/400x600/4ECDC4/FFFFFF?text=${encodeURIComponent(bookTitle.value)}`
+)
+
+// 處理預約按鈕點擊
+function handleReserve() {
+  router.push({
+    path: '/book-reservation',
+    query: {
+      bookId: bookId.value,
+      title: bookTitle.value,
+      author: bookAuthor.value,
+      coverUrl: coverUrl.value
+    }
+  })
+}
+</script>
+
+<style scoped>
+.scroll-wrapper {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-const reviews = ref([
-  { id: 1, reviewer: '小明', rating: 5, comment: '超好看！' },
-  { id: 2, reviewer: '阿綠', rating: 3, comment: '節奏稍慢但有深度。' },
-  { id: 3, reviewer: '小華', rating: 4, comment: '值得一讀。' },
-])
+.intro {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  background: transparent;
+}
 
-const sortedReviews = computed(() => {
-  if (sortOption.value === 'rating') {
-    return [...reviews.value].sort((a, b) => b.rating - a.rating)
-  }
-  return [...reviews.value].reverse()
-})
-</script>
+/* 滾動條預設為透明 */
+.intro::-webkit-scrollbar {
+  width: 8px;
+}
+
+.intro::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+/* 滑鼠靠近 wrapper 時顯示滾動條 */
+.scroll-wrapper:hover .intro::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* 滑鼠靠近時滾動條背景也顯示 */
+.scroll-wrapper:hover .intro {
+  scrollbar-color: rgba(0, 0, 0, 0.4) transparent;
+}
+
+.grid {
+  display: grid;
+}
+
+.bg-white.rounded-lg.border.p-6.space-y-4 {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(229, 231, 235, 0.4);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.bg-white.rounded-lg.border.p-6 {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(229, 231, 235, 0.4);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+</style> 
