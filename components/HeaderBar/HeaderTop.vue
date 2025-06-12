@@ -1,17 +1,18 @@
   <template>
-    <!-- <a href="#main-content" class="skip-link">跳至主內容</a> -->
     <div class="top-bar">
       <slot name="logo">
-        <!-- 本動畫來源：https://www.aigei.com/s?type=gif_moving_graph&q=看書 -->
-        <div class="cat"><img src="/public/images/book-reading.gif"></div>
-        <!-- 預設 logo -->
-        <div class="logo">
-          <img src="/public/images/libraryLogo.png" alt="Logo" />
-          <div class="title">
-            <h1>{{ title }}</h1>
-            <p>{{ subtitle }}</p>
+        <NuxtLink to="/" class="logo-link" aria-label="回到首頁">
+          <!-- 本動畫來源：https://www.aigei.com/s?type=gif_moving_graph&q=看書 -->
+          <div class="cat"><img src="/public/images/book-reading.gif"></div>
+          <!-- 預設 logo -->
+          <div class="logo">
+            <img src="/public/images/libraryLogo.png" alt="Logo" />
+            <div class="title">
+              <h1>{{ title }}</h1>
+              <p>{{ subtitle }}</p>
+            </div>
           </div>
-        </div>
+        </NuxtLink>
       </slot>
 
       <div class="top-links">
@@ -127,6 +128,14 @@ let links = [
   align-items: center;
 }
 
+.logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
 .cat {
   position: absolute;
   /* 讓它脫離正常排版，可以自由定位 */
@@ -196,7 +205,8 @@ let links = [
 }
 
 .a11y-toggle:hover {
-  color: yellow; /* 黃色高對比 */
+  color: yellow;
+  /* 黃色高對比 */
 }
 
 .a11y-toggle:focus {

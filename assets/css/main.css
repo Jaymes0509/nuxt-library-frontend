@@ -31,6 +31,15 @@ html.accessible-mode button {
   border-radius: 0.5rem;
   white-space: nowrap;
   color: white;
+  margin-top: 0.1rem;
+}
+
+html.accessible-mode .lang-btn {
+  background-color: #111 !important;
+  border-radius: 0.5rem;
+  white-space: nowrap;
+  color: white;
+  margin-bottom: 0.3rem;
 }
 
 html.accessible-mode button:hover {
@@ -44,4 +53,8 @@ html.accessible-mode :focus {
 
 html.accessible-mode .sidebar + .toggle-area {
     left: 12.2rem;
+}
+
+html.accessible-mode .separator {
+  display: none;
 }
