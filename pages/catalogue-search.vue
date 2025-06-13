@@ -20,41 +20,42 @@
       <div class="search-layout">
         <!-- 左側：進階搜尋條件 -->
         <div class="search-conditions">
-      <div class="search-bar">
-        <h2>進階搜尋</h2>
-        <button class="btn btn-secondary" @click="toggleAdvancedSearch">返回單一搜尋</button>
-      </div>
-      <div v-for="(condition, index) in advancedSearchConditions" :key="index" class="condition">
-        <select v-if="index > 0" v-model="condition.operator">
-          <option value="AND">AND</option>
-          <option value="OR">OR</option>
-          <option value="NOT">NOT</option>
-        </select>
-        <select v-model="condition.field">
-          <option value="title">書名</option>
-          <option value="author">作者</option>
-          <option value="isbn">ISBN</option>
-          <option value="publisher">出版社</option>
-          <option value="year">出版年</option>
-        </select>
-        <input v-model="condition.value" type="text" placeholder="輸入搜尋內容" />
-        <button
-          v-if="index > 0"
-          class="btn btn-danger"
-          @click="removeCondition(index)"
-        >
-          移除
-        </button>
-      </div>
-      <div class="search-bar">
-        <button
-          class="btn btn-primary"
-          :class="{ 'btn-disabled': advancedSearchConditions.length >= 6 }"
-          @click="addCondition"
-        >
-          新增條件
-        </button>
-        <button class="btn btn-primary" @click="performAdvancedSearch">搜尋</button>
+          <div class="search-bar">
+            <h2>進階搜尋</h2>
+            <button class="btn btn-secondary" @click="toggleAdvancedSearch">返回單一搜尋</button>
+          </div>
+          <div v-for="(condition, index) in advancedSearchConditions" :key="index" class="condition">
+            <select v-if="index > 0" v-model="condition.operator">
+              <option value="AND">AND</option>
+              <option value="OR">OR</option>
+              <option value="NOT">NOT</option>
+            </select>
+            <select v-model="condition.field">
+              <option value="title">書名</option>
+              <option value="author">作者</option>
+              <option value="isbn">ISBN</option>
+              <option value="publisher">出版社</option>
+              <option value="classification">分類號</option>
+              <option value="version">版本項</option>
+            </select>
+            <input v-model="condition.value" type="text" placeholder="輸入搜尋內容" />
+            <button
+              v-if="index > 0"
+              class="btn btn-danger"
+              @click="removeCondition(index)"
+            >
+              移除
+            </button>
+          </div>
+          <div class="search-bar">
+            <button
+              class="btn btn-primary"
+              :class="{ 'btn-disabled': advancedSearchConditions.length >= 6 }"
+              @click="addCondition"
+            >
+              新增條件
+            </button>
+            <button class="btn btn-primary" @click="performAdvancedSearch">搜尋</button>
           </div>
         </div>
 
@@ -97,7 +98,7 @@
             <!-- 語言 -->
             <div class="condition">
               <label>語言</label>
-              <select v-model="selectedLanguages" multiple style="height:100px;">
+              <select v-model="selectedLanguages" >
                 <option
                   v-for="lang in languageOptions"
                   :key="lang.value"
@@ -147,6 +148,7 @@
           <p><strong>作者:</strong> {{ book.author }}</p>
           <p><strong>出版社:</strong> {{ book.publisher }}</p>
           <p><strong>出版年:</strong> {{ book.publishdate }}</p>
+          <p><strong>版本項:</strong> {{ book.version }}</p>
           <p><strong>ISBN:</strong> {{ book.isbn }}</p>
           <p><strong>分類:</strong> {{ book.classification }}</p>
           <p><strong>語言:</strong> {{ book.language }}</p>
@@ -247,20 +249,12 @@ const sortConfig = ref({
 const yearFrom = ref('');
 const yearTo = ref('');
 const selectedClassification = ref('');
-const selectedLanguages = ref([]);
+const selectedLanguages = ref('');
 
 // 分類選項
 const classificationOptions = ref([
-  { value: '000', label: '總類' },
-  { value: '100', label: '哲學類' },
-  { value: '200', label: '宗教類' },
-  { value: '300', label: '科學類' },
-  { value: '400', label: '應用科學類' },
-  { value: '500', label: '社會科學類' },
-  { value: '600', label: '史地類' },
-  { value: '700', label: '世界史地類' },
-  { value: '800', label: '語言文學類' },
-  { value: '900', label: '藝術類' }
+  { value: 'CLC', label: '中國圖書分類法' },
+  { value: 'LCC', label: '美國國會圖書館分類法' }
 ]);
 
 // 語言選項
@@ -268,7 +262,6 @@ const languageOptions = ref([
   { value: 'zh', label: '中文' },
   { value: 'en', label: '英文' },
   { value: 'ja', label: '日文' },
-  { value: 'ko', label: '韓文' },
   { value: 'fr', label: '法文' },
   { value: 'de', label: '德文' }
 ]);
@@ -286,13 +279,70 @@ onMounted(async () => {
   }
 })
 
+onMounted(async () => {
+  const route = useRoute()
+  
+  // 處理從書籍詳情頁返回的情況
+  if (route.query.q && route.query.from !== 'bookinfo') {
+    // 如果有搜尋參數且不是從 bookinfo 返回，執行搜尋
+    if (route.query.q === 'advanced') {
+      // 處理進階搜尋返回
+      isAdvancedSearch.value = true
+      // 這裡可以根據需要恢復進階搜尋條件
+    } else {
+      // 處理簡單搜尋返回
+      simpleSearchQuery.value = route.query.q
+      await performSimpleSearch()
+    }
+    
+    // 恢復頁碼
+    if (route.query.page) {
+      currentPage.value = parseInt(route.query.page) || 1
+    }
+  }
+  
+  // 原有的書籍詳情邏輯
+  const bookId = route.query.bookId
+  if (!bookId) return
+  try {
+    const response = await axios.get(`http://localhost:8080/api/books/${bookId}`)
+    book.value = response.data
+  } catch (e) {
+    console.error('找不到書籍', e)
+  }
+})
+
+// 或者更完整的狀態恢復版本
+const handleReturnFromBookInfo = () => {
+  const route = useRoute()
+  
+  // 檢查 URL 參數以決定是否需要恢復搜尋狀態
+  if (route.query.q) {
+    if (route.query.returnType === 'advanced') {
+      isAdvancedSearch.value = true
+      // 可以在這裡添加更詳細的進階搜尋狀態恢復邏輯
+    } else {
+      simpleSearchQuery.value = route.query.q
+      performSimpleSearch()
+    }
+    
+    // 恢復頁碼
+    if (route.query.page) {
+      currentPage.value = parseInt(route.query.page)
+    }
+    
+    // 清理 URL 參數（可選）
+    router.replace({ query: {} })
+  }
+}
+
 // 修改 fetchBooks 函數
 const fetchBooks = async (params) => {
   try {
     const [field, direction] = sortConfig.value.field.split('_');
     console.log('搜尋參數：', params);
     
-    const response = await axios.get('http://localhost:8080/api/books/search', {
+    const response = await axios.get('http://localhost:8080/api/books/simple-search', {
       params: {
         ...params,
         page: currentPage.value - 1,
@@ -305,15 +355,12 @@ const fetchBooks = async (params) => {
       console.log('API 回應資料：', response.data);
       console.log('API 回應資料類型：', typeof response.data);
       
-      // 確保 content 是陣列
       const content = Array.isArray(response.data.content) ? response.data.content : [];
       
-      // 處理每本書的資料
       content.forEach((book, index) => {
         console.log(`第 ${index + 1} 本書的原始在架狀態：`, book.is_available);
         console.log(`第 ${index + 1} 本書的在架狀態類型：`, typeof book.is_available);
-
-        // 確保 is_available 是數字類型
+        
         book.is_available = Number(book.is_available);
         
         console.log(`第 ${index + 1} 本書的處理後在架狀態：`, book.is_available);
@@ -335,6 +382,7 @@ const fetchBooks = async (params) => {
     searched.value = true;
   } catch (error) {
     console.error('搜尋錯誤：', error);
+    alert('搜尋失敗，請稍後再試');
     searchResults.value = {
       content: [],
       totalElements: 0,
@@ -411,47 +459,98 @@ const performSimpleSearch = async () => {
   }
   
   await fetchBooks({
-    title: query,
-    sort: sortConfig.value.field.split('_')
+    field: 'title', // 直接使用 'title' 作為預設搜尋欄位
+    keyword: query
   });
 };
 
 // 修改進階搜尋函數
 const performAdvancedSearch = async () => {
-  const searchParams = {};
-  
-  advancedSearchConditions.value.forEach((condition, index) => {
-    if (condition.value.trim()) {
-      searchParams[`conditions[${index}].field`] = condition.field;
-      searchParams[`conditions[${index}].value`] = condition.value.trim();
-      if (condition.operator && index > 0) {
-        searchParams[`conditions[${index}].operator`] = condition.operator;
+  // 檢查是否有任何搜尋條件
+  const hasSearchConditions = advancedSearchConditions.value.some(cond => cond.value.trim());
+  const hasFilterConditions = yearFrom.value || yearTo.value || selectedClassification.value || selectedLanguages.value;
+
+  if (!hasSearchConditions && !hasFilterConditions) {
+    alert('請至少輸入一個搜尋條件');
+    return;
+  }
+
+  // 組成條件陣列
+  const conditions = advancedSearchConditions.value
+    .filter(cond => cond.value.trim())
+    .map(cond => ({
+      field: cond.field,
+      operator: cond.operator,
+      value: cond.value.trim()
+    }));
+
+  // 添加其他篩選條件
+  if (yearFrom.value || yearTo.value) {
+    conditions.push({
+      field: 'publishdate',
+      operator: 'AND',
+      value: JSON.stringify({
+        from: yearFrom.value || null,
+        to: yearTo.value || null
+      })
+    });
+  }
+  if (selectedClassification.value) {
+    conditions.push({
+      field: 'category_system',
+      operator: 'AND',
+      value: JSON.stringify({
+        cs_id: selectedClassification.value,
+        include_children: true
+      })
+    });
+  }
+  if (selectedLanguages.value) {
+    conditions.push({ 
+      field: 'language', 
+      operator: 'AND', 
+      value: selectedLanguages.value 
+    });
+  }
+
+  // 分頁與排序參數
+  const [sortField, sortDir] = sortConfig.value.field.split('_');
+
+  try {
+    const response = await axios.post('http://localhost:8080/api/books/advanced-search', conditions, {
+      params: {
+        page: currentPage.value - 1,
+        size: itemsPerPage.value,
+        sortField,
+        sortDir
       }
-    }
-  });
-
-  // 添加其他進階搜尋參數
-  if (yearFrom.value) searchParams.yearFrom = yearFrom.value;
-  if (yearTo.value) searchParams.yearTo = yearTo.value;
-  if (selectedClassification.value) searchParams.classification = selectedClassification.value;
-  if (selectedLanguages.value?.length) searchParams.languages = selectedLanguages.value.join(',');
-
-  await fetchBooks(searchParams);
+    });
+    searchResults.value = response.data;
+    searched.value = true;
+  } catch (error) {
+    console.error('進階查詢錯誤：', error);
+    alert('搜尋失敗，請稍後再試');
+    searchResults.value = {
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      size: itemsPerPage.value,
+      number: 0
+    };
+    searched.value = true;
+  }
 };
-
-// const toggleFavorite = (book) => {
-//   book.favorite = !book.favorite;
-//   if (book.favorite) {
-//     alert(`《${book.title}》已加入最愛！`);
-//   } else {
-//     alert(`《${book.title}》已從最愛移除！`);
-//   }
-// };
 
 const goToPage = (page) => {
   const pageNum = parseInt(page);
-  if (pageNum && !isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages.value) {
-    currentPage.value = pageNum;
+  if (pageNum && !isNaN(pageNum)) {
+    if (pageNum < 1) {
+      currentPage.value = 1;
+    } else if (pageNum > totalPages.value) {
+      currentPage.value = totalPages.value;
+    } else {
+      currentPage.value = pageNum;
+    }
   }
 };
 
@@ -459,11 +558,23 @@ watch(itemsPerPage, () => {
   currentPage.value = 1;
 });
 
-// 修改導航到書籍詳情頁的方法
+// 添加排序監聽
+watch(sortConfig, () => {
+  if (searched.value) {
+    if (isAdvancedSearch.value) {
+      performAdvancedSearch();
+    } else {
+      performSimpleSearch();
+    }
+  }
+}, { deep: true });
+
+// 修改後的導航到書籍詳情頁方法
 const navigateToBookDetail = (book) => {
   router.push({
-    path: `/${book.id || book.bookId}`,
+    path: '/bookinfo', // 導航到 bookinfo.vue 頁面
     query: {
+      id: book.id || book.bookId,
       title: book.title,
       author: book.author,
       isbn: book.isbn,
@@ -471,10 +582,14 @@ const navigateToBookDetail = (book) => {
       publishdate: book.publishdate,
       classification: book.classification,
       language: book.language,
-      description: book.description,
+      description: book.description || '', // 如果沒有描述則使用空字串
       is_available: book.is_available.toString(),
       total_copies: String(book.total_copies || 1),
-      available_copies: String(book.available_copies || (book.is_available === 1 ? 1 : 0))
+      available_copies: String(book.available_copies || (book.is_available === 1 ? 1 : 0)),
+      // 保存返回資訊
+      returnQuery: isAdvancedSearch.value ? 'advanced' : simpleSearchQuery.value,
+      returnPage: currentPage.value.toString(),
+      returnType: isAdvancedSearch.value ? 'advanced' : 'simple'
     }
   })
 }
@@ -491,7 +606,7 @@ body {
 
 .container {
   width: 100%; /* 確保容器能適應螢幕 */
-  max-width: 1200px; /* 可選：設定最大寬度，防止過寬 */
+  max-width: 1200px; /* 設定最大寬度，防止過寬 */
   margin: 0 auto;
   background-color: transparent;
   padding: 20px;
