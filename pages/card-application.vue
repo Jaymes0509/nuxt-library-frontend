@@ -1,4 +1,4 @@
-<template>
+    <template>
     <div class="scroll-wrapper">
         <div class="library-card">
             <div class="title-row">
