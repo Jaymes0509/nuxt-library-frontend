@@ -163,7 +163,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import axios from 'axios'
 
 // 檢查是否可以續借（到期日前3天）
 function canRenew(dueDate) {
@@ -225,77 +226,29 @@ const sortConfig = ref({
   ascending: true
 })
 
-// 生成大量測試資料
-const books = [
-  '哈利波特：神秘的魔法石', '哈利波特：消失的密室', '哈利波特：阿茲卡班的逃犯',
-  '魔戒首部曲：魔戒現身', '魔戒二部曲：雙城奇謀', '魔戒三部曲：王者再臨',
-  '三體', '三體Ⅱ黑暗森林', '三體Ⅲ死神永生', '挪威的森林',
-  '1984', '美麗新世界', '動物農莊', '華氏451度',
-  '追風箏的孩子', '群山回唱', '燦爛千陽', '小王子',
-  '百年孤寂', '霍爾的移動城堡', '神隱少女', '天空之城'
-]
+// 串接API取得1號會員的歷史紀錄
+const borrowedBooks = ref([])
 
-const authors = [
-  'J.K. 羅琳', '托爾金', '劉慈欣', '村上春樹',
-  '喬治·歐威爾', '赫胥黎', '卡勒德·胡賽尼', '安東尼·聖修伯里',
-  '加西亞·馬奎斯', '宮崎駿'
-]
-
-// 預設封面圖片（這裡使用隨機顏色作為示例）
-function getDefaultCoverUrl(index) {
-  const colors = ['FF6B6B', 'FF8787', '4ECDC4', '45B7D1', '96CEB4', 'FFEEAD', 'D4A5A5', 'FFE3E3']
-  const color = colors[index % colors.length]
-  return `https://via.placeholder.com/300x400/${color}/FFFFFF?text=${encodeURIComponent('書籍封面')}`
+async function fetchBorrowHistory() {
+  try {
+    const res = await axios.get('http://localhost:8080/api/borrows/member/1/history')
+    borrowedBooks.value = res.data.map(item => ({
+      id: item.borrowId,
+      title: item.book?.title || '',
+      author: item.book?.author || '',
+      borrowDate: item.borrowDate?.split('T')[0] || '',
+      dueDate: item.dueDate?.split('T')[0] || '',
+      renewCount: item.renewCount,
+      isReturned: item.status === 'RETURNED'
+    }))
+  } catch (err) {
+    console.error('取得借閱紀錄失敗', err)
+  }
 }
 
-const borrowedBooks = ref(Array.from({ length: 50 }, (_, i) => {
-  const isReturned = i % 10 === 0 // 每10本書將有1本是已歸還的狀態
-  
-  // 取得今天的日期
-  const today = new Date()
-  const baseDate = new Date(today)
-  baseDate.setDate(baseDate.getDate() - 30) // 從30天前開始
-
-  // 根據索引設置不同的借閱情況
-  let borrowDate, dueDate, renewCount
-  
-  if (i % 8 === 0) { // 即將到期（1-2天內）
-    borrowDate = new Date(today)
-    borrowDate.setDate(borrowDate.getDate() - 28) // 28天前借的
-    dueDate = new Date(today)
-    dueDate.setDate(dueDate.getDate() + 2) // 還有2天到期
-    renewCount = 0
-  } else if (i % 8 === 1) { // 已經逾期
-    borrowDate = new Date(today)
-    borrowDate.setDate(borrowDate.getDate() - 35) // 35天前借的
-    dueDate = new Date(today)
-    dueDate.setDate(dueDate.getDate() - 5) // 5天前就到期了
-    renewCount = Math.min(2, Math.floor(Math.random() * 3)) // 0-2次續借
-  } else if (i % 8 === 2 || i % 8 === 3) { // 剛借不久
-    borrowDate = new Date(today)
-    borrowDate.setDate(borrowDate.getDate() - 5) // 5天前借的
-    dueDate = new Date(today)
-    dueDate.setDate(dueDate.getDate() + 25) // 還有25天到期
-    renewCount = 0
-  } else { // 已續借過的（一般借閱中）
-    borrowDate = new Date(today)
-    borrowDate.setDate(borrowDate.getDate() - 20) // 20天前借的
-    dueDate = new Date(today)
-    dueDate.setDate(dueDate.getDate() + 10) // 還有10天到期
-    renewCount = 1 // 已續借1次
-  }
-
-  return {
-    id: String(i + 1),
-    title: books[i % books.length],
-    author: authors[i % authors.length],
-    borrowDate: borrowDate.toISOString().split('T')[0],
-    dueDate: dueDate.toISOString().split('T')[0],
-    coverUrl: null,
-    renewCount,
-    isReturned
-  }
-}))
+onMounted(() => {
+  fetchBorrowHistory()
+})
 
 // 排序功能
 function toggleSortOrder() {
@@ -321,7 +274,6 @@ const sortedBooks = computed(() => {
   return [...borrowedBooks.value].sort((a, b) => {
     const field = sortConfig.value.field
     const modifier = sortConfig.value.ascending ? 1 : -1
-    
     if (a[field] < b[field]) return -1 * modifier
     if (a[field] > b[field]) return 1 * modifier
     return 0
@@ -343,39 +295,26 @@ const paginatedBooks = computed(() => {
   return sortedBooks.value.slice(start, end)
 })
 
-// 續借功能
+// 續借功能（前端假動作，實際應串接後端續借API）
 function renewBook(book) {
   if (book.isReturned) {
     alert('此書已歸還')
     return
   }
-  
   if (book.renewCount >= 2) {
     alert('此書已達到續借上限，無法再次續借')
     return
   }
-
   if (isOverdue(book.dueDate)) {
     alert('此書已逾期，無法續借')
     return
   }
-
   if (!canRenew(book.dueDate)) {
     alert('尚未到續借時間（到期前3天內才能續借）')
     return
   }
-
-  // 取得當前到期日
-  const currentDueDate = new Date(book.dueDate)
-  
-  // 計算新的到期日（當前到期日 + 30天）
-  const newDueDate = new Date(currentDueDate)
-  newDueDate.setDate(newDueDate.getDate() + 30)
-  
-  // 更新書籍的到期日
-  book.dueDate = newDueDate.toISOString().split('T')[0]
-  // 增加續借次數
-  book.renewCount++
+  // 這裡可串接後端續借API
+  alert('請串接後端續借API')
 }
 
 // 添加 goToPage 函數
