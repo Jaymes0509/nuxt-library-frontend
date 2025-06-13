@@ -1,5 +1,61 @@
-body, html {
+body,
+html {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
 }
+
+html.accessible-mode {
+  background-color: #000;
+  font-size: 150%;
+}
+
+html.accessible-mode div.title {
+  white-space: nowrap !important;
+  margin-right: 1rem;
+}
+
+html.accessible-mode a {
+  background-color: #111;
+  /* border: 1px solid #fff; */
+  border-radius: 0.2rem;
+  color: white !important;
+}
+
+html.accessible-mode a:hover {
+  color: yellow !important;
+}
+
+html.accessible-mode button {
+  background-color: #111 !important;
+  border-radius: 0.5rem;
+  white-space: nowrap;
+  color: white;
+  margin-top: 0.1rem;
+}
+
+html.accessible-mode .lang-btn {
+  background-color: #111 !important;
+  border-radius: 0.5rem;
+  white-space: nowrap;
+  color: white;
+  margin-bottom: 0.3rem;
+}
+
+html.accessible-mode button:hover {
+  color: yellow;
+}
+
+html.accessible-mode :focus {
+  outline: 3px solid red;
+  outline-offset: 2px;
+}
+
+html.accessible-mode .sidebar + .toggle-area {
+    left: 12.2rem;
+}
+
+html.accessible-mode .separator {
+  display: none;
+}
+

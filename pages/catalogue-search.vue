@@ -604,13 +604,13 @@ body {
   align-items: center;
 }
 
- .container {
+.container {
   width: 100%; /* 確保容器能適應螢幕 */
   max-width: 1200px; /* 設定最大寬度，防止過寬 */
   margin: 0 auto;
   background-color: transparent;
   padding: 20px;
-} 
+}
 
 .simple-search,
 .advanced-search {
@@ -683,16 +683,16 @@ body {
 }
 
 .favorite {
-  background-color: #ccc;
+  background-color: #ccc; 
   color: #333;
 }
 
 .favorite:hover {
-  background-color: #b3b3b3;
+  background-color: #b3b3b3; 
 }
 
 .not-favorite {
-  background-color: #dc3545;
+  background-color: #dc3545; 
   color: white;
 }
 
@@ -701,7 +701,7 @@ body {
 }
 
 .bookinfo-btn {
-  background-color: #007bff;
+  background-color: #007bff; 
   color: white;
 }
 
@@ -746,7 +746,7 @@ body {
 }
 
 .result-item:hover {
-  background-color: #96c0fdbe;
+  background-color: #96c0fdbe; 
   transition: background-color 0.2s ease;
   cursor: pointer;
 }
