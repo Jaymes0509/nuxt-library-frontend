@@ -150,10 +150,12 @@
           <p><strong>出版年:</strong> {{ book.publishdate }}</p>
           <p><strong>版本項:</strong> {{ book.version }}</p>
           <p><strong>ISBN:</strong> {{ book.isbn }}</p>
+          <p><strong>分類:</strong> {{ book.classification }}</p>
+          <p><strong>語言:</strong> {{ book.language }}</p>
           <p>
             <strong>在架狀態:</strong>
-            <span :class="book.available ? 'availability' : 'unavailable'">
-              {{ book.available ? '是' : '否' }}
+            <span :class="book.is_available === 1 ? 'availability' : 'unavailable'">
+              {{ book.is_available === 1 ? '是' : '否' }}
             </span>
           </p>
         </div>
@@ -167,9 +169,7 @@
           </button> -->
           <button
             class="btn bookinfo-btn"
-            
-            @click=""
-    
+            @click="navigateToBookDetail(book)"
           >
             更多資訊
           </button>
@@ -204,7 +204,9 @@
           </button>
         </div>
         <div class="pagination-info">
-          顯示第 {{ (currentPage - 1) * itemsPerPage + 1 }} 到 {{ Math.min(currentPage * itemsPerPage, searchResults.length) }} 筆，共 {{ searchResults.length }} 筆
+          顯示第 {{ searchResults.size * (searchResults.number) + 1 }} 到 
+          {{ Math.min(searchResults.size * (searchResults.number + 1), searchResults.totalElements) }} 筆，
+          共 {{ searchResults.totalElements }} 筆
         </div>
       </div>
     </div>
@@ -215,15 +217,26 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import axios from 'axios'
+import { useRoute, useRouter } from 'vue-router'
 
 // State
+const route = useRoute()
+const router = useRouter()
+const book = ref(null)
 const simpleSearchQuery = ref('');
 const isAdvancedSearch = ref(false);
 const advancedSearchConditions = ref([
   { field: 'title', operator: 'AND', value: '' },
 ]);
-const searchResults = ref([]);
+const searchResults = ref({
+  content: [],
+  totalElements: 0,
+  totalPages: 0,
+  size: 10,
+  number: 0
+});
 const searched = ref(false);
 const currentPage = ref(1);
 const pageSizes = ref([10, 25, 50]);
@@ -385,21 +398,35 @@ const fetchBooks = async (params) => {
 const totalPages = computed(() => searchResults.value.totalPages || 0);
 
 const sortedResults = computed(() => {
+  const content = searchResults.value.content || [];
+  if (!Array.isArray(content)) return [];
+  
+  console.log('排序前的資料：', content);
   const [field, order] = sortConfig.value.field.split('_');
-  return [...searchResults.value].sort((a, b) => {
+  const sorted = [...content].sort((a, b) => {
     const modifier = order === 'asc' ? 1 : -1;
     if (a[field] < b[field]) return -1 * modifier;
     if (a[field] > b[field]) return 1 * modifier;
     return 0;
   });
+  console.log('排序後的資料：', sorted);
+  return sorted;
 });
+
+const currentPageResults = computed(() => sortedResults.value);
 
 // Methods
 const toggleAdvancedSearch = () => {
   isAdvancedSearch.value = !isAdvancedSearch.value;
   if (!isAdvancedSearch.value) {
     advancedSearchConditions.value = [{ field: 'title', operator: 'AND', value: '' }];
-    searchResults.value = [];
+    searchResults.value = {
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      size: itemsPerPage.value,
+      number: 0
+    };
     searched.value = false;
     currentPage.value = 1;
   }
@@ -415,10 +442,17 @@ const removeCondition = (index) => {
   advancedSearchConditions.value.splice(index, 1);
 };
 
-const performSimpleSearch = () => {
-  const query = simpleSearchQuery.value.toLowerCase().trim();
+// 修改簡單搜尋函數
+const performSimpleSearch = async () => {
+  const query = simpleSearchQuery.value.trim();
   if (!query) {
-    searchResults.value = [];
+    searchResults.value = {
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      size: itemsPerPage.value,
+      number: 0
+    };
     searched.value = true;
     currentPage.value = 1;
     return;

@@ -1,70 +1,89 @@
 <template>
   <div class="scroll-wrapper">
     <div class="intro">
-  <div class="p-6 max-w-4xl mx-auto">
-    <div class="mb-6">
-      <Button variant="outline" class="mb-4" @click="router.back()">
-        <ChevronLeftIcon class="h-4 w-4 mr-2" />
-        返回
-      </Button>
-      <h1 class="text-3xl font-bold mb-2">{{ bookTitle }}</h1>
-      <p class="text-lg text-gray-600">作者：{{ bookAuthor }}</p>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- 左側：書本封面 -->
-      <div class="aspect-[3/4] relative bg-gray-100 rounded-lg overflow-hidden">
-        <img :src="coverUrl" :alt="bookTitle" class="object-cover w-full h-full" />
-      </div>
-
-      <!-- 右側：書本詳細信息 -->
-      <div class="md:col-span-2 space-y-6">
-        <!-- 基本信息 -->
-        <div class="bg-white rounded-lg border p-6 space-y-4">
-          <h2 class="text-xl font-semibold mb-4">基本信息</h2>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <p class="text-sm text-gray-500">ISBN</p>
-              <p>978-3-16-148410-0</p>
-            </div>
-            <div>
-              <p class="text-sm text-gray-500">出版社</p>
-              <p>某某出版社</p>
-            </div>
-            <div>
-              <p class="text-sm text-gray-500">出版日期</p>
-              <p>2024-01-01</p>
-            </div>
-            <div>
-              <p class="text-sm text-gray-500">頁數</p>
-              <p>300</p>
-            </div>
-          </div>
+      <div class="p-6 max-w-4xl mx-auto">
+        <div class="mb-6">
+          <Button variant="outline" class="mb-4" @click="router.back()">
+            <ChevronLeftIcon class="h-4 w-4 mr-2" />
+            返回
+          </Button>
+          <h1 class="text-3xl font-bold mb-2">{{ book?.title || '載入中...' }}</h1>
+          <p class="text-lg text-gray-600">作者：{{ book?.author || '載入中...' }}</p>
         </div>
 
-        <!-- 簡介 -->
-        <div class="bg-white rounded-lg border p-6">
-          <h2 class="text-xl font-semibold mb-4">內容簡介</h2>
-          <p class="text-gray-600 leading-relaxed">
-            這是一個模擬的書本簡介。在這裡，我們可以看到這本書的詳細介紹和內容概要。
-            實際應用中，這裡應該顯示真實的書本簡介內容。書本簡介可以包含多個段落，
-            描述書本的主要內容、特色、作者背景等信息。
-          </p>
-        </div>
-
-        <!-- 借閱狀態 -->
-        <div class="bg-white rounded-lg border p-6">
-          <h2 class="text-xl font-semibold mb-4">借閱狀態</h2>
-          <div class="space-y-2">
-            <p><span class="text-gray-500">當前狀態：</span><Badge>可借閱</Badge></p>
-            <p><span class="text-gray-500">館藏數量：</span>5本</p>
-            <p><span class="text-gray-500">可借閱數量：</span>3本</p>
+        <div v-if="book" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- 左側：書本封面 -->
+          <div class="aspect-[3/4] relative bg-gray-100 rounded-lg overflow-hidden">
+            <img :src="coverUrl" :alt="book.title" class="object-cover w-full h-full" />
           </div>
-          <div class="mt-6">
-            <Button class="w-full" @click="handleReserve">預約借閱</Button>
+
+          <!-- 右側：書本詳細信息 -->
+          <div class="md:col-span-2 space-y-6">
+            <!-- 基本信息 -->
+            <div class="bg-white rounded-lg border p-6 space-y-4">
+              <h2 class="text-xl font-semibold mb-4">基本信息</h2>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <p class="text-sm text-gray-500">ISBN</p>
+                  <p>{{ book.isbn }}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500">出版社</p>
+                  <p>{{ book.publisher }}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500">出版日期</p>
+                  <p>{{ book.publishdate }}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500">語言</p>
+                  <p>{{ book.language }}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500">分類</p>
+                  <p>{{ book.classification }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 簡介 -->
+            <div class="bg-white rounded-lg border p-6">
+              <h2 class="text-xl font-semibold mb-4">內容簡介</h2>
+              <p class="text-gray-600 leading-relaxed">
+                {{ book.description || '暫無簡介' }}
+              </p>
+            </div>
+
+            <!-- 借閱狀態 -->
+            <div class="bg-white rounded-lg border p-6">
+              <h2 class="text-xl font-semibold mb-4">借閱狀態</h2>
+              <div class="space-y-2">
+                <p>
+                  <span class="text-gray-500">當前狀態：</span>
+                  <Badge>{{ book.is_available === 1 ? '可借閱' : '已借出' }}</Badge>
+                </p>
+                <p><span class="text-gray-500">館藏數量：</span>{{ book.total_copies }}本</p>
+                <p><span class="text-gray-500">可借閱數量：</span>{{ book.available_copies }}本</p>
+              </div>
+              <div class="mt-6">
+                <Button 
+                  class="w-full" 
+                  :disabled="book.is_available !== 1"
+                  @click="handleReserve"
+                >
+                  {{ book.is_available === 1 ? '預約借閱' : '目前無法借閱' }}
+                </Button>
               </div>
             </div>
           </div>
+        </div>
+        
+        <!-- 載入中或錯誤狀態 -->
+        <div v-else-if="error" class="text-center py-8">
+          <p class="text-red-500">{{ error }}</p>
+        </div>
+        <div v-else class="text-center py-8">
+          <p class="text-gray-500">載入中...</p>
         </div>
       </div>
     </div>
@@ -72,37 +91,71 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Button from '@/components/button/Button.vue'
 import Badge from '@/components/badge/Badge.vue'
 import { ChevronLeftIcon } from 'lucide-vue-next'
+import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
+const book = ref({
+  id: route.params.id,
+  title: route.query.title || '載入中...',
+  author: route.query.author || '載入中...',
+  isbn: route.query.isbn,
+  publisher: route.query.publisher,
+  publishdate: route.query.publishdate,
+  classification: route.query.classification,
+  language: route.query.language,
+  description: route.query.description,
+  is_available: Number(route.query.is_available),
+  total_copies: parseInt(route.query.total_copies || '1'),
+  available_copies: parseInt(route.query.available_copies || '0')
+})
+const error = ref(null)
 
-// 從路由參數獲取書本信息
-const bookTitle = computed(() => route.query.title || '未知書名')
-const bookAuthor = computed(() => route.query.author || '未知作者')
-const bookId = computed(() => route.params.id)
+// 獲取書本封面
+const coverUrl = computed(() => {
+  if (!book.value?.isbn) return 'https://via.placeholder.com/400x600/4ECDC4/FFFFFF?text=No+Cover'
+  return `https://covers.openlibrary.org/b/isbn/${book.value.isbn}-L.jpg`
+})
 
-// 模擬封面圖片
-const coverUrl = computed(() => 
-  route.query.coverUrl || `https://via.placeholder.com/400x600/4ECDC4/FFFFFF?text=${encodeURIComponent(bookTitle.value)}`
-)
+// 獲取書本詳細信息
+async function fetchBookDetails() {
+  try {
+    error.value = null
+    const response = await axios.get(`http://localhost:8080/api/books/${route.params.id}`)
+    // 合併查詢參數和 API 響應數據，優先使用 API 數據
+    book.value = {
+      ...book.value,
+      ...response.data
+    }
+  } catch (e) {
+    console.error('獲取書籍詳情失敗：', e)
+    error.value = '無法載入完整書籍信息'
+  }
+}
 
 // 處理預約按鈕點擊
 function handleReserve() {
+  if (book.value?.is_available !== 1) return
+  
   router.push({
     path: '/book-reservation',
     query: {
-      bookId: bookId.value,
-      title: bookTitle.value,
-      author: bookAuthor.value,
-      coverUrl: coverUrl.value
+      bookId: route.params.id,
+      title: book.value.title,
+      author: book.value.author,
+      isbn: book.value.isbn
     }
   })
 }
+
+onMounted(() => {
+  fetchBookDetails()
+})
 </script>
 
 <style scoped>
