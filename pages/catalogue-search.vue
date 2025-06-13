@@ -20,41 +20,41 @@
       <div class="search-layout">
         <!-- 左側：進階搜尋條件 -->
         <div class="search-conditions">
-          <div class="search-bar">
-            <h2>進階搜尋</h2>
-            <button class="btn btn-secondary" @click="toggleAdvancedSearch">返回單一搜尋</button>
-          </div>
-          <div v-for="(condition, index) in advancedSearchConditions" :key="index" class="condition">
-            <select v-if="index > 0" v-model="condition.operator">
-              <option value="AND">AND</option>
-              <option value="OR">OR</option>
-              <option value="NOT">NOT</option>
-            </select>
-            <select v-model="condition.field">
-              <option value="title">書名</option>
-              <option value="author">作者</option>
-              <option value="isbn">ISBN</option>
-              <option value="publisher">出版社</option>
-              <option value="year">出版年</option>
-            </select>
-            <input v-model="condition.value" type="text" placeholder="輸入搜尋內容" />
-            <button
-              v-if="index > 0"
-              class="btn btn-danger"
-              @click="removeCondition(index)"
-            >
-              移除
-            </button>
-          </div>
-          <div class="search-bar">
-            <button
-              class="btn btn-primary"
-              :class="{ 'btn-disabled': advancedSearchConditions.length >= 6 }"
-              @click="addCondition"
-            >
-              新增條件
-            </button>
-            <button class="btn btn-primary" @click="performAdvancedSearch">搜尋</button>
+      <div class="search-bar">
+        <h2>進階搜尋</h2>
+        <button class="btn btn-secondary" @click="toggleAdvancedSearch">返回單一搜尋</button>
+      </div>
+      <div v-for="(condition, index) in advancedSearchConditions" :key="index" class="condition">
+        <select v-if="index > 0" v-model="condition.operator">
+          <option value="AND">AND</option>
+          <option value="OR">OR</option>
+          <option value="NOT">NOT</option>
+        </select>
+        <select v-model="condition.field">
+          <option value="title">書名</option>
+          <option value="author">作者</option>
+          <option value="isbn">ISBN</option>
+          <option value="publisher">出版社</option>
+          <option value="year">出版年</option>
+        </select>
+        <input v-model="condition.value" type="text" placeholder="輸入搜尋內容" />
+        <button
+          v-if="index > 0"
+          class="btn btn-danger"
+          @click="removeCondition(index)"
+        >
+          移除
+        </button>
+      </div>
+      <div class="search-bar">
+        <button
+          class="btn btn-primary"
+          :class="{ 'btn-disabled': advancedSearchConditions.length >= 6 }"
+          @click="addCondition"
+        >
+          新增條件
+        </button>
+        <button class="btn btn-primary" @click="performAdvancedSearch">搜尋</button>
           </div>
         </div>
 
@@ -312,7 +312,7 @@ const fetchBooks = async (params) => {
       content.forEach((book, index) => {
         console.log(`第 ${index + 1} 本書的原始在架狀態：`, book.is_available);
         console.log(`第 ${index + 1} 本書的在架狀態類型：`, typeof book.is_available);
-        
+
         // 確保 is_available 是數字類型
         book.is_available = Number(book.is_available);
         
@@ -489,13 +489,13 @@ body {
   align-items: center;
 }
 
- .container {
+.container {
   width: 100%; /* 確保容器能適應螢幕 */
   max-width: 1200px; /* 可選：設定最大寬度，防止過寬 */
   margin: 0 auto;
   background-color: transparent;
   padding: 20px;
-} 
+}
 
 .simple-search,
 .advanced-search {
@@ -568,16 +568,16 @@ body {
 }
 
 .favorite {
-  background-color: #ccc;
+  background-color: #ccc; 
   color: #333;
 }
 
 .favorite:hover {
-  background-color: #b3b3b3;
+  background-color: #b3b3b3; 
 }
 
 .not-favorite {
-  background-color: #dc3545;
+  background-color: #dc3545; 
   color: white;
 }
 
@@ -586,7 +586,7 @@ body {
 }
 
 .bookinfo-btn {
-  background-color: #007bff;
+  background-color: #007bff; 
   color: white;
 }
 
@@ -631,7 +631,7 @@ body {
 }
 
 .result-item:hover {
-  background-color: #96c0fdbe;
+  background-color: #96c0fdbe; 
   transition: background-color 0.2s ease;
   cursor: pointer;
 }
