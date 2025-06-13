@@ -122,6 +122,7 @@
 import { useRoute, useRouter } from 'vue-router'
 import { ref, computed } from 'vue'
 import { useHead } from '#imports'
+import axios from 'axios'
 
 // 設置頁面標題
 useHead({
@@ -152,7 +153,7 @@ const form = ref({
   method: '',
 })
 
-function handleReserve() {
+async function handleReserve() {
   if (!isLoggedIn) {
     alert('請先登入才能預約')
     router.push('/login')
@@ -169,17 +170,31 @@ function handleReserve() {
     return
   }
 
-  // 模擬預約成功
-  userReservedCount.value++
-  alert(`成功預約《${book.value?.title}》`)
-  router.push({
-    path: '/reservation-record',
-    query: {
-      bookId: book.value?.id,
-      title: book.value?.title,
-      author: book.value?.author
+  try {
+    const response = await axios.post(`/api/books/${book.value?.id}/reserve`, {
+      time: form.value.time,
+      location: form.value.location,
+      method: form.value.method
+    })
+
+    if (response.data?.status === 'success') {
+      userReservedCount.value++
+      alert(`成功預約《${book.value?.title}》`)
+      router.push({
+        path: '/reservation-record',
+        query: {
+          bookId: book.value?.id,
+          title: book.value?.title,
+          author: book.value?.author
+        }
+      })
+    } else {
+      throw new Error('預約失敗')
     }
-  })
+  } catch (error: any) {
+    console.error('預約失敗：', error)
+    alert('預約失敗：' + (error.response?.data?.statusMessage || error.message))
+  }
 }
 </script>
 
