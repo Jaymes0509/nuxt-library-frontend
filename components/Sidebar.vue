@@ -113,13 +113,17 @@ const menuItems = [
 }
 
 .sidebar {
-    width: 150px;
+    width: 10.5rem;
     padding: 20px;
     height: 100%;
     transition: width 0.3s ease, padding 0.3s ease;
     position: relative;
     overflow-x: hidden;
     background: #fff;
+}
+
+.sidebar span {
+    white-space: nowrap;
 }
 
 .sidebar.closed {
@@ -132,8 +136,9 @@ const menuItems = [
     position: absolute;
     top: 50%;
     left: 190px;
-    transform: translateY(-50%);
-    width: 16px;
+    transform: translateY(-100%);
+    /* transform: translateX(0); */
+    width: 20px;
     height: 64px;
     background: linear-gradient(180deg, #1e3c72, #2a5298);
     border: none;
@@ -146,14 +151,20 @@ const menuItems = [
     font-weight: bold;
     z-index: 99;
     transition: left 0.3s ease, opacity 0.2s;
+
+    
 }
 
 .sidebar.closed + .toggle-area {
     left: 0;
 }
 
+.sidebar + .toggle-area {
+    left: 12.8rem;
+}
+
 .toggle-icon {
-    font-size: 12px;
+    font-size: 30px;
     line-height: 1;
 }
 

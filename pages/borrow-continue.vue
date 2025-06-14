@@ -313,8 +313,24 @@ function renewBook(book) {
     alert('尚未到續借時間（到期前3天內才能續借）')
     return
   }
+
   // 這裡可串接後端續借API
   alert('請串接後端續借API')
+
+
+  // 取得當前到期日
+  const currentDueDate = new Date(book.dueDate)
+  
+
+  // 計算新的到期日（當前到期日 + 30天）
+  const newDueDate = new Date(currentDueDate)
+  newDueDate.setDate(newDueDate.getDate() + 30)
+  
+  // 更新書籍的到期日
+  book.dueDate = newDueDate.toISOString().split('T')[0]
+  // 增加續借次數
+  book.renewCount++
+
 }
 
 // 添加 goToPage 函數
@@ -322,6 +338,7 @@ function goToPage(page) {
   const pageNum = parseInt(page)
   if (pageNum && !isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages.value) {
     currentPage.value = pageNum
+
   }
 }
 </script>

@@ -1,50 +1,55 @@
-<template>
-  <div class="top-bar">
-    <slot name="logo">
-      <!-- 本動畫來源：https://www.aigei.com/s?type=gif_moving_graph&q=看書 -->
-      <div class="cat"><img src="/public/images/book-reading.gif"></div>
-      <!-- 預設 logo -->
-      <div class="logo">
-        <img src="/public/images/libraryLogo.png" alt="Logo" />
-        <div class="title">
-          <h1>{{ title }}</h1>
-          <p>{{ subtitle }}</p>
-        </div>
-      </div>
-    </slot>
+  <template>
+    <div class="top-bar">
+      <slot name="logo">
+        <NuxtLink to="/" class="logo-link" aria-label="回到首頁">
+          <!-- 本動畫來源：https://www.aigei.com/s?type=gif_moving_graph&q=看書 -->
+          <div class="cat"><img src="/public/images/book-reading.gif"></div>
+          <!-- 預設 logo -->
+          <div class="logo">
+            <img src="/public/images/libraryLogo.png" alt="Logo" />
+            <div class="title">
+              <h1>{{ title }}</h1>
+              <p>{{ subtitle }}</p>
+            </div>
+          </div>
+        </NuxtLink>
+      </slot>
 
-    <div class="top-links">
-      <ul>
-        <li v-for="(link, index) in links" :key="link.href" :title="link.label">
-          <a :href="link.href">{{ link.label }}</a>
-          <span v-if="index !== links.length - 1" class="separator">＊</span>
-        </li>
-      </ul>
-      <!-- <div class="icons">
+      <div class="top-links">
+        <ul>
+          <li v-for="(link, index) in links" :key="link.href" :title="link.label">
+            <a v-if="link.label !== '無障礙專區'" :href="link.href">{{ link.label }}</a>
+            <button v-else class="a11y-toggle" @click="toggleAccessibility" aria-label="切換視障友善模式">
+              {{ isAccessible ? '標準模式' : '無障礙模式' }}
+            </button>
+            <span v-if="index !== links.length - 1" class="separator">＊</span>
+          </li>
+        </ul>
+        <!-- <div class="icons">
         <img src="/yt.png" alt="YouTube" />
         <img src="/line.png" alt="Line" />
         <img src="/ig.png" alt="Instagram" />
         <img src="/fb.png" alt="Facebook" />
       </div> -->
-      <!-- 語言切換選單 -->
-      <div>
-        <button @click="toggleDropdown" class="lang-btn" title="語言">🌐 語言</button>
-        <ul v-if="showDropdown" class="lang-menu">
-          <li v-for="lang in languages" :key="lang.code" :title="lang.label">
-            <a href="#" class="dropdown-item" @click.prevent="selectLang(lang.code)">
-              {{ lang.label }}
-            </a>
-          </li>
-        </ul>
-      </div>
+        <!-- 語言切換選單 -->
+        <div>
+          <button @click="toggleDropdown" class="lang-btn" title="語言">🌐 語言</button>
+          <ul v-if="showDropdown" class="lang-menu">
+            <li v-for="lang in languages" :key="lang.code" :title="lang.label">
+              <a href="#" class="dropdown-item" @click.prevent="selectLang(lang.code)">
+                {{ lang.label }}
+              </a>
+            </li>
+          </ul>
+        </div>
 
-      <div class="search">
-        <input type="text" placeholder="站內搜尋" />
-        <span>🔍</span>
+        <div class="search">
+          <input type="text" placeholder="站內搜尋" />
+          <span>🔍</span>
+        </div>
       </div>
     </div>
-  </div>
-</template>
+  </template>
 
 <script setup>
 import { ref } from 'vue'
@@ -77,12 +82,36 @@ defineProps({
     default: 'LIBRARY'
   }
 })
+
+const isAccessible = ref(false)
+
+const toggleAccessibility = () => {
+  isAccessible.value = !isAccessible.value
+  const html = document.documentElement
+
+  if (isAccessible.value) {
+    html.classList.add('accessible-mode')
+    localStorage.setItem('accessibleMode', 'true')
+  } else {
+    html.classList.remove('accessible-mode')
+    localStorage.removeItem('accessibleMode')
+  }
+}
+
+onMounted(() => {
+  if (localStorage.getItem('accessibleMode') === 'true') {
+    document.documentElement.classList.add('accessible-mode')
+    isAccessible.value = true
+  }
+})
+
+
 let links = [
   { label: '首頁', href: '/' },
   { label: '網站導覽', href: '' },
-  { label: '無障礙專區', href: '' },
   { label: '開放時間', href: '/opening-hours' },
-  { label: '意見信箱', href: '' },]
+  { label: '意見信箱', href: '/feedback' },
+  { label: '無障礙專區', href: '' }]
 </script>
 
 <style scoped>
@@ -97,6 +126,14 @@ let links = [
   justify-content: space-between;
   padding: 0.2rem 1rem;
   align-items: center;
+}
+
+.logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
 }
 
 .cat {
@@ -156,6 +193,25 @@ let links = [
 
 .top-links a:hover {
   color: skyblue;
+}
+
+.a11y-toggle {
+  white-space: nowrap;
+  font-weight: bold;
+  font-size: large;
+  color: white;
+  background-color: #111;
+  border-radius: 5rem;
+}
+
+.a11y-toggle:hover {
+  color: yellow;
+  /* 黃色高對比 */
+}
+
+.a11y-toggle:focus {
+  outline: 2px solid red;
+  outline-offset: 2px;
 }
 
 .separator {
