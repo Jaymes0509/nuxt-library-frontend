@@ -128,11 +128,7 @@ const form = reactive({
 const captchaUrl = ref(getCaptchaUrl());
 
 function getCaptchaUrl() {
-<<<<<<< Updated upstream
     return `http://localhost:8080/api/captcha/m1?ts=${Date.now()}`; // 加上 timestamp 防止瀏覽器快取
-=======
-    return `http://localhost:8080/api/captcha/m1?ts=${Date.now()}`; // 防止快取
->>>>>>> Stashed changes
 }
 
 function refreshCaptcha() {
@@ -386,7 +382,6 @@ a:hover {
     gap: 1rem;
     margin-left: 5rem;
     margin: 0 auto 2rem;
-<<<<<<< Updated upstream
 }
 
 
@@ -394,8 +389,6 @@ a:hover {
     display: flex;
     align-items: center;
     gap: 8px;
-=======
->>>>>>> Stashed changes
 }
 
 .captcha-img {
