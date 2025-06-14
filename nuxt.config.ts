@@ -7,7 +7,6 @@ export default defineNuxtConfig({
   ssr: false,
 
   modules: [
-    '@nuxtjs/tailwindcss',
     '@nuxtjs/google-fonts'
   ],
 
@@ -37,8 +36,6 @@ export default defineNuxtConfig({
       }
     }
   },
-
-
 
   compatibilityDate: '2025-05-15',
 

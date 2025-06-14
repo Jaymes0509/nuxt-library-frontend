@@ -35,7 +35,8 @@
               <option value="author">作者</option>
               <option value="isbn">ISBN</option>
               <option value="publisher">出版社</option>
-              <option value="year">出版年</option>
+              <option value="classification">分類號</option>
+              <option value="version">版本項</option>
             </select>
             <input v-model="condition.value" type="text" placeholder="輸入搜尋內容" />
             <button
@@ -97,7 +98,7 @@
             <!-- 語言 -->
             <div class="condition">
               <label>語言</label>
-              <select v-model="selectedLanguages" multiple style="height:100px;">
+              <select v-model="selectedLanguages" >
                 <option
                   v-for="lang in languageOptions"
                   :key="lang.value"
@@ -145,13 +146,16 @@
         <div class="result-info">
           <p><strong>書名:</strong> {{ book.title }}</p>
           <p><strong>作者:</strong> {{ book.author }}</p>
-          <p><strong>出版設:</strong> {{ book.publisher }}</p>
-          <p><strong>出版年:</strong> {{ book.year }}</p>
+          <p><strong>出版社:</strong> {{ book.publisher }}</p>
+          <p><strong>出版年:</strong> {{ book.publishdate }}</p>
+          <p><strong>版本項:</strong> {{ book.version }}</p>
           <p><strong>ISBN:</strong> {{ book.isbn }}</p>
+          <p><strong>分類:</strong> {{ book.classification }}</p>
+          <p><strong>語言:</strong> {{ book.language }}</p>
           <p>
             <strong>在架狀態:</strong>
-            <span :class="book.available ? 'availability' : 'unavailable'">
-              {{ book.available ? '是' : '否' }}
+            <span :class="book.is_available === 1 ? 'availability' : 'unavailable'">
+              {{ book.is_available === 1 ? '是' : '否' }}
             </span>
           </p>
         </div>
@@ -165,9 +169,7 @@
           </button> -->
           <button
             class="btn bookinfo-btn"
-            
-            @click=""
-    
+            @click="navigateToBookDetail(book)"
           >
             更多資訊
           </button>
@@ -202,7 +204,9 @@
           </button>
         </div>
         <div class="pagination-info">
-          顯示第 {{ (currentPage - 1) * itemsPerPage + 1 }} 到 {{ Math.min(currentPage * itemsPerPage, searchResults.length) }} 筆，共 {{ searchResults.length }} 筆
+          顯示第 {{ searchResults.size * (searchResults.number) + 1 }} 到 
+          {{ Math.min(searchResults.size * (searchResults.number + 1), searchResults.totalElements) }} 筆，
+          共 {{ searchResults.totalElements }} 筆
         </div>
       </div>
     </div>
@@ -213,15 +217,26 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import axios from 'axios'
+import { useRoute, useRouter } from 'vue-router'
 
 // State
+const route = useRoute()
+const router = useRouter()
+const book = ref(null)
 const simpleSearchQuery = ref('');
 const isAdvancedSearch = ref(false);
 const advancedSearchConditions = ref([
   { field: 'title', operator: 'AND', value: '' },
 ]);
-const searchResults = ref([]);
+const searchResults = ref({
+  content: [],
+  totalElements: 0,
+  totalPages: 0,
+  size: 10,
+  number: 0
+});
 const searched = ref(false);
 const currentPage = ref(1);
 const pageSizes = ref([10, 25, 50]);
@@ -230,41 +245,188 @@ const sortConfig = ref({
   field: 'title_asc'
 });
 
-// Mock book data
-const books = ref([
-  { title: 'JavaScript 入門', author: '張三', isbn: '1234567890', publisher: '技術出版社', year: '2020', available: true, reserved: false, favorite: false },
-  { title: 'Vue.js 實戰', author: '李四', isbn: '0987654321', publisher: '前端出版社', year: '2021', available: false, reserved: false, favorite: false },
-  { title: 'Python 程式設計', author: '王五', isbn: '1122334455', publisher: '技術出版社', year: '2019', available: true, reserved: false, favorite: false },
-  { title: 'HTML 基礎', author: '陳六', isbn: '9876543210', publisher: '基礎出版社', year: '2018', available: false, reserved: false, favorite: false },
-  { title: 'CSS 進階', author: '趙七', isbn: '4567891230', publisher: '進階出版社', year: '2022', available: true, reserved: false, favorite: false },
-  { title: 'Node.js 實戰', author: '孫八', isbn: '3216549870', publisher: '實戰出版社', year: '2023', available: false, reserved: false, favorite: false },
-  { title: 'React 入門', author: '吳九', isbn: '6543219870', publisher: '技術出版社', year: '2020', available: true, reserved: false, favorite: false },
+// 添加缺少的 ref 變數
+const yearFrom = ref('');
+const yearTo = ref('');
+const selectedClassification = ref('');
+const selectedLanguages = ref('');
+
+// 分類選項
+const classificationOptions = ref([
+  { value: 'CLC', label: '中國圖書分類法' },
+  { value: 'LCC', label: '美國國會圖書館分類法' }
 ]);
 
-// Computed properties
-const totalPages = computed(() => Math.ceil(searchResults.value.length / itemsPerPage.value));
-const currentPageResults = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value;
-  const end = start + itemsPerPage.value;
-  return sortedResults.value.slice(start, end);
-});
+// 語言選項
+const languageOptions = ref([
+  { value: 'zh', label: '中文' },
+  { value: 'en', label: '英文' },
+  { value: 'ja', label: '日文' },
+  { value: 'fr', label: '法文' },
+  { value: 'de', label: '德文' }
+]);
+
+// 添加 onMounted 邏輯
+onMounted(async () => {
+  const route = useRoute()
+  const bookId = route.query.bookId
+  if (!bookId) return
+  try {
+    const response = await axios.get(`http://localhost:8080/api/books/${bookId}`)
+    book.value = response.data
+  } catch (e) {
+    console.error('找不到書籍', e)
+  }
+})
+
+onMounted(async () => {
+  const route = useRoute()
+  
+  // 處理從書籍詳情頁返回的情況
+  if (route.query.q && route.query.from !== 'bookinfo') {
+    // 如果有搜尋參數且不是從 bookinfo 返回，執行搜尋
+    if (route.query.q === 'advanced') {
+      // 處理進階搜尋返回
+      isAdvancedSearch.value = true
+      // 這裡可以根據需要恢復進階搜尋條件
+    } else {
+      // 處理簡單搜尋返回
+      simpleSearchQuery.value = route.query.q
+      await performSimpleSearch()
+    }
+    
+    // 恢復頁碼
+    if (route.query.page) {
+      currentPage.value = parseInt(route.query.page) || 1
+    }
+  }
+  
+  // 原有的書籍詳情邏輯
+  const bookId = route.query.bookId
+  if (!bookId) return
+  try {
+    const response = await axios.get(`http://localhost:8080/api/books/${bookId}`)
+    book.value = response.data
+  } catch (e) {
+    console.error('找不到書籍', e)
+  }
+})
+
+// 或者更完整的狀態恢復版本
+const handleReturnFromBookInfo = () => {
+  const route = useRoute()
+  
+  // 檢查 URL 參數以決定是否需要恢復搜尋狀態
+  if (route.query.q) {
+    if (route.query.returnType === 'advanced') {
+      isAdvancedSearch.value = true
+      // 可以在這裡添加更詳細的進階搜尋狀態恢復邏輯
+    } else {
+      simpleSearchQuery.value = route.query.q
+      performSimpleSearch()
+    }
+    
+    // 恢復頁碼
+    if (route.query.page) {
+      currentPage.value = parseInt(route.query.page)
+    }
+    
+    // 清理 URL 參數（可選）
+    router.replace({ query: {} })
+  }
+}
+
+// 修改 fetchBooks 函數
+const fetchBooks = async (params) => {
+  try {
+    const [field, direction] = sortConfig.value.field.split('_');
+    console.log('搜尋參數：', params);
+    
+    const response = await axios.get('http://localhost:8080/api/books/simple-search', {
+      params: {
+        ...params,
+        page: currentPage.value - 1,
+        size: itemsPerPage.value,
+        sort: `${field},${direction}`
+      }
+    });
+    
+    if (response.data) {
+      console.log('API 回應資料：', response.data);
+      console.log('API 回應資料類型：', typeof response.data);
+      
+      const content = Array.isArray(response.data.content) ? response.data.content : [];
+      
+      content.forEach((book, index) => {
+        console.log(`第 ${index + 1} 本書的原始在架狀態：`, book.is_available);
+        console.log(`第 ${index + 1} 本書的在架狀態類型：`, typeof book.is_available);
+        
+        book.is_available = Number(book.is_available);
+        
+        console.log(`第 ${index + 1} 本書的處理後在架狀態：`, book.is_available);
+      });
+      
+      searchResults.value = {
+        ...response.data,
+        content
+      };
+    } else {
+      searchResults.value = {
+        content: [],
+        totalElements: 0,
+        totalPages: 0,
+        size: itemsPerPage.value,
+        number: 0
+      };
+    }
+    searched.value = true;
+  } catch (error) {
+    console.error('搜尋錯誤：', error);
+    alert('搜尋失敗，請稍後再試');
+    searchResults.value = {
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      size: itemsPerPage.value,
+      number: 0
+    };
+    searched.value = true;
+  }
+};
+
+// 修改 computed properties
+const totalPages = computed(() => searchResults.value.totalPages || 0);
 
 const sortedResults = computed(() => {
+  const content = searchResults.value.content || [];
+  if (!Array.isArray(content)) return [];
+  
+  console.log('排序前的資料：', content);
   const [field, order] = sortConfig.value.field.split('_');
-  return [...searchResults.value].sort((a, b) => {
+  const sorted = [...content].sort((a, b) => {
     const modifier = order === 'asc' ? 1 : -1;
     if (a[field] < b[field]) return -1 * modifier;
     if (a[field] > b[field]) return 1 * modifier;
     return 0;
   });
+  console.log('排序後的資料：', sorted);
+  return sorted;
 });
+
+const currentPageResults = computed(() => sortedResults.value);
 
 // Methods
 const toggleAdvancedSearch = () => {
   isAdvancedSearch.value = !isAdvancedSearch.value;
   if (!isAdvancedSearch.value) {
     advancedSearchConditions.value = [{ field: 'title', operator: 'AND', value: '' }];
-    searchResults.value = [];
+    searchResults.value = {
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      size: itemsPerPage.value,
+      number: 0
+    };
     searched.value = false;
     currentPage.value = 1;
   }
@@ -280,68 +442,157 @@ const removeCondition = (index) => {
   advancedSearchConditions.value.splice(index, 1);
 };
 
-const performSimpleSearch = () => {
-  const query = simpleSearchQuery.value.toLowerCase().trim();
+// 修改簡單搜尋函數
+const performSimpleSearch = async () => {
+  const query = simpleSearchQuery.value.trim();
   if (!query) {
-    searchResults.value = [];
+    searchResults.value = {
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      size: itemsPerPage.value,
+      number: 0
+    };
     searched.value = true;
     currentPage.value = 1;
     return;
   }
-  searchResults.value = books.value.filter(book =>
-    book.title.toLowerCase().includes(query) ||
-    book.author.toLowerCase().includes(query) ||
-    book.isbn.includes(query) ||
-    book.publisher.toLowerCase().includes(query) ||
-    book.year.includes(query)
-  );
-  searched.value = true;
-  currentPage.value = 1;
-};
-
-const performAdvancedSearch = () => {
-  let results = [...books.value];
-  advancedSearchConditions.value.forEach((condition, index) => {
-    const value = condition.value.toLowerCase().trim();
-    if (!value) return;
-
-    const filtered = results.filter(book => {
-      const fieldValue = book[condition.field].toLowerCase();
-      return fieldValue.includes(value);
-    });
-
-    if (condition.operator === 'AND' || index === 0) {
-      results = filtered;
-    } else if (condition.operator === 'OR') {
-      results = [...new Set([...results, ...filtered])];
-    } else if (condition.operator === 'NOT') {
-      results = results.filter(book => !filtered.includes(book));
-    }
+  
+  await fetchBooks({
+    field: 'title', // 直接使用 'title' 作為預設搜尋欄位
+    keyword: query
   });
-  searchResults.value = results;
-  searched.value = true;
-  currentPage.value = 1;
 };
 
-// const toggleFavorite = (book) => {
-//   book.favorite = !book.favorite;
-//   if (book.favorite) {
-//     alert(`《${book.title}》已加入最愛！`);
-//   } else {
-//     alert(`《${book.title}》已從最愛移除！`);
-//   }
-// };
+// 修改進階搜尋函數
+const performAdvancedSearch = async () => {
+  // 檢查是否有任何搜尋條件
+  const hasSearchConditions = advancedSearchConditions.value.some(cond => cond.value.trim());
+  const hasFilterConditions = yearFrom.value || yearTo.value || selectedClassification.value || selectedLanguages.value;
+
+  if (!hasSearchConditions && !hasFilterConditions) {
+    alert('請至少輸入一個搜尋條件');
+    return;
+  }
+
+  // 組成條件陣列
+  const conditions = advancedSearchConditions.value
+    .filter(cond => cond.value.trim())
+    .map(cond => ({
+      field: cond.field,
+      operator: cond.operator,
+      value: cond.value.trim()
+    }));
+
+  // 添加其他篩選條件
+  if (yearFrom.value || yearTo.value) {
+    conditions.push({
+      field: 'publishdate',
+      operator: 'AND',
+      value: JSON.stringify({
+        from: yearFrom.value || null,
+        to: yearTo.value || null
+      })
+    });
+  }
+  if (selectedClassification.value) {
+    conditions.push({
+      field: 'category_system',
+      operator: 'AND',
+      value: JSON.stringify({
+        cs_id: selectedClassification.value,
+        include_children: true
+      })
+    });
+  }
+  if (selectedLanguages.value) {
+    conditions.push({ 
+      field: 'language', 
+      operator: 'AND', 
+      value: selectedLanguages.value 
+    });
+  }
+
+  // 分頁與排序參數
+  const [sortField, sortDir] = sortConfig.value.field.split('_');
+
+  try {
+    const response = await axios.post('http://localhost:8080/api/books/advanced-search', conditions, {
+      params: {
+        page: currentPage.value - 1,
+        size: itemsPerPage.value,
+        sortField,
+        sortDir
+      }
+    });
+    searchResults.value = response.data;
+    searched.value = true;
+  } catch (error) {
+    console.error('進階查詢錯誤：', error);
+    alert('搜尋失敗，請稍後再試');
+    searchResults.value = {
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      size: itemsPerPage.value,
+      number: 0
+    };
+    searched.value = true;
+  }
+};
 
 const goToPage = (page) => {
   const pageNum = parseInt(page);
-  if (pageNum && !isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages.value) {
-    currentPage.value = pageNum;
+  if (pageNum && !isNaN(pageNum)) {
+    if (pageNum < 1) {
+      currentPage.value = 1;
+    } else if (pageNum > totalPages.value) {
+      currentPage.value = totalPages.value;
+    } else {
+      currentPage.value = pageNum;
+    }
   }
 };
 
 watch(itemsPerPage, () => {
   currentPage.value = 1;
 });
+
+// 添加排序監聽
+watch(sortConfig, () => {
+  if (searched.value) {
+    if (isAdvancedSearch.value) {
+      performAdvancedSearch();
+    } else {
+      performSimpleSearch();
+    }
+  }
+}, { deep: true });
+
+// 修改後的導航到書籍詳情頁方法
+const navigateToBookDetail = (book) => {
+  router.push({
+    path: '/bookinfo', // 導航到 bookinfo.vue 頁面
+    query: {
+      id: book.id || book.bookId,
+      title: book.title,
+      author: book.author,
+      isbn: book.isbn,
+      publisher: book.publisher,
+      publishdate: book.publishdate,
+      classification: book.classification,
+      language: book.language,
+      description: book.description || '', // 如果沒有描述則使用空字串
+      is_available: book.is_available.toString(),
+      total_copies: String(book.total_copies || 1),
+      available_copies: String(book.available_copies || (book.is_available === 1 ? 1 : 0)),
+      // 保存返回資訊
+      returnQuery: isAdvancedSearch.value ? 'advanced' : simpleSearchQuery.value,
+      returnPage: currentPage.value.toString(),
+      returnType: isAdvancedSearch.value ? 'advanced' : 'simple'
+    }
+  })
+}
 </script>
 
 <style scoped>
@@ -353,13 +604,13 @@ body {
   align-items: center;
 }
 
- .container {
+.container {
   width: 100%; /* 確保容器能適應螢幕 */
-  max-width: 1200px; /* 可選：設定最大寬度，防止過寬 */
+  max-width: 1200px; /* 設定最大寬度，防止過寬 */
   margin: 0 auto;
   background-color: transparent;
   padding: 20px;
-} 
+}
 
 .simple-search,
 .advanced-search {
@@ -432,16 +683,16 @@ body {
 }
 
 .favorite {
-  background-color: #ccc;
+  background-color: #ccc; 
   color: #333;
 }
 
 .favorite:hover {
-  background-color: #b3b3b3;
+  background-color: #b3b3b3; 
 }
 
 .not-favorite {
-  background-color: #dc3545;
+  background-color: #dc3545; 
   color: white;
 }
 
@@ -450,7 +701,7 @@ body {
 }
 
 .bookinfo-btn {
-  background-color: #007bff;
+  background-color: #007bff; 
   color: white;
 }
 
@@ -495,7 +746,7 @@ body {
 }
 
 .result-item:hover {
-  background-color: #96c0fdbe;
+  background-color: #96c0fdbe; 
   transition: background-color 0.2s ease;
   cursor: pointer;
 }

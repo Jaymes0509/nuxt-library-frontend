@@ -14,7 +14,7 @@
             <!-- 步驟一：使用聲明 -->
             <div v-if="step === 1" class="instructions">
                 <ol>
-                    <li>親愛的讀者，您好~</li>
+                    <li>親愛的讀者，您好~😃</li>
                     <li>感謝您使用本館意見信箱留言，針對您的寶貴建議，我們會儘快回覆處理情形和進度，謝謝您的意見！</li>
                     <li>儘量以一件mail反映一件事情，以利案件處理，並簡潔、明確說明。</li>
                     <li>案件確定成立後，原則上辦理期限為七個工作天(不含週六日 及 例假日)。</li>
@@ -67,8 +67,8 @@
                 <div class="form-group captcha">
                     <label>驗證碼：</label>
                     <div class="captcha-row">
-                        <img :src="captchaUrl" alt="驗證碼" />
-                        <button type="button" @click="refreshCaptcha">🔄</button>
+                        <img :src="captchaUrl" alt="驗證碼" class="captcha-img" />
+                        <button type="button" @click="refreshCaptcha">↻</button>
                         <input v-model="form.captcha" required />
                     </div>
                 </div>
@@ -88,14 +88,9 @@
                 <p v-if="loading">即將返回首頁...</p>
 
                 <button v-if="!loading" @click="delayedGoHome">回首頁</button>
-                <!-- <button @click="delayedGoHome">回首頁</button> -->
             </div>
 
-            <div v-if="step === 4" class="already-applied-step">
-                <h2>⚠️ 您已申請過借閱證</h2>
-                <p>系統判定您已辦理借閱證，請勿重複申請。如有疑問請洽客服。</p>
-                <button @click="delayedGoHome">回首頁</button>
-            </div>
+
         </div>
 
     </div>
@@ -133,7 +128,7 @@ const form = reactive({
 const captchaUrl = ref(getCaptchaUrl());
 
 function getCaptchaUrl() {
-    return `http://localhost:8080/api/captcha?ts=${Date.now()}`; // 防止快取
+    return `http://localhost:8080/api/captcha/m1?ts=${Date.now()}`; // 加上 timestamp 防止瀏覽器快取
 }
 
 function refreshCaptcha() {
@@ -151,29 +146,34 @@ function resetForm() {
     refreshCaptcha();
 }
 
-
-
-
-
-
-
-
 const submitted = ref(false)
 
 const submitForm = async () => {
-    // 模擬已有申請過的身分證號
-    if (form.idNumber === 'A123456789') {
-        alreadyApplied.value = true
-        step.value = 4 // 顯示「已申請過」畫面
-        return
+    try {
+        await $fetch('http://localhost:8080/api/feedback', {
+            method: 'POST',
+            body: {
+                name: form.name,
+                cardNumber: form.cardNumber,
+                phone: form.phone,
+                email: form.email,
+                subject: form.subject,
+                content: form.content,
+                captcha: form.captcha
+            },
+            credentials: 'include'
+        });
+
+        alert("✅ 送出成功！");
+        submitted.value = true;
+        step.value = 3;
+    } catch (err) {
+        // 回傳 400 會進來這裡
+        const msg = err?.data || err?.message || '提交失敗';
+        alert("❌ 錯誤：" + msg);
+        refreshCaptcha(); // 驗證碼錯就重新載入
     }
-
-    // ✅ 送出表單流程
-    console.log('送出資料：', form)
-    submitted.value = true
-    step.value = 3
 }
-
 
 </script>
 
@@ -381,76 +381,56 @@ a:hover {
     justify-content: center;
     gap: 1rem;
     margin-left: 5rem;
-    margin: 0 auto 2rem;   
+    margin: 0 auto 2rem;
 }
 
 
-.education-row {
+.captcha-row {
     display: flex;
-    align-items: flex-start;
-    margin-bottom: 1.5rem;
+    align-items: center;
+    gap: 8px;
 }
+
+.captcha-img {
+    width: 120px;
+    height: 40px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    /* ✅ 圓角圖片 */
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.captcha-row button {
+    background-color: lightgray;
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.captcha-row button:hover {
+    background-color: #2980b9;
+}
+
+.captcha-row input {
+    height: 38px;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+    font-size: 16px;
+    width: 100px;
+}
+
 
 .form-label {
     width: 80px;
     font-weight: bold;
     margin-top: 0.3rem;
-}
-
-.gender-radio {
-    display: flex;
-    /* gap: 2rem; */
-    min-width: 100px;
-    font-weight: bold
-}
-
-.education-options {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(200px, 1fr));
-    /* 三欄排版 */
-    gap: 1rem 2rem;
-}
-
-.education-options label {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    gap: 6px;
-}
-
-.address-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8PX;
-    margin-bottom: 0.5rem;
-}
-
-.address-row select,
-.address-row input {
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 1rem;
-    min-width: 140px;
-}
-
-.address-detail {
-    display: flex;
-    /* width: fit-content; */
-    width: 100%;
-    /* margin-left: 0; */
-    padding-left: 130px;
-    /* 避免被頂住，408 = 200 + 200 + 8 */
-}
-
-.address-detail input {
-    width: 100%;
-    max-width: calc(3 * 200px + 16px);
-    /* 假設前面三個欄位每個200px，中間gap為8px*2 */
-    padding: 8px;
-    font-size: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 6px;
 }
 
 
@@ -490,6 +470,49 @@ button[type='submit']:hover {
     border-radius: 6px;
     cursor: pointer;
 }
+
+.captcha-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* ✅ 按鈕與圖片、輸入欄位間距 */
+}
+
+.captcha-img {
+    width: 120px;
+    height: 40px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    /* ✅ 圓角圖片 */
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.captcha-row button {
+    background-color: lightgray;
+    color: black;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 25px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.captcha-row button:hover {
+    background-color: #2980b9;
+}
+
+.captcha-row input {
+    height: 38px;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+    font-size: 16px;
+    width: 100px;
+}
+
 
 .reset-button {
     margin: 1rem;
@@ -567,5 +590,10 @@ button[type='submit']:hover {
 
 .already-applied-step button:hover {
     background-color: #fb8c00;
+}
+
+html.accessible-mode .back-button,
+.reset-button {
+    font-size: larger;
 }
 </style>
