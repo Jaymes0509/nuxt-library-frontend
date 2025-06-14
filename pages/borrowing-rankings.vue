@@ -143,30 +143,51 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 
+// 當前顯示的階段（summary 或各排行榜類型）
 const step = ref('summary')
+
+// 預設封面圖片連結
 const defaultCover = 'https://via.placeholder.com/80x120.png?text=No+Cover'
 
+// 排行分類選項，用於第一層選擇排行榜類型
 const sortOptions = [
   { label: '預約次數', value: 'reserve' },
   { label: '借閱次數', value: 'borrow' },
   { label: '評分高低', value: 'rating' }
 ]
 
+// 篩選條件（時間與分類）
 const selectedPeriod = ref('all')
 const selectedCategory = ref('')
 const selectedYear = ref(new Date().getFullYear())
 const selectedMonth = ref(new Date().getMonth() + 1)
+
+// 分頁設定
 const currentPage = ref(1)
 const pageSize = ref(10)
 
+// 書籍分類列表
 const bookCategories = [
   '哲學類', '宗教類', '科學類', '應用科學類', '社會科學類',
   '語文類', '藝術類', '歷史類', '地理類', '文學類', '總類', '其他'
 ]
 
-const years = [2023, 2024, 2025]
+// 年與月選項
+// 可供選擇的年份列表，供年份下拉選單使用
+// 自動產生從 2020 年到當前年份的選項，供年份下拉選單使用
+const years = Array.from({ length: new Date().getFullYear() - 2020 + 1 }, (_, i) => 2020 + i)
 const months = Array.from({ length: 12 }, (_, i) => i + 1)
 
+// 排行榜假資料（僅供展示用途）
+// 假資料格式說明：
+// book_id：書籍 ID（唯一值）
+// title：書名
+// author：作者名稱
+// stat_count：統計數值（依照排行榜類型為預約次數／借閱次數／平均評分）
+// cover：封面圖片網址（目前為空字串，未使用）
+// period：時間範圍（all / year / month）
+// category：書籍分類（對應下方 bookCategories）
+// type：排行榜類型（reserve / borrow / rating）
 const rankedBooks = ref([
   // 預約排行榜 (10 本)
   { book_id: 1, title: '解憂雜貨店', author: '東野圭吾', stat_count: 25, cover: '', period: 'all', category: '文學類', type: 'reserve' },
@@ -205,7 +226,7 @@ const rankedBooks = ref([
   { book_id: 210, title: '擺渡人', author: '克萊兒·麥克福爾', stat_count: 4.0, cover: '', period: 'month', category: '文學類', type: 'rating' }
 ])
 
-
+// 根據當前條件過濾與排序書籍列表
 function topBooks(type, isSummary = false) {
   const filtered = rankedBooks.value.filter(book => {
     const periodMatch = selectedPeriod.value === 'all' || book.period === selectedPeriod.value
@@ -218,6 +239,7 @@ function topBooks(type, isSummary = false) {
   return filtered.slice(start, start + pageSize.value)
 }
 
+// 計算總頁數供分頁元件使用
 const totalPages = computed(() => {
   const filtered = rankedBooks.value.filter(book => {
     const periodMatch = selectedPeriod.value === 'all' || book.period === selectedPeriod.value
@@ -227,6 +249,7 @@ const totalPages = computed(() => {
   return Math.ceil(filtered.length / pageSize.value) || 1
 })
 
+// 當篩選條件改變時，自動重置分頁為第一頁
 watch([selectedPeriod, selectedCategory], () => {
   currentPage.value = 1
 })

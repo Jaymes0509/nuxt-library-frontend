@@ -1,8 +1,8 @@
 <template>
   <div class="bg-white p-8 w-full text-center">
-    <!-- 第一層入口（未選擇 step） -->
+
+    <!-- 第一層：功能總覽 -->
     <div v-if="!step">
-      <!-- 頁面標題區 -->
       <div class="mb-10 border-b pb-4">
         <div class="flex justify-center items-center mb-2">
           <span class="text-4xl mr-2">📚</span>
@@ -15,32 +15,32 @@
         </div>
       </div>
 
-      <!-- 功能選單卡片 -->
+      <!-- 功能選單 -->
       <div class="flex justify-center gap-12 mb-12">
         <div class="bg-blue-100 hover:bg-blue-200 transition-all p-6 rounded-2xl shadow w-72 cursor-pointer text-center"
-          @click="goToWrite">
+             @click="goToWrite">
           <div class="text-4xl mb-2">📝</div>
           <div class="text-xl font-bold mb-1">撰寫心得</div>
           <div class="text-sm text-gray-700">針對您借閱的書籍，留下寶貴評論與評分</div>
         </div>
 
         <div class="bg-green-100 hover:bg-green-200 transition-all p-6 rounded-2xl shadow w-72 cursor-pointer text-center"
-          @click="step = 'read'">
+             @click="step = 'read'">
           <div class="text-4xl mb-2">📖</div>
           <div class="text-xl font-bold mb-1">閱讀心得</div>
           <div class="text-sm text-gray-700">查看其他讀者對書籍的評價與心得內容</div>
         </div>
       </div>
 
-      <!-- 模擬登入登出按鈕 -->
+      <!-- 模擬登入登出 -->
       <div class="mt-4 flex flex-col gap-2 items-center">
         <button class="bg-green-600 text-white px-4 py-2 rounded" @click="simulateLogin">模擬登入會員</button>
         <button class="bg-gray-600 text-white px-4 py-2 rounded" @click="simulateLogout">模擬登出會員</button>
       </div>
     </div>
 
-    <!-- 第二層：寫新書評或查看舊書評選單 -->
-    <div v-if="step === 'write' && !selectedBookForReview && !editingReview && !actionMode" class="max-w-4xl mx-auto">
+    <!-- 第二層：操作選單 -->
+    <div v-if="step === 'write' && actionMode === null" class="max-w-4xl mx-auto">
       <button class="text-blue-600 underline mb-4" @click="step = null">← 返回功能總覽</button>
       <h2 class="text-xl font-bold mb-4">請選擇操作類型</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -55,7 +55,7 @@
       </div>
     </div>
 
-    <!-- 撰寫心得：選書 -->
+    <!-- 第二層：撰寫新書評 → 選書 -->
     <div v-if="step === 'write' && actionMode === 'new' && !selectedBookForReview" class="max-w-3xl mx-auto text-left">
       <button class="text-blue-600 underline mb-4" @click="actionMode = null">← 返回操作選單</button>
       <h2 class="text-2xl font-bold mb-6">請選擇您想撰寫書評的書籍</h2>
@@ -63,16 +63,34 @@
       <div v-if="borrowedBooks.length === 0" class="text-gray-600">您目前沒有可以撰寫書評的書籍。</div>
 
       <div v-for="book in borrowedBooks" :key="book.id"
-        class="border rounded p-4 mb-4 shadow hover:shadow-md transition cursor-pointer"
-        @click="startWritingReview(book)">
+           class="border rounded p-4 mb-4 shadow hover:shadow-md transition cursor-pointer"
+           @click="startWritingReview(book)">
         <h3 class="text-lg font-semibold">{{ book.title }}</h3>
         <p class="text-sm text-gray-600">作者：{{ book.author }}</p>
         <p class="text-sm text-blue-600 mt-2 hover:underline">點擊撰寫書評</p>
       </div>
     </div>
 
+    <!-- 第二層：修改書評 → 顯示我的書評清單 -->
+    <div v-if="step === 'write' && actionMode === 'edit'" class="max-w-4xl mx-auto text-left">
+      <button class="text-blue-600 underline mb-4" @click="actionMode = null">← 返回操作選單</button>
+      <h2 class="text-2xl font-bold mb-6">我的書評列表</h2>
 
-    <!-- 撰寫心得：書評填寫表單 -->
+      <div v-if="myReviews.length === 0" class="text-gray-600">您尚未撰寫任何書評。</div>
+
+      <div v-for="review in myReviews" :key="review.id"
+           class="border rounded p-4 mb-4 shadow hover:shadow-md transition cursor-pointer">
+        <h3 class="text-lg font-semibold mb-1">{{ review.bookTitle }}</h3>
+        <p class="text-sm text-gray-600 mb-2">⭐ {{ review.rating }} 分</p>
+        <p class="text-gray-700">{{ review.comment }}</p>
+        <div class="flex gap-4 mt-2">
+          <button @click="editReview(review)" class="text-blue-600 hover:underline">修改</button>
+          <button @click="deleteReview(review)" class="text-red-600 hover:underline">刪除</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第三層：實際撰寫書評表單 -->
     <div v-if="step === 'write' && selectedBookForReview" class="max-w-3xl mx-auto text-left">
       <button class="text-blue-600 underline mb-4" @click="selectedBookForReview = null">← 返回書籍列表</button>
       <h2 class="text-2xl font-bold mb-4">撰寫《{{ selectedBookForReview.title }}》的書評</h2>
@@ -93,6 +111,30 @@
       <div class="flex gap-4 mt-4">
         <button @click="submitReview" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">提交</button>
         <button @click="selectedBookForReview = null" class="text-gray-600 hover:underline">取消</button>
+      </div>
+    </div>
+
+    <!-- 第三層：修改書評表單 -->
+    <div v-if="step === 'editReview'" class="max-w-3xl mx-auto text-left">
+      <button class="text-blue-600 underline mb-4" @click="step = 'write'; actionMode = 'edit'">← 返回書評列表</button>
+      <h2 class="text-2xl font-bold mb-4">修改書評：{{ editingReview.bookTitle }}</h2>
+
+      <div class="mb-4">
+        <label class="block font-medium mb-1">評分（1~5 分）：</label>
+        <select v-model="reviewRating" class="border rounded px-3 py-2 w-full">
+          <option disabled value="">請選擇評分</option>
+          <option v-for="n in 5" :key="n" :value="n">{{ n }} 分</option>
+        </select>
+      </div>
+
+      <div class="mb-4">
+        <label class="block font-medium mb-1">書評內容：</label>
+        <textarea v-model="reviewText" rows="6" class="border rounded px-3 py-2 w-full"></textarea>
+      </div>
+
+      <div class="flex gap-4 mt-4">
+        <button @click="updateReview" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">儲存修改</button>
+        <button @click="step = 'write'; actionMode = 'edit'" class="text-gray-600 hover:underline">取消</button>
       </div>
     </div>
 
@@ -162,7 +204,11 @@
         </div>
         <p class="mb-2">⭐ {{ review.rating }} 分</p>
         <p class="text-gray-700">{{ review.comment }}</p>
-        <p class="text-sm text-gray-500 mt-2">👍 點讚數：{{ review.likes }}</p>
+        <p class="text-sm text-gray-500 mt-2">
+  👍 點讚數：{{ review.likes }}
+  <button @click="likeReview(review)" class="text-blue-600 hover:underline ml-2">點讚</button>
+</p>
+
       </div>
     </div>
   </div>
@@ -200,8 +246,17 @@ const goToWrite = () => {
     window.alert('請先登入會員後才能撰寫書評')
     return
   }
+
+  // ✅ 進入撰寫流程前先清空所有狀態
+  selectedBook.value = null
+  selectedBookForReview.value = null
+  editingReview.value = null
+  actionMode.value = null
+  newReview.value = { rating: '', comment: '' }
+
   step.value = 'write'
 }
+
 
 const simulateLogin = () => {
   document.cookie = "user=mock-member; path=/"
@@ -259,7 +314,7 @@ const submitReview = () => {
     alert('請完整填寫評分與評論內容')
     return
   }
-  
+
   const now = new Date().toISOString().split('T')[0]
   allReviews.value.push({
     id: Date.now(),
@@ -268,15 +323,50 @@ const submitReview = () => {
     comment: newReview.value.comment,
     date: now,
     likes: 0,
+    likedBy: [],
     bookId: selectedBookForReview.value.id,
     bookTitle: selectedBookForReview.value.title
   })
+
+  
+
+
+  // 從可撰寫書評的清單中移除該書
   borrowedBooks.value = borrowedBooks.value.filter(book => book.id !== selectedBookForReview.value.id)
+
+  // ✅ 清空所有狀態並返回首頁
   selectedBook.value = null
   selectedBookForReview.value = null
+  newReview.value = { rating: '', comment: '' }
+  actionMode.value = null
+  editingReview.value = null
   step.value = null
+
   alert('您的書評已成功提交')
 }
+
+const likeReview = (review) => {
+  if (!user.value || typeof user.value !== 'string' || user.value.trim() === '') {
+    alert('請先登入才能點讚書評')
+    return
+  }
+
+  if (review.reviewer === '您') {
+    alert('不能對自己的書評按讚喔！')
+    return
+  }
+
+  if (!review.likedBy) review.likedBy = []
+
+  if (review.likedBy.includes(user.value)) {
+    alert('您已點過讚囉！')
+    return
+  }
+
+  review.likes++
+  review.likedBy.push(user.value)
+}
+
 
 const editReview = (review) => {
   editingReview.value = review
