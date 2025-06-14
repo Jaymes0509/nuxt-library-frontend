@@ -1,4 +1,3 @@
-
 <template>
   <div class="bg-white p-8 w-full text-center">
 
