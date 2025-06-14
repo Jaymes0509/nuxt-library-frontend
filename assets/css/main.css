@@ -10,6 +10,16 @@ html.accessible-mode {
   font-size: 150%;
 }
 
+html.accessible-mode .title {
+  background-color: #000;
+  font-size: 150%;
+}
+
+html.accessible-mode .logo  {
+  background-color: white;
+}
+
+
 html.accessible-mode div.title {
   white-space: nowrap !important;
   margin-right: 1rem;
@@ -51,11 +61,15 @@ html.accessible-mode :focus {
   outline-offset: 2px;
 }
 
-html.accessible-mode .sidebar + .toggle-area {
-    left: 12.2rem;
+html.accessible-mode .sidebar+.toggle-area {
+  left: 12.2rem;
 }
 
 html.accessible-mode .separator {
   display: none;
+<<<<<<< Updated upstream
 }
 
+=======
+}
+>>>>>>> Stashed changes
