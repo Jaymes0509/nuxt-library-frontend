@@ -128,7 +128,11 @@ const form = reactive({
 const captchaUrl = ref(getCaptchaUrl());
 
 function getCaptchaUrl() {
+<<<<<<< Updated upstream
     return `http://localhost:8080/api/captcha/m1?ts=${Date.now()}`; // 加上 timestamp 防止瀏覽器快取
+=======
+    return `http://localhost:8080/api/captcha/m1?ts=${Date.now()}`; // 防止快取
+>>>>>>> Stashed changes
 }
 
 function refreshCaptcha() {
@@ -382,6 +386,7 @@ a:hover {
     gap: 1rem;
     margin-left: 5rem;
     margin: 0 auto 2rem;
+<<<<<<< Updated upstream
 }
 
 
@@ -389,6 +394,8 @@ a:hover {
     display: flex;
     align-items: center;
     gap: 8px;
+=======
+>>>>>>> Stashed changes
 }
 
 .captcha-img {
@@ -470,6 +477,49 @@ button[type='submit']:hover {
     border-radius: 6px;
     cursor: pointer;
 }
+
+.captcha-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* ✅ 按鈕與圖片、輸入欄位間距 */
+}
+
+.captcha-img {
+    width: 120px;
+    height: 40px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    /* ✅ 圓角圖片 */
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.captcha-row button {
+    background-color: lightgray;
+    color: black;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 25px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.captcha-row button:hover {
+    background-color: #2980b9;
+}
+
+.captcha-row input {
+    height: 38px;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+    font-size: 16px;
+    width: 100px;
+}
+
 
 .reset-button {
     margin: 1rem;
