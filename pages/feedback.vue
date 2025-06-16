@@ -59,10 +59,14 @@
                     <input v-model="form.subject" required />
                 </div>
 
-                <div class="form-group">
+                <div class="form-group textarea-wrapper">
                     <label class="form-label">內容：</label>
-                    <textarea v-model="form.content" required rows="6" cols="50"></textarea>
+                    <div class="textarea-container">
+                        <textarea v-model="form.content" required rows="6" maxlength="1000"></textarea>
+                        <span class="word-counter">{{ form.content.length }}/1000</span>
+                    </div>
                 </div>
+
 
                 <div class="form-group captcha">
                     <label>驗證碼：</label>
@@ -113,7 +117,6 @@ const delayedGoHome = () => {
 
 const step = ref(1)
 const agreed = ref(false)
-const alreadyApplied = ref(false)
 
 const form = reactive({
     name: '',
@@ -382,6 +385,47 @@ a:hover {
     gap: 1rem;
     margin-left: 5rem;
     margin: 0 auto 2rem;
+}
+
+.form-group.textarea-wrapper {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.form-group.textarea-wrapper .form-label {
+  min-width: 80px;
+  margin-right: 1rem;
+  font-weight: bold;
+  margin-top: 0.3rem;
+  text-align: right;
+  margin-left: 2.5rem;
+}
+
+.textarea-container {
+    position: relative;
+    flex: 1;
+    
+}
+
+.textarea-container textarea {
+    width: 100%;
+    padding: 8px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+    resize: vertical;
+    min-height: 120px;
+}
+
+.word-counter {
+    position: absolute;
+    bottom: 6px;
+    right: 10px;
+    font-size: 0.8rem;
+    color: #666;
+    pointer-events: none;
 }
 
 

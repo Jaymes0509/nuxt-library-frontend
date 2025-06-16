@@ -1,157 +1,169 @@
     <template>
-    <div class="scroll-wrapper">
-        <div class="library-card">
-            <div class="title-row">
-                <img src="/images/libraryCard.jpg" alt="借閱證圖片" />
-                <h1>借閱證申請</h1>
-            </div>
-            <h1 class="section-title"> {{
-                step === 1 ? '申辦說明' :
-                    step === 2 ? '個人資料填寫' :
-                        step === 3 ? '申請成功' :
-                            '重複申請警告'
-            }}</h1>
+        <div class="scroll-wrapper">
+            <div class="library-card">
+                <div class="title-row">
+                    <img src="/images/libraryCard.jpg" alt="借閱證圖片" />
+                    <h1>借閱證申請</h1>
+                </div>
+                <h1 class="section-title"> {{
+                    step === 1 ? '申辦說明' :
+                        step === 2 ? '個人資料填寫' :
+                            step === 3 ? '申請成功' :
+                                '重複申請警告'
+                }}</h1>
 
-            <!-- 步驟一：申請說明 + 同意聲明 -->
-            <div v-if="step === 1" class="instructions">
-                <ol>
-                    <li>申辦對象：未曾申辦過本館個人借閱證之中華民國國民及持有居留證之非本國籍讀者</li>
-                    <li>使用範圍：借閱證可借用本館內館藏資源(圖書、視聽資料、館內設備等)，並能使用本館所有線上資源。</li>
-                    <li>領取：網路申請辦證後，請於本館開放時間內攜帶身分證明文件至櫃台領取。
-                        <ul>
-                            <li>中華民國國民應持個人身分證、駕照或戶口名簿(未滿十二歲之兒童由家長或法定監護人檢具身分證正本及戶口名簿正本代為辦理)。</li>
-                            <li>非本國籍人士持護照或居留證。</li>
-                        </ul>
-                    </li>
-                    <li>借閱說明：借閱證每人限辦乙張，個人借閱證可借閱圖書30冊、期刊5冊、視聽資料5件，圖書、期刊借期30天，可續借兩次。漫畫及視聽資料借期14天，不得續借。</li>
-                    <li>遺失補發：
-                        <ul>
-                            <li>掛失登記：借閱證如遺失時，應立即向本館辦理掛失登記，若因未掛失或轉借而發生冒用情事，應自行負責相關賠償之責。</li>
-                            <li>遺失補發: 檢具相關身分證明文件，須繳交行政規費新臺幣參拾元整(繳付工本費30元整)，申請補發</li>
-                            <li>讀者資料如有變更，應即向本館辦理異動手續。</li>
-                        </ul>
-                    </li>
-                </ol>
+                <!-- 步驟一：申請說明 + 同意聲明 -->
+                <div v-if="step === 1" class="instructions">
+                    <ol>
+                        <li>申辦對象：未曾申辦過本館個人借閱證之中華民國國民及持有居留證之非本國籍讀者</li>
+                        <li>使用範圍：借閱證可借用本館內館藏資源(圖書、視聽資料、館內設備等)，並能使用本館所有線上資源。</li>
+                        <li>領取：網路申請辦證後，請於本館開放時間內攜帶身分證明文件至櫃台領取。
+                            <ul>
+                                <li>中華民國國民應持個人身分證、駕照或戶口名簿(未滿十二歲之兒童由家長或法定監護人檢具身分證正本及戶口名簿正本代為辦理)。</li>
+                                <li>非本國籍人士持護照或居留證。</li>
+                            </ul>
+                        </li>
+                        <li>借閱說明：借閱證每人限辦乙張，個人借閱證可借閱圖書30冊、期刊5冊、視聽資料5件，圖書、期刊借期30天，可續借兩次。漫畫及視聽資料借期14天，不得續借。</li>
+                        <li>遺失補發：
+                            <ul>
+                                <li>掛失登記：借閱證如遺失時，應立即向本館辦理掛失登記，若因未掛失或轉借而發生冒用情事，應自行負責相關賠償之責。</li>
+                                <li>遺失補發: 檢具相關身分證明文件，須繳交行政規費新臺幣參拾元整(繳付工本費30元整)，申請補發</li>
+                                <li>讀者資料如有變更，應即向本館辦理異動手續。</li>
+                            </ul>
+                        </li>
+                    </ol>
 
-                <label class="consent">
-                    <input type="checkbox" v-model="agreed" />
-                    我已閱讀並同意以上聲明
-                </label>
+                    <label class="consent">
+                        <input type="checkbox" v-model="agreed" />
+                        我已閱讀並同意以上聲明
+                    </label>
 
-                <button :disabled="!agreed" @click="step = 2" class="start-button">
-                    開始申請網路辦證
-                </button>
-            </div>
-
-            <!-- ✅ 步驟二：申請表單 -->
-            <form v-if="step === 2" @submit.prevent="submitForm" class="form">
-                <div class="form-group">
-                    <label class="form-label">姓名：</label>
-                    <input v-model="form.name" required />
+                    <button :disabled="!agreed" @click="step = 2" class="start-button">
+                        開始申請網路辦證
+                    </button>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">性別：</label>
-                    <div class="gender-radio">
-                        <label><input type="radio" value="男" v-model="form.gender" required />男 Male</label>
-                        <label><input type="radio" value="女" v-model="form.gender" />女 Female</label>
+                <!-- ✅ 步驟二：申請表單 -->
+                <form v-if="step === 2" @submit.prevent="submitForm" class="form">
+                    <div class="form-group">
+                        <label class="form-label">姓名：</label>
+                        <input v-model="form.name" required />
                     </div>
-                </div>
 
-                <div class="form-group">
-                    <label class="form-label">身分證字號：</label>
-                    <input v-model="form.idNumber" required />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">出生日期：</label>
-                    <input v-model="form.birthDate" type="date" required />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">國別：</label>
-                    <select v-model="form.nationality" required>
-                        <option disabled value="">請選擇國別</option>
-                        <option v-for="country in countries" :key="country" :value="country">{{ country }}</option>
-                    </select>
-                </div>
-
-                <div class="form-group education-row">
-                    <label class="form-label">學歷：</label>
-                    <div class="education-options">
-                        <label v-for="edu in educationOptions" :key="edu.value">
-                            <input type="radio" :value="edu.value" v-model="form.education" name="education" required />
-                            {{ edu.label }}
-                        </label>
+                    <div class="form-group">
+                        <label class="form-label">性別：</label>
+                        <div class="gender-radio">
+                            <label><input type="radio" value="男" v-model="form.gender" required />男 Male</label>
+                            <label><input type="radio" value="女" v-model="form.gender" />女 Female</label>
+                        </div>
                     </div>
-                </div>
 
+                    <div class="form-group">
+                        <label class="form-label">身分證字號：</label>
+                        <input v-model="form.idNumber" required />
+                    </div>
 
-                <div class="form-group">
-                    <label class="form-label">職業：</label>
-                    <select v-model="form.occupation" required>
-                        <option disabled value="">請選擇職業</option>
-                        <option v-for="job in occupations" :key="job" :value="job">{{ job }}</option>
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label class="form-label">出生日期：</label>
+                        <input v-model="form.birthDate" type="date" required />
+                    </div>
 
-                <div class="form-group">
-                    <label class="form-label">通訊地址：</label>
-                    <div class="address-row">
-
-                        <select v-model="form.addressCounty" required>
-                            <option disabled value="">請選擇縣市</option>
-                            <option v-for="county in counties" :key="county">{{ county }}</option>
+                    <div class="form-group">
+                        <label class="form-label">國別：</label>
+                        <select v-model="form.nationality" required>
+                            <option disabled value="">請選擇國別</option>
+                            <option v-for="country in countries" :key="country" :value="country">{{ country }}</option>
                         </select>
+                    </div>
 
-                        <select v-model="form.addressTown" required>
-                            <option disabled value="">請選擇鄉鎮</option>
-                            <option v-for="town in towns" :key="town">{{ town }}</option>
+                    <div class="form-group education-row">
+                        <label class="form-label">學歷：</label>
+                        <div class="education-options">
+                            <label v-for="edu in educationOptions" :key="edu.value">
+                                <input type="radio" :value="edu.value" v-model="form.education" name="education"
+                                    required />
+                                {{ edu.label }}
+                            </label>
+                        </div>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label class="form-label">職業：</label>
+                        <select v-model="form.occupation" required>
+                            <option disabled value="">請選擇職業</option>
+                            <option v-for="job in occupations" :key="job" :value="job">{{ job }}</option>
                         </select>
-                        <input type="text" v-model="form.addressZip" placeholder="郵遞區號 Zip" required />
                     </div>
-                    <div class="address-detail">
-                        <input type="text" v-model="form.addressDetail" placeholder="地址 Address" required />
+
+                    <div class="form-group">
+                        <label class="form-label">通訊地址：</label>
+                        <div class="address-row">
+
+                            <select v-model="form.addressCounty" required>
+                                <option disabled value="">請選擇縣市</option>
+                                <option v-for="county in counties" :key="county">{{ county }}</option>
+                            </select>
+
+                            <select v-model="form.addressTown" required>
+                                <option disabled value="">請選擇鄉鎮</option>
+                                <option v-for="town in towns" :key="town">{{ town }}</option>
+                            </select>
+                            <input type="text" v-model="form.addressZip" placeholder="郵遞區號 Zip" required />
+                        </div>
+                        <div class="address-detail">
+                            <input type="text" v-model="form.addressDetail" placeholder="地址 Address" required />
+                        </div>
                     </div>
+
+
+                    <div class="form-group">
+                        <label class="form-label">電子郵件：</label>
+                        <input v-model="form.email" type="email" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">聯絡電話：</label>
+                        <input v-model="form.phone" type="tel" required />
+                    </div>
+
+                    <!-- 密碼設定欄位 -->
+                    <div class="form-group">
+                        <label class="form-label">設定密碼：</label>
+                        <div class="password-wrapper">
+                            <input :type="showPassword ? 'text' : 'password'" v-model="form.password" required
+                                minlength="8" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$" title="請輸入至少8碼，包含大寫、小寫英文與數字"
+                                placeholder="請輸入至少8碼，包含大寫、小寫英文與數字" />
+                            <button type="button" @click="showPassword = !showPassword">👁</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="button" @click="step = 1" class="back-button">← 回上一頁</button>
+                        <button type="submit">送出申請</button>
+                    </div>
+                </form>
+
+                <!-- 步驟三：成功畫面 -->
+                <div v-if="step === 3" class="success-step">
+                    <h2>✅ 申請成功！</h2>
+                    <p>我們已收到您的申請，將盡快與您聯絡!</p>
+                    <div v-if="loading" class="loading-spinner"></div>
+                    <p v-if="loading">即將返回首頁...</p>
+
+                    <button v-if="!loading" @click="delayedGoHome">回首頁</button>
                 </div>
 
-
-                <div class="form-group">
-                    <label class="form-label">電子郵件：</label>
-                    <input v-model="form.email" type="email" required />
+                <div v-if="step === 4" class="already-applied-step">
+                    <h2>⚠️ 您已申請過借閱證</h2>
+                    <p>系統判定您已辦理借閱證，請勿重複申請。如有疑問請洽客服。</p>
+                    <button @click="delayedGoHome">回首頁</button>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">聯絡電話：</label>
-                    <input v-model="form.phone" type="tel" required />
-                </div>
-
-                <div class="form-group">
-                    <button type="button" @click="step = 1" class="back-button">← 回上一頁</button>
-                    <button type="submit">送出申請</button>
-                </div>
-            </form>
-
-            <!-- 步驟三：成功畫面 -->
-            <div v-if="step === 3" class="success-step">
-                <h2>✅ 申請成功！</h2>
-                <p>我們已收到您的申請，將盡快與您聯絡!</p>
-                <div v-if="loading" class="loading-spinner"></div>
-                <p v-if="loading">即將返回首頁...</p>
-
-                <button v-if="!loading" @click="delayedGoHome">回首頁</button>
-            </div>
-
-            <div v-if="step === 4" class="already-applied-step">
-                <h2>⚠️ 您已申請過借閱證</h2>
-                <p>系統判定您已辦理借閱證，請勿重複申請。如有疑問請洽客服。</p>
-                <button @click="delayedGoHome">回首頁</button>
             </div>
 
         </div>
-
-    </div>
-</template>
+    </template>
 
 <script setup>
 import { ref, reactive, watch } from 'vue'
@@ -186,6 +198,7 @@ const form = reactive({
     addressDetail: '',
     email: '',
     phone: '',
+    password: '',
 })
 
 const countries = [
@@ -295,23 +308,32 @@ watch(() => form.addressTown, async (newTown) => {
     }
 })
 
+const showPassword = ref(false)
 
 const submitted = ref(false)
 
 const submitForm = async () => {
-    // 模擬已有申請過的身分證號
-    if (form.idNumber === 'A123456789') {
-        alreadyApplied.value = true
-        step.value = 4 // 顯示「已申請過」畫面
-        return
+    try {
+        // 呼叫後端 API
+        await $fetch('http://localhost:8080/api/members/register', {
+            method: 'POST',
+            body: { ...form },
+            credentials: 'include' // 若後端有跨域需要 session 可加
+        })
+
+        submitted.value = true
+        step.value = 3 // 顯示申請成功畫面
+    } catch (error) {
+        // 偵測是否為重複身分證或 email 錯誤
+        const message = error?.data || error?.message || '申請失敗'
+        alert(`❌ 錯誤：${message}`)
+
+        // 顯示已申請過畫面（可依照後端訊息判斷）
+        if (message.includes('身分證') || message.includes('已被註冊')) {
+            step.value = 4
+        }
     }
-
-    // ✅ 送出表單流程
-    console.log('送出資料：', form)
-    submitted.value = true
-    step.value = 3
 }
-
 
 </script>
 
@@ -463,7 +485,7 @@ a:hover {
 
 .start-button {
     display: block;
-    margin: 0 auto 2rem;                                                                                                                                                                 
+    margin: 0 auto 2rem;
     background-color: orange;
     color: black;
     padding: 12px 16px;
@@ -580,6 +602,23 @@ a:hover {
     font-size: 1rem;
     border: 1px solid #ccc;
     border-radius: 6px;
+}
+
+.password-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.password-wrapper input {
+    flex: 1;
+}
+
+.password-wrapper button {
+    margin-left: 0.5rem;
+    background: none;
+    font-size: xx-large;
+    border: none;
+    cursor: pointer;
 }
 
 
