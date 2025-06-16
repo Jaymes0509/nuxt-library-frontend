@@ -141,7 +141,13 @@
       </div>
       <div v-for="book in currentPageResults" :key="book.isbn" class="result-item">
         <div class="result-image">
-          <img :src="`https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`" alt="Book cover" />
+          <img 
+            :src="book.coverUrl || `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`" 
+            :alt="book.title"
+            @error="handleImageError"
+            class="book-cover"
+            onerror="this.onerror=null;this.src='https://cdn-icons-png.flaticon.com/512/2232/2232688.png';"
+          />
         </div>
         <div class="result-info">
           <p><strong>書名:</strong> {{ book.title }}</p>
@@ -150,7 +156,7 @@
           <p><strong>出版年:</strong> {{ book.publishdate }}</p>
           <p><strong>版本項:</strong> {{ book.version }}</p>
           <p><strong>ISBN:</strong> {{ book.isbn }}</p>
-          <p><strong>分類:</strong> {{ book.classification }}</p>
+          <p><strong>分類號:</strong> {{ book.classification }}</p>
           <p><strong>語言:</strong> {{ book.language }}</p>
           <p>
             <strong>在架狀態:</strong>
@@ -160,13 +166,6 @@
           </p>
         </div>
         <div class="result-actions">
-          <!-- <button
-            class="btn"
-            :class="book.favorite ? 'favorite' : 'not-favorite'"
-            @click="toggleFavorite(book)"
-          >
-            最愛
-          </button> -->
           <button
             class="btn bookinfo-btn"
             @click="navigateToBookDetail(book)"
@@ -269,13 +268,24 @@ const languageOptions = ref([
 // 添加 onMounted 邏輯
 onMounted(async () => {
   const route = useRoute()
-  const bookId = route.query.bookId
-  if (!bookId) return
-  try {
-    const response = await axios.get(`http://localhost:8080/api/books/${bookId}`)
-    book.value = response.data
-  } catch (e) {
-    console.error('找不到書籍', e)
+  
+  // 處理從書籍詳情頁返回的情況
+  if (route.query.q) {
+    // 如果有搜尋參數，執行搜尋
+    if (route.query.q === 'advanced') {
+      // 處理進階搜尋返回
+      isAdvancedSearch.value = true
+      // 這裡可以根據需要恢復進階搜尋條件
+    } else {
+      // 處理簡單搜尋返回
+      simpleSearchQuery.value = route.query.q
+      await performSimpleSearch()
+    }
+    
+    // 恢復頁碼
+    if (route.query.page) {
+      currentPage.value = parseInt(route.query.page) || 1
+    }
   }
 })
 
@@ -357,14 +367,31 @@ const fetchBooks = async (params) => {
       
       const content = Array.isArray(response.data.content) ? response.data.content : [];
       
-      content.forEach((book, index) => {
-        console.log(`第 ${index + 1} 本書的原始在架狀態：`, book.is_available);
-        console.log(`第 ${index + 1} 本書的在架狀態類型：`, typeof book.is_available);
+      // 為每本書獲取 Google Books 封面
+      for (const book of content) {
+        if (book.isbn) {
+          try {
+            const googleBooksResponse = await axios.get(`https://www.googleapis.com/books/v1/volumes?q=isbn:${book.isbn}`);
+            if (googleBooksResponse.data.items && googleBooksResponse.data.items.length > 0) {
+              const volumeInfo = googleBooksResponse.data.items[0].volumeInfo;
+              if (volumeInfo.imageLinks && volumeInfo.imageLinks.thumbnail) {
+                book.coverUrl = volumeInfo.imageLinks.thumbnail;
+              } else {
+                book.coverUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
+              }
+            } else {
+              book.coverUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
+            }
+          } catch (error) {
+            console.error('獲取 Google Books 封面失敗：', error);
+            book.coverUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
+          }
+        } else {
+          book.coverUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
+        }
         
-        book.is_available = Number(book.is_available);
-        
-        console.log(`第 ${index + 1} 本書的處理後在架狀態：`, book.is_available);
-      });
+        book.is_available = book.is_available === true ? 1 : 0;
+      }
       
       searchResults.value = {
         ...response.data,
@@ -497,7 +524,7 @@ const performAdvancedSearch = async () => {
   }
   if (selectedClassification.value) {
     conditions.push({
-      field: 'category_system',
+      field: 'categorysystem',
       operator: 'AND',
       value: JSON.stringify({
         cs_id: selectedClassification.value,
@@ -525,7 +552,37 @@ const performAdvancedSearch = async () => {
         sortDir
       }
     });
-    searchResults.value = response.data;
+
+    // 為每本書獲取 Google Books 封面
+    const content = Array.isArray(response.data.content) ? response.data.content : [];
+    for (const book of content) {
+      if (book.isbn) {
+        try {
+          const googleBooksResponse = await axios.get(`https://www.googleapis.com/books/v1/volumes?q=isbn:${book.isbn}`);
+          if (googleBooksResponse.data.items && googleBooksResponse.data.items.length > 0) {
+            const volumeInfo = googleBooksResponse.data.items[0].volumeInfo;
+            if (volumeInfo.imageLinks && volumeInfo.imageLinks.thumbnail) {
+              book.coverUrl = volumeInfo.imageLinks.thumbnail;
+            } else {
+              book.coverUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
+            }
+          } else {
+            book.coverUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
+          }
+        } catch (error) {
+          console.error('獲取 Google Books 封面失敗：', error);
+          book.coverUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
+        }
+      } else {
+        book.coverUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
+      }
+      book.is_available = book.is_available === true || book.is_available === 1 ? 1 : 0;
+    }
+
+    searchResults.value = {
+      ...response.data,
+      content
+    };
     searched.value = true;
   } catch (error) {
     console.error('進階查詢錯誤：', error);
@@ -570,9 +627,27 @@ watch(sortConfig, () => {
 }, { deep: true });
 
 // 修改後的導航到書籍詳情頁方法
-const navigateToBookDetail = (book) => {
+const navigateToBookDetail = async (book) => {
+  // 如果還沒有封面和描述，先從 Google Books API 獲取
+  if (!book.coverUrl || !book.description) {
+    try {
+      const googleBooksResponse = await axios.get(`https://www.googleapis.com/books/v1/volumes?q=isbn:${book.isbn}`);
+      if (googleBooksResponse.data.items && googleBooksResponse.data.items.length > 0) {
+        const volumeInfo = googleBooksResponse.data.items[0].volumeInfo;
+        if (volumeInfo.imageLinks && volumeInfo.imageLinks.thumbnail) {
+          book.coverUrl = volumeInfo.imageLinks.thumbnail;
+        }
+        if (volumeInfo.description) {
+          book.description = volumeInfo.description;
+        }
+      }
+    } catch (error) {
+      console.error('獲取 Google Books 資訊失敗：', error);
+    }
+  }
+
   router.push({
-    path: '/bookinfo', // 導航到 bookinfo.vue 頁面
+    path: '/bookinfo',
     query: {
       id: book.id || book.bookId,
       title: book.title,
@@ -582,8 +657,10 @@ const navigateToBookDetail = (book) => {
       publishdate: book.publishdate,
       classification: book.classification,
       language: book.language,
-      description: book.description || '', // 如果沒有描述則使用空字串
+      description: book.description || '',
+      coverUrl: book.coverUrl || `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`,
       is_available: book.is_available.toString(),
+      categorysystem: book.categorysystem || '',
       total_copies: String(book.total_copies || 1),
       available_copies: String(book.available_copies || (book.is_available === 1 ? 1 : 0)),
       // 保存返回資訊
@@ -591,7 +668,11 @@ const navigateToBookDetail = (book) => {
       returnPage: currentPage.value.toString(),
       returnType: isAdvancedSearch.value ? 'advanced' : 'simple'
     }
-  })
+  });
+};
+
+const handleImageError = (event) => {
+  event.target.src = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
 }
 </script>
 
@@ -1003,6 +1084,42 @@ h2 {
 
   .pagination-input {
     width: 60px;
+  }
+}
+
+.result-image {
+  width: 120px;
+  height: 180px;
+  margin-right: 20px;
+  flex-shrink: 0;
+}
+
+.book-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.book-cover:hover {
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .result-image {
+    width: 100px;
+    height: 150px;
+    margin-right: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .result-image {
+    width: 80px;
+    height: 120px;
+    margin-right: 10px;
   }
 }
 </style>

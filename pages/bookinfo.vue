@@ -32,15 +32,14 @@
         <ul class="details-list">
           <li><strong>ISBN：</strong>{{ book.isbn }}</li>
           <li><strong>出版社：</strong>{{ book.publisher }}</li>
-          <li><strong>出版日期：</strong>{{ book.publishdate }}</li>
+          <li><strong>出版年：</strong>{{ book.publishdate }}</li>
           <li><strong>分類號：</strong>{{ book.classification }}</li>
+          <li><strong>分類系統：</strong>{{ book.categorysystem }}</li>
           <li><strong>語言：</strong>{{ book.language }}</li>
-          <li><strong>總藏書量：</strong>{{ book.total_copies }}</li>
-          <li><strong>可借閱數量：</strong>{{ book.available_copies }}</li>
           <li>
             <strong>在架狀態：</strong>
-            <span :class="book.is_available === '1' ? 'available' : 'unavailable'">
-              {{ book.is_available === '1' ? '可借閱' : '不可借閱' }}
+            <span :class="book.is_available === 1 ? 'available' : 'unavailable'">
+              {{ book.is_available === 1 ? '可借閱' : '不可借閱' }}
             </span>
           </li>
         </ul>
@@ -51,10 +50,10 @@
         <button 
           class="reserve-btn" 
           @click="reserveBook"
-          :disabled="book.is_available !== '1'"
-          :class="{ 'disabled': book.is_available !== '1' }"
+          :disabled="!book.is_available"
+          :class="{ 'disabled': !book.is_available }"
         >
-          📖 {{ book.is_available === '1' ? '預約此書' : '無法預約' }}
+          {{ book.is_available === 1 ? '預約此書' : '無法預約' }}
         </button>
         <button class="back-btn" @click="goBack">
           ← 返回搜尋結果
@@ -67,74 +66,74 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
 
-// 從 URL query 參數中獲取書籍資訊
-const book = ref({
-  id: route.params.id || route.query.id || '',
-  title: route.query.title || '未知書名',
-  author: route.query.author || '未知作者',
-  isbn: route.query.isbn || '',
-  publisher: route.query.publisher || '未知出版社',
-  publishdate: route.query.publishdate || '',
-  classification: route.query.classification || '',
-  language: route.query.language || '',
-  description: route.query.description || '',
-  is_available: route.query.is_available || '0',
-  total_copies: route.query.total_copies || '1',
-  available_copies: route.query.available_copies || '0'
+const book = ref({})
+
+onMounted(async () => {
+  const isbn = route.query.isbn
+  if (!isbn) return
+
+  try {
+    const res = await axios.get(`/api/books/isbn/${isbn}`)
+    const data = res.data
+
+    // 統一處理 is_available（支援後端回傳為 boolean 或 int）
+    data.is_available = (data.is_available === 1 || data.is_available === '1' || data.is_available === true) ? 1 : 0
+
+    book.value = data
+  } catch (error) {
+    console.error('無法取得書籍資料', error)
+  }
+  console.log('book 資料：', book.value)
+
 })
 
-// 計算封面圖片 URL
 const bookCoverUrl = computed(() => {
+  if (route.query.coverUrl) {
+    return route.query.coverUrl
+  }
   if (book.value.isbn) {
     return `https://covers.openlibrary.org/b/isbn/${book.value.isbn}-L.jpg`
   }
-  // 如果沒有 ISBN，使用預設圖片
-  return 'https://via.placeholder.com/300x400?text=No+Cover'
+  return 'https://dummyimage.com/300X400/d1d1d1/030303&text=%E6%9A%AB%E7%84%A1%E5%B0%81%E9%9D%A2'
 })
 
-// 預約書籍功能
-const reserveBook = () => {
-  if (book.value.is_available === '1') {
-    alert(`已成功預約：《${book.value.title}》`)
-  } else {
-    alert('此書籍目前無法預約')
-  }
-}
-
-// 改進的返回功能
 const goBack = () => {
-  // 方法1: 檢查是否有返回的搜尋參數
-  if (route.query.returnQuery) {
-    router.push({
-      path: '/', // 搜尋頁面路徑，請根據您的實際路徑調整
-      query: {
-        q: route.query.returnQuery,
-        page: route.query.returnPage || '1'
-      }
-    })
-    return
+  const query = {
+    q: route.query.returnQuery,
+    page: route.query.returnPage,
+    from: 'bookinfo',
+    returnType: route.query.returnType
   }
   
-  // 方法2: 檢查瀏覽器歷史記錄
-  if (window.history.length > 1) {
-    router.back()
-  } else {
-    // 方法3: 如果沒有歷史記錄，導航到搜尋頁面
-    router.push('/')
-  }
-}
+  if (route.query.returnQuery) query.q = route.query.returnQuery
+  if (route.query.returnPage) query.page = route.query.returnPage
+  if (route.query.returnType) query.returnType = route.query.returnType
+  query.from = 'bookinfo'
 
-// 組件掛載時的處理
-onMounted(() => {
-  // 如果沒有必要的書籍資訊，可能需要重新獲取
-  if (!book.value.title || book.value.title === '未知書名') {
-    console.warn('書籍資訊不完整，可能需要從 API 重新獲取')
+  // 可選擴充：如果有分類、語言、年份也帶回
+  if (route.query.categorysystem) {
+    query.categorysystem = route.query.categorysystem
   }
-})
+  if (route.query.language) {
+    query.language = route.query.language
+  }
+  if (route.query.yearFrom) {
+    query.yearFrom = route.query.yearFrom
+  }
+  if (route.query.yearTo) {
+    query.yearTo = route.query.yearTo
+  }
+
+  router.push({
+    path: '/catalogue-search',
+    query
+  })
+}
 </script>
 
 <style scoped>
