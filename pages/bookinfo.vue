@@ -134,6 +134,25 @@ const goBack = () => {
     query
   })
 }
+
+const reserveBook = () => {
+  if (book.value?.is_available !== 1) return
+  
+  router.push({
+    path: '/book-reservation',
+    query: {
+      bookId: book.value.id,
+      title: book.value.title,
+      author: book.value.author,
+      isbn: book.value.isbn,
+      publisher: book.value.publisher,
+      classification: book.value.classification,
+      language: book.value.language,
+      description: book.value.description,
+      coverUrl: bookCoverUrl.value
+    }
+  })
+}
 </script>
 
 <style scoped>

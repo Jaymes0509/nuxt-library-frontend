@@ -60,80 +60,51 @@
             <p>目前沒有預約記錄</p>
           </div>
 
-          <!-- 表格視圖 -->
-          <div v-else :class="['history-table-scroll', itemsPerPage > 10 ? 'history-table-scrollable' : 'history-table-fill']">
-            <div v-if="viewMode === 'table'" class="history-grid-table">
-              <div class="history-grid-header">
-                <div>書名</div>
-                <div>作者</div>
-                <div>取書地點</div>
-                <div>取書時間</div>
-                <div>操作</div>
-              </div>
-              <div class="history-grid-body">
-                <div
-                  v-for="(reservation, index) in paginatedBooks"
-                  :key="index"
-                  class="history-grid-row"
-                >
-                  <div>{{ reservation.title }}</div>
-                  <div>{{ reservation.author }}</div>
-                  <div>{{ reservation.pickupLocation }}</div>
-                  <div>{{ formatDateTime(reservation.pickupTime) }}</div>
-                  <div>
-                    <button @click="viewBookDetail(reservation)" class="history-detail-btn">詳情</button>
+              <!-- 表格視圖 -->
+              <div v-else :class="['history-table-scroll', itemsPerPage > 10 ? 'history-table-scrollable' : 'history-table-fill']">
+                <div v-if="viewMode === 'table'" class="history-grid-table">
+                  <div class="history-grid-header">
+                    <div>書名</div>
+                    <div>作者</div>
+                    <div>取書地點</div>
+                    <div>取書時間</div>
+                    <div>操作</div>
                   </div>
-                </div>
-              </div>
-            </div>
-            <div v-else class="history-grid">
-              <div v-for="(reservation, index) in paginatedBooks" :key="reservation.reservationId" class="history-grid-card">
-                <div class="history-grid-img-wrap">
-                  <img :src="getDefaultCoverUrl(index)" :alt="reservation.title" class="history-grid-img" />
-                </div>
-                <div class="history-grid-info">
-                  <div class="history-grid-content">
-                    <h3 class="history-grid-title" :title="reservation.title">{{ reservation.title }}</h3>
-                    <div class="history-grid-meta">
-                      <p class="history-grid-author" :title="reservation.author">
-                        <span class="history-grid-label">作者：</span>
-                        {{ reservation.author }}
-                      </p>
-                      <p class="history-grid-isbn" :title="reservation.isbn">
-                        <span class="history-grid-label">ISBN：</span>
-                        {{ reservation.isbn }}
-                      </p>
-                      <p class="history-grid-publisher" :title="reservation.publisher">
-                        <span class="history-grid-label">出版社：</span>
-                        {{ reservation.publisher }}
-                      </p>
-                      <p class="history-grid-classification" :title="reservation.classification">
-                        <span class="history-grid-label">分類：</span>
-                        {{ reservation.classification }}
-                      </p>
-                    </div>
-                    <div class="history-grid-pickup">
-                      <p class="history-grid-location" :title="reservation.pickupLocation">
-                        <span class="history-grid-label">取書地點：</span>
-                        {{ reservation.pickupLocation }}
-                      </p>
-                      <p class="history-grid-time" :title="formatDateTime(reservation.pickupTime)">
-                        <span class="history-grid-label">取書時間：</span>
-                        {{ formatDateTime(reservation.pickupTime) }}
-                      </p>
-                      <p class="history-grid-status" :class="'status-' + reservation.status">
-                        <span class="history-grid-label">狀態：</span>
-                        {{ reservation.status === 'pending' ? '待取書' : 
-                           reservation.status === 'completed' ? '已完成' : 
-                           reservation.status === 'cancelled' ? '已取消' : '未知' }}
-                      </p>
+                  <div class="history-grid-body">
+                    <div
+                      v-for="(reservation, index) in paginatedBooks"
+                      :key="index"
+                      class="history-grid-row"
+                    >
+                      <div class="history-grid-title-cell">{{ reservation.title }}</div>
+                      <div>{{ reservation.author }}</div>
+                      <div>{{ reservation.pickupLocation }}</div>
+                      <div>{{ reservation.pickupTime }}</div>
+                      <div>
+                        <button @click="viewBookDetail(reservation)" class="history-detail-btn">詳情</button>
+                      </div>
                     </div>
                   </div>
-                  <button class="history-detail-btn" @click="viewBookDetail(reservation)">查看詳情</button>
+                </div>
+                <div v-else class="history-grid">
+                  <div v-for="(reservation, index) in paginatedBooks" :key="index" class="history-grid-card">
+                    <div class="history-grid-img-wrap">
+                      <img :src="getDefaultCoverUrl(index)" :alt="reservation.bookTitle" class="history-grid-img" />
+                    </div>
+                    <div class="history-grid-info">
+                      <h3 class="history-grid-title reservation-record-book-title">{{ reservation.bookTitle }}</h3>
+                      <p class="history-grid-author">作者：{{ reservation.author }}</p>
+                      <div class="history-grid-dates">
+                        <p>取書地點：{{ reservation.pickupLocation }}</p>
+                        <p>取書時間：{{ reservation.pickupTime }}</p>
+                        <p>預約日期：{{ reservation.reservationDate }}</p>
+                        <p>預約狀態：{{ reservation.status || '待確認' }}</p>
+                      </div>
+                      <button class="history-detail-btn" @click="viewBookDetail(reservation)">詳情</button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
 
           <!-- 分頁控制 -->
           <div v-if="paginatedBooks.length" class="history-pagination">
@@ -144,7 +115,6 @@
                 @click="currentPage--"
               >
                 <span aria-hidden="true">←</span>
-                <span class="sr-only">上一頁</span>
               </button>
               <span>共{{ totalPages }}頁</span>
               <input
@@ -162,7 +132,6 @@
                 @click="currentPage++"
               >
                 <span aria-hidden="true">→</span>
-                <span class="sr-only">下一頁</span>
               </button>
             </div>
             <div class="history-pagination-info">
@@ -228,7 +197,7 @@ async function fetchReservations() {
   try {
     const response = await axios.get('/api/reservations')
 
-    console.log('預約記錄原始資料：', JSON.stringify(response.data[0], null, 2))
+    console.log('API 回傳資料：', response.data);
     
     if (response.data && Array.isArray(response.data)) {
       reservationBooks.value = response.data.map((reservation, index) => {
@@ -276,6 +245,8 @@ async function fetchReservations() {
         pickupTime: reservationBooks.value[0]?.pickupTime,
         status: reservationBooks.value[0]?.status
       })
+
+      console.log('前端處理後的 reservationBooks：', reservationBooks.value);
     } else {
       console.warn('API 返回格式不符合預期：', response.data)
       reservationBooks.value = []
@@ -517,6 +488,10 @@ onMounted(async () => {
 }
 .history-table-scroll {
   width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
 .history-table-fill {
   display: flex;
@@ -529,9 +504,8 @@ onMounted(async () => {
   justify-content: flex-start;
 }
 .history-grid-table {
-  display: flex;
-  flex-direction: column;
   width: 100%;
+  overflow-x: auto;
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(10px);
   border-radius: 8px;
@@ -541,8 +515,9 @@ onMounted(async () => {
 .history-grid-header,
 .history-grid-row {
   display: grid;
-  grid-template-columns: 2fr 1.5fr 1.5fr 1.5fr 1fr;
+  grid-template-columns: minmax(300px, 3fr) minmax(120px, 1.5fr) minmax(120px, 1.5fr) minmax(150px, 1.5fr) minmax(80px, 0.8fr);
   align-items: center;
+  min-width: 900px;
 }
 .history-grid-header {
   background: rgba(243, 244, 246, 0.6);
@@ -551,12 +526,18 @@ onMounted(async () => {
   font-weight: 600;
   padding: 12px 0;
 }
-.history-grid-header > div {
+.history-grid-header > div,
+.history-grid-row > div {
   padding: 12px 16px;
   text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.history-grid-header > div:first-child {
+.history-grid-header > div:first-child,
+.history-grid-row > div:first-child {
   text-align: left;
+  justify-content: flex-start;
 }
 .history-grid-body {
   display: flex;
@@ -673,13 +654,19 @@ onMounted(async () => {
   font-size: 1.1rem;
   color: #18181b;
   margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  max-height: 2.8em;
   line-height: 1.4;
-  min-height: 2.8em;
+  overflow: hidden;
+  position: relative;
+}
+
+.history-grid-title::after {
+  content: '...';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding-left: 40px;
+  background: linear-gradient(to right, transparent, white 50%);
 }
 
 .history-grid-meta {
@@ -841,20 +828,22 @@ onMounted(async () => {
 
   .history-grid-header,
   .history-grid-row {
-    grid-template-columns: 1.5fr 1fr 1fr 1fr 0.8fr;
+    grid-template-columns: minmax(180px, 2fr) minmax(100px, 1.2fr) minmax(100px, 1.2fr) minmax(120px, 1.2fr) minmax(70px, 0.8fr);
     font-size: 0.9rem;
   }
 
-  .history-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  .history-grid-header > div,
+  .history-grid-row > div {
+    padding: 10px 12px;
   }
 
-  .history-grid-card {
-    height: 440px;
+  .history-grid-title-cell {
+    font-size: 0.9rem;
   }
 
-  .history-grid-img-wrap {
-    height: 200px;
+  .history-detail-btn {
+    padding: 6px 10px;
+    font-size: 0.85rem;
   }
 }
 
@@ -865,13 +854,28 @@ onMounted(async () => {
 
   .history-grid-header,
   .history-grid-row {
-    grid-template-columns: 1.2fr 1fr 0.8fr;
+    grid-template-columns: minmax(150px, 2fr) minmax(90px, 1fr) minmax(100px, 1fr) minmax(70px, 0.8fr);
     font-size: 0.85rem;
   }
 
   .history-grid-header > div,
   .history-grid-row > div {
-    padding: 8px;
+    padding: 8px 10px;
+  }
+
+  .history-grid-title-cell {
+    font-size: 0.85rem;
+  }
+
+  .history-detail-btn {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    min-width: 60px;
+  }
+
+  .history-grid-header > div:nth-child(3),
+  .history-grid-row > div:nth-child(3) {
+    display: none;
   }
 
   .history-grid {
@@ -917,12 +921,16 @@ onMounted(async () => {
   
   .history-pagination-info {
     font-size: 0.9rem;
-    white-space: normal; /* 在手機版允許文字換行 */
+    white-space: normal;
     line-height: 1.4;
   }
   
   .history-pagination-input {
     width: 50px;
+  }
+
+  .history-grid-title-cell {
+    font-size: 0.85rem;
   }
 }
 
@@ -942,6 +950,34 @@ onMounted(async () => {
 
   .history-label {
     text-align: center;
+  }
+
+  .history-grid-header,
+  .history-grid-row {
+    grid-template-columns: minmax(120px, 2fr) minmax(80px, 1fr) minmax(60px, 0.8fr);
+    font-size: 0.8rem;
+  }
+
+  .history-grid-header > div,
+  .history-grid-row > div {
+    padding: 6px 8px;
+  }
+
+  .history-grid-title-cell {
+    font-size: 0.8rem;
+  }
+
+  .history-detail-btn {
+    padding: 4px 6px;
+    font-size: 0.75rem;
+    min-width: 50px;
+  }
+
+  .history-grid-header > div:nth-child(3),
+  .history-grid-row > div:nth-child(3),
+  .history-grid-header > div:nth-child(4),
+  .history-grid-row > div:nth-child(4) {
+    display: none;
   }
 }
 
@@ -1032,11 +1068,12 @@ onMounted(async () => {
 }
 
 .history-grid-status {
-  margin: 0;
+  display: inline-block;
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.9rem;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .status-pending {
@@ -1052,5 +1089,48 @@ onMounted(async () => {
 .status-cancelled {
   background: rgba(239, 68, 68, 0.1);
   color: #991b1b;
+}
+
+.reservation-record-book-title {
+  max-height: 2.8em;
+  line-height: 1.4;
+  overflow: hidden;
+  position: relative;
+}
+
+.reservation-record-book-title::after {
+  content: '...';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding-left: 40px;
+  background: linear-gradient(to right, transparent, white 50%);
+}
+
+.history-grid-title-cell {
+  font-weight: 600;
+  color: #18181b;
+  text-align: left;
+  padding: 12px 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-table-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.history-table-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.history-table-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.history-table-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
 }
 </style>
