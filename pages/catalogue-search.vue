@@ -68,14 +68,14 @@
               <input
                 v-model="yearFrom"
                 type="number"
-                placeholder="從"
+                placeholder="西元年"
                 style="width:100px;"
               />
               <span>至</span>
               <input
                 v-model="yearTo"
                 type="number"
-                placeholder="至"
+                placeholder="西元年"
                 style="width:100px;"
               />
             </div>
@@ -203,8 +203,8 @@
           </button>
         </div>
         <div class="pagination-info">
-          顯示第 {{ searchResults.size * (searchResults.number) + 1 }} 到 
-          {{ Math.min(searchResults.size * (searchResults.number + 1), searchResults.totalElements) }} 筆，
+          顯示第 {{ (currentPage - 1) * itemsPerPage + 1 }} 到 
+          {{ Math.min(currentPage * itemsPerPage, searchResults.totalElements) }} 筆，
           共 {{ searchResults.totalElements }} 筆
         </div>
       </div>
@@ -613,6 +613,13 @@ const goToPage = (page) => {
 
 watch(itemsPerPage, () => {
   currentPage.value = 1;
+  if (searched.value) {
+    if (isAdvancedSearch.value) {
+      performAdvancedSearch();
+    } else {
+      performSimpleSearch();
+    }
+  }
 });
 
 // 添加排序監聽
