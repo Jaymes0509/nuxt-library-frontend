@@ -14,6 +14,9 @@
       <div :class="['footer-container', { 'footer--collapsed': !isSidebarOpen }]">
          <FooterBar />
       </div>
+
+        <!-- 讀者登入按鈕 -->
+      <MemberLoginButton />
    </div>
 
 </template>
