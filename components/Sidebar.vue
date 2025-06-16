@@ -89,7 +89,7 @@ const menuItems = [
         label: '申請服務',
         children: [
             { label: '借閱證申請', href: '/card-application' },
-            { label: '自習座位預約', href: '#' },
+            { label: '自習座位預約', href: '/seat-reservation2' },
             { label: '團體討論室預約', href: '#' },
             { label: '場地租借', href: '#' },
             { label: '團體參訪預約', href: '#' },
@@ -153,11 +153,11 @@ const menuItems = [
     transition: left 0.3s ease, opacity 0.2s;
 }
 
-.sidebar.closed + .toggle-area {
+.sidebar.closed+.toggle-area {
     left: 0;
 }
 
-.sidebar + .toggle-area {
+.sidebar+.toggle-area {
     left: 12.8rem;
 }
 

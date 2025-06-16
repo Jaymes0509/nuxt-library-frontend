@@ -17,43 +17,55 @@
 
       <div class="top-links">
         <ul>
-          <li v-for="(link, index) in links" :key="link.href" :title="link.label">
-            <a v-if="link.label !== '無障礙專區'" :href="link.href">{{ link.label }}</a>
-            <button v-else class="a11y-toggle" @click="toggleAccessibility" aria-label="切換視障友善模式">
-              {{ isAccessible ? '標準模式' : '無障礙模式' }}
-            </button>
+          <li v-for="(link, index) in links" :key="link.href || link.label" :title="link.label">
+            <template v-if="link.label !== '無障礙專區'">
+              <NuxtLink :to="link.href" class="top-link">
+                {{ link.label }}
+              </NuxtLink>
+            </template>
+            <template v-else>
+              <button class="a11y-toggle" @click="toggleAccessibility" aria-label="切換視障友善模式">
+                {{ isAccessible ? '標準模式' : '無障礙模式' }}
+              </button>
+            </template>
+
             <span v-if="index !== links.length - 1" class="separator">＊</span>
           </li>
         </ul>
-        <!-- <div class="icons">
+      </div>
+
+      <!-- <div class="icons">
         <img src="/yt.png" alt="YouTube" />
         <img src="/line.png" alt="Line" />
         <img src="/ig.png" alt="Instagram" />
         <img src="/fb.png" alt="Facebook" />
       </div> -->
-        <!-- 語言切換選單 -->
-        <div>
-          <button @click="toggleDropdown" class="lang-btn" title="語言">🌐 語言</button>
-          <ul v-if="showDropdown" class="lang-menu">
-            <li v-for="lang in languages" :key="lang.code" :title="lang.label">
-              <a href="#" class="dropdown-item" @click.prevent="selectLang(lang.code)">
-                {{ lang.label }}
-              </a>
-            </li>
-          </ul>
-        </div>
-
-        <div class="search">
-          <input type="text" placeholder="站內搜尋" />
-          <span>🔍</span>
-        </div>
-        <NuxtLink to="/login" class="login-btn">登入</NuxtLink>
+      <!-- 語言切換選單 -->
+      <div>
+        <button @click="toggleDropdown" class="lang-btn" title="語言">🌐 語言</button>
+        <ul v-if="showDropdown" class="lang-menu">
+          <li v-for="lang in languages" :key="lang.code" :title="lang.label">
+            <a href="#" class="dropdown-item" @click.prevent="selectLang(lang.code)">
+              {{ lang.label }}
+            </a>
+          </li>
+        </ul>
       </div>
+
+      <div class="search">
+        <input type="text" v-model="query" placeholder="站內搜尋" class="search-input" @keyup.enter="submitSearch" />
+        <button class="search-icon" @click="submitSearch">
+          🔍
+        </button>
+      </div>
+
+      <NuxtLink to="/login" class="login-btn">登入</NuxtLink>
     </div>
   </template>
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 // import { useI18n } from 'vue-i18n'
 
 // const { locale, t } = useI18n()
@@ -113,6 +125,15 @@ let links = [
   { label: '開放時間', href: '/opening-hours' },
   { label: '意見信箱', href: '/feedback' },
   { label: '無障礙專區', href: '' }]
+
+const query = ref('')
+const router = useRouter()
+
+const submitSearch = () => {
+  if (query.value.trim()) {
+    router.push(`/search?q=${encodeURIComponent(query.value.trim())}`)
+  }
+}
 </script>
 
 <style scoped>
@@ -176,6 +197,7 @@ let links = [
   display: flex;
   align-items: center;
   gap: 1rem;
+  margin-left: 10rem;
 }
 
 .top-links ul {
@@ -222,12 +244,9 @@ let links = [
   margin-left: 0.7rem;
 }
 
-/* .icons img {
-  height: 24px;
-  margin-left: 0.5rem;
-} */
-
 .lang-btn {
+  /* position: relative; */
+  /* display: inline-block; */
   background: none;
   border: none;
   cursor: pointer;
@@ -236,22 +255,40 @@ let links = [
 }
 
 .lang-menu {
+  list-style: none;
   position: absolute;
   margin-top: 6px;
-  /* top: 100%; */
+  /* left: 70%;
+   */
+  transform: translateX(-10%);
   flex-direction: column;
   background: white;
   border: 1px solid #ccc;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   z-index: 20;
   min-width: 95px;
+  padding: 0;
+}
+
+.lang-btn:hover {
+  background-color: lightgray;
+  border-radius: 3rem;
 }
 
 .dropdown-item {
-  display: grid;
+  display: block;
+  /* width: 100%; */
+  text-align: center;
+  left: 0;
+  /* ✅ 文字置中 */
+  /* margin: 0 auto; */
+  /* ✅ 居中用於防止預設 left-align */
+  color: black;
+  /* 依你的設計調整顏色 */
   padding: 8px 12px;
   font-size: 0.85rem;
   text-decoration: none;
+  border: none;
 }
 
 .dropdown-item:hover {
@@ -265,17 +302,22 @@ let links = [
 .search {
   display: flex;
   align-items: center;
-  border-bottom: 1px solid #333;
-  margin-left: 1rem;
+  border-bottom: 1px solid #444;
+  padding: 4px;
 }
 
-.search input {
+.search-input {
   border: none;
   outline: none;
+  font-size: 16px;
+  flex: 1;
   background: transparent;
 }
 
-.search span {
-  margin-left: 0.5rem;
+.search-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
 }
 </style>

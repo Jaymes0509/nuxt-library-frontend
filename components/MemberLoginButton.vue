@@ -1,6 +1,7 @@
 <template>
   <div class="reader-login-btn" @click="goToLogin" aria-label="讀者登入" role="button">
-    <i class="fas fa-user"></i>
+    <i class="fa fa-user"></i>
+    <!-- <font-awesome-icon :icon="['fad', 'user']" /> -->
     <div class="label">讀者登入</div>
   </div>
 </template>
