@@ -47,7 +47,6 @@
           <input type="text" placeholder="站內搜尋" />
           <span>🔍</span>
         </div>
-        <NuxtLink to="/login" class="login-btn">登入</NuxtLink>
       </div>
     </div>
   </template>
