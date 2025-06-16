@@ -151,8 +151,6 @@ const menuItems = [
     font-weight: bold;
     z-index: 99;
     transition: left 0.3s ease, opacity 0.2s;
-
-    
 }
 
 .sidebar.closed + .toggle-area {
