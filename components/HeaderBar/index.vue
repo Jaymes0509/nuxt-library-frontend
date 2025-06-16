@@ -1,13 +1,13 @@
 <template>
   <header class="header">
     <HeaderTop />
-    <HeaderNav />
+    <!-- <HeaderNav /> -->
   </header>
 </template>
 
 <script setup>
 import HeaderTop from './HeaderTop.vue'
-import HeaderNav from './HeaderNav.vue'
+// import HeaderNav from './HeaderNav.vue'
 </script>
 
 <style scoped>
