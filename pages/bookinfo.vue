@@ -15,9 +15,9 @@
       <h1 class="book-title">{{ book.title }}</h1>
 
       <!-- 內容簡介 -->
-      <section class="section-block" v-if="book.description">
+      <section class="section-block" v-if="book.summary">
         <h2>內容簡介</h2>
-        <p>{{ book.description }}</p>
+        <p>{{ book.summary }}</p>
       </section>
 
       <!-- 作者介紹 -->
@@ -78,7 +78,11 @@ onMounted(async () => {
   if (!isbn) return
 
   try {
-    const res = await axios.get(`/api/books/isbn/${isbn}`)
+    const res = await axios.get(`/api/books/isbn/${isbn}`, {
+      timeout: 10000, // 設定 10 秒超時
+      retries: 3,     // 重試 3 次
+      retryDelay: 1000 // 每次重試間隔 1 秒
+    })
     const data = res.data
 
     // 統一處理 is_available（支援後端回傳為 boolean 或 int）
@@ -87,19 +91,27 @@ onMounted(async () => {
     book.value = data
   } catch (error) {
     console.error('無法取得書籍資料', error)
+    if (error.code === 'ECONNABORTED') {
+      alert('連線超時，請稍後再試')
+    } else if (error.response) {
+      // 伺服器回應錯誤
+      alert(`取得書籍資料失敗：${error.response.data?.message || '未知錯誤'}`)
+    } else if (error.request) {
+      // 請求發送失敗
+      alert('無法連接到伺服器，請檢查網路連線')
+    } else {
+      // 其他錯誤
+      alert('發生未知錯誤，請稍後再試')
+    }
   }
   console.log('book 資料：', book.value)
-
 })
 
 const bookCoverUrl = computed(() => {
-  if (route.query.coverUrl) {
-    return route.query.coverUrl
+  if (route.query.imgUrl) {
+    return route.query.imgUrl
   }
-  if (book.value.isbn) {
-    return `https://covers.openlibrary.org/b/isbn/${book.value.isbn}-L.jpg`
-  }
-  return 'https://dummyimage.com/300X400/d1d1d1/030303&text=%E6%9A%AB%E7%84%A1%E5%B0%81%E9%9D%A2'
+  return 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png'
 })
 
 const goBack = () => {
@@ -109,30 +121,51 @@ const goBack = () => {
     from: 'bookinfo',
     returnType: route.query.returnType
   }
-  
-  if (route.query.returnQuery) query.q = route.query.returnQuery
-  if (route.query.returnPage) query.page = route.query.returnPage
-  if (route.query.returnType) query.returnType = route.query.returnType
-  query.from = 'bookinfo'
 
-  // 可選擴充：如果有分類、語言、年份也帶回
-  if (route.query.categorysystem) {
-    query.categorysystem = route.query.categorysystem
-  }
-  if (route.query.language) {
-    query.language = route.query.language
-  }
-  if (route.query.yearFrom) {
-    query.yearFrom = route.query.yearFrom
-  }
-  if (route.query.yearTo) {
-    query.yearTo = route.query.yearTo
-  }
+  if (route.query.categorysystem) query.categorysystem = route.query.categorysystem
+  if (route.query.language) query.language = route.query.language
+  if (route.query.yearFrom) query.yearFrom = route.query.yearFrom
+  if (route.query.yearTo) query.yearTo = route.query.yearTo
 
   router.push({
     path: '/catalogue-search',
     query
   })
+}
+
+// 添加預約書籍功能
+const reserveBook = async () => {
+  if (!book.value.is_available) {
+    alert('此書目前無法預約')
+    return
+  }
+
+  try {
+    const res = await axios.post(`/api/books/${book.value.isbn}/reserve`, {}, {
+      timeout: 10000,
+      retries: 3,
+      retryDelay: 1000
+    })
+    
+    if (res.data.success) {
+      alert('預約成功')
+      // 更新書籍狀態
+      book.value.is_available = 0
+    } else {
+      alert(res.data.message || '預約失敗')
+    }
+  } catch (error) {
+    console.error('預約失敗', error)
+    if (error.code === 'ECONNABORTED') {
+      alert('連線超時，請稍後再試')
+    } else if (error.response) {
+      alert(`預約失敗：${error.response.data?.message || '未知錯誤'}`)
+    } else if (error.request) {
+      alert('無法連接到伺服器，請檢查網路連線')
+    } else {
+      alert('發生未知錯誤，請稍後再試')
+    }
+  }
 }
 </script>
 
