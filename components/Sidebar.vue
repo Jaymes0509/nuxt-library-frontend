@@ -1,3 +1,36 @@
+<template>
+    <div class="sidebar-container">
+        <aside class="sidebar" :class="{ closed: !isOpen }">
+            <img src="/images/book-flip.gif" alt="翻書動畫" class="bg-book" />
+
+            <nav v-show="isOpen">
+                <ul class="menu-list">
+                    <li v-for="item in menuItems" :key="item.label">
+                        <div class="menu-item" :class="{ active: current === item.label }"
+                            @click="() => setCurrent(item.label)">
+                            <span>{{ item.label }}</span>
+                            <span v-if="item.children">{{ open[item.label] ? '▾' : '▸' }}</span>
+                        </div>
+
+                        <ul v-if="item.children && open[item.label]" class="submenu">
+                            <li v-for="child in item.children" :key="child.label">
+                                <NuxtLink v-if="child.href" :to="child.href" :title="child.label" class="submenu-link">
+                                    {{ child.label }}
+                                </NuxtLink>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+        <div class="toggle-area" @click="$emit('update:isOpen', !isOpen)">
+            <div class="toggle-icon">
+                {{ isOpen ? '«' : '»' }}
+            </div>
+        </div>
+    </div>
+</template>
+
 <script setup>
 import { useAuth } from '~/components/useAuth'
 import { computed, reactive, ref } from 'vue'
@@ -90,39 +123,6 @@ const menuItems = computed(() => {
     return items
 })
 </script>
-
-<template>
-    <div class="sidebar-container">
-        <aside class="sidebar" :class="{ closed: !isOpen }">
-            <img src="/images/book-flip.gif" alt="翻書動畫" class="bg-book" />
-
-            <nav v-show="isOpen">
-                <ul class="menu-list">
-                    <li v-for="item in menuItems" :key="item.label">
-                        <div class="menu-item" :class="{ active: current === item.label }"
-                            @click="() => setCurrent(item.label)">
-                            <span>{{ item.label }}</span>
-                            <span v-if="item.children">{{ open[item.label] ? '▾' : '▸' }}</span>
-                        </div>
-
-                        <ul v-if="item.children && open[item.label]" class="submenu">
-                            <li v-for="child in item.children" :key="child.label">
-                                <NuxtLink v-if="child.href" :to="child.href" :title="child.label" class="submenu-link">
-                                    {{ child.label }}
-                                </NuxtLink>
-                            </li>
-                        </ul>
-                    </li>
-                </ul>
-            </nav>
-        </aside>
-        <div class="toggle-area" @click="$emit('update:isOpen', !isOpen)">
-            <div class="toggle-icon">
-                {{ isOpen ? '«' : '»' }}
-            </div>
-        </div>
-    </div>
-</template>
 
 <style scoped>
 .sidebar-container {

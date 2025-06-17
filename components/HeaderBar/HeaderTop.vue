@@ -8,32 +8,48 @@
           <div class="logo">
             <img src="/public/images/libraryLogo.png" alt="Logo" />
             <div class="title">
-              <h1>{{ title }}</h1>
-              <p>{{ subtitle }}</p>
+              <h1>{{ $t('header.title') }}</h1>
+              <p>{{ $t('header.subtitle') }}</p>
             </div>
           </div>
         </NuxtLink>
       </slot>
 
-      <div class="top-links">
+      <!-- 漢堡選單按鈕 -->
+      <button class="menu-toggle" @click="toggleMenu" aria-label="選單">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <!-- 遮罩，選單展開時顯示，點擊可關閉選單 -->
+      <div v-if="isMenuOpen" class="menu-backdrop" @click="closeMenu"></div>
+
+      <div class="top-links" :class="{ 'menu-open': isMenuOpen }">
         <ul>
-          <li v-for="(link, index) in links" :key="link.href" :title="link.label">
-            <a v-if="link.label !== '無障礙專區'" :href="link.href">{{ link.label }}</a>
+
+          <li v-for="(link, index) in links" :key="link.href" :title="$t(link.key)">
+            <a v-if="link.label !== '無障礙專區'" :href="link.href">{{ $t(link.key) }}</a>
             <button v-else class="a11y-toggle" @click="toggleAccessibility" aria-label="切換視障友善模式">
-              {{ isAccessible ? '標準模式' : '無障礙模式' }}
+              {{ isAccessible ? $t('header.normalMode') : $t('header.accessibleMode') }}
             </button>
+
             <span v-if="index !== links.length - 1" class="separator">＊</span>
           </li>
         </ul>
-        <!-- <div class="icons">
+      </div>
+
+      <!-- <div class="icons">
         <img src="/yt.png" alt="YouTube" />
         <img src="/line.png" alt="Line" />
         <img src="/ig.png" alt="Instagram" />
         <img src="/fb.png" alt="Facebook" />
       </div> -->
-        <!-- 語言切換選單 -->
+
+      <!-- 語言切換選單 -->
+      <div class="top-right">
         <div>
-          <button @click="toggleDropdown" class="lang-btn" title="語言">🌐 語言</button>
+          <button @click="toggleDropdown" class="lang-btn" title="語言">🌐 {{ $t('header.language') }}</button>
           <ul v-if="showDropdown" class="lang-menu">
             <li v-for="lang in languages" :key="lang.code" :title="lang.label">
               <a href="#" class="dropdown-item" @click.prevent="selectLang(lang.code)">
@@ -44,35 +60,53 @@
         </div>
 
         <div class="search">
-          <input type="text" placeholder="站內搜尋" />
-          <span>🔍</span>
+          <input type="text" v-model="query" :placeholder="$t('header.search')" class="search-input"
+            @keyup.enter="submitSearch" />
+          <button class="search-icon" @click="submitSearch">
+            🔍
+          </button>
         </div>
-        <NuxtLink to="/login" class="login-btn">登入</NuxtLink>
+        <!-- <NuxtLink to="/login" class="login-btn">{{ $t('login') }}</NuxtLink> -->
       </div>
+
     </div>
+
+    <!-- <div class="search">
+      <input type="text" v-model="query" placeholder="站內搜尋" class="search-input" @keyup.enter="submitSearch" />
+      <button class="search-icon" @click="submitSearch">
+        🔍
+      </button>
+    </div> -->
+
+    <!-- <NuxtLink to="/login" class="login-btn">登入</NuxtLink> -->
   </template>
 
 <script setup>
 import { ref } from 'vue'
-// import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
-// const { locale, t } = useI18n()
+import { useI18n } from 'vue-i18n'
+
+
+const { locale, t } = useI18n()
 const showDropdown = ref(false)
+const isMenuOpen = ref(false)
 
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
 }
-
-// const selectLang = (code) => {
-//   locale.value = code
-//   showDropdown.value = false
-// }
 
 const languages = [
   { code: 'zh-tw', label: '繁體中文' },
   { code: 'en', label: 'English' },
   { code: 'ja', label: '日本語' }
 ]
+
+function selectLang(code) {
+  locale.value = code
+  showDropdown.value = false
+}
+
 defineProps({
   title: {
     type: String,
@@ -106,13 +140,40 @@ onMounted(() => {
   }
 })
 
+const toggleMenu = () => {
+  isMenuOpen.value = !isMenuOpen.value
+}
+
+const closeMenu = () => {
+  isMenuOpen.value = false
+}
 
 let links = [
-  { label: '首頁', href: '/' },
-  { label: '網站導覽', href: '' },
-  { label: '開放時間', href: '/opening-hours' },
-  { label: '意見信箱', href: '/feedback' },
-  { label: '無障礙專區', href: '' }]
+
+  { label: '首頁', href: '/', key: 'header.home' },
+  { label: '網站導覽', href: '', key: 'header.sitemap' },
+  { label: '開放時間', href: '/opening-hours', key: 'header.openingHours' },
+  { label: '意見信箱', href: '/feedback', key: 'header.feedback' },
+  { label: '無障礙專區', href: '', key: 'header.accessible' }
+]
+// async function submitSearch() {
+//   if (!query.value.trim()) return
+//   const { data, error } = await useFetch(`/api/search?q=${encodeURIComponent(query.value)}`)
+
+//   if (error.value) {
+//     console.error('搜尋失敗:', error.value)
+//   } else {
+//     results.value = data.value // 將資料儲存顯示
+//   }
+// }
+const query = ref('')
+const router = useRouter()
+
+const submitSearch = () => {
+  if (query.value.trim()) {
+    router.push(`/search?q=${encodeURIComponent(query.value.trim())}`)
+  }
+}
 </script>
 
 <style scoped>
@@ -176,6 +237,7 @@ let links = [
   display: flex;
   align-items: center;
   gap: 1rem;
+  margin-left: 10rem;
 }
 
 .top-links ul {
@@ -189,7 +251,7 @@ let links = [
 .top-links a {
   text-decoration: none;
   color: #333;
-  font-size: 1rem;
+  font-size: 1.25rem;
 }
 
 .top-links a:hover {
@@ -199,7 +261,7 @@ let links = [
 .a11y-toggle {
   white-space: nowrap;
   font-weight: bold;
-  font-size: large;
+  font-size: 1.25rem;
   color: white;
   background-color: #111;
   border-radius: 5rem;
@@ -216,42 +278,56 @@ let links = [
 }
 
 .separator {
-  /* margin: 0.25rem; */
-  /* background-color: red; */
   color: #999;
   margin-left: 0.7rem;
+  font-size: 1.25rem;
 }
 
-/* .icons img {
-  height: 24px;
-  margin-left: 0.5rem;
-} */
-
 .lang-btn {
+  /* position: relative; */
+  /* display: inline-block; */
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 1.25rem;
   padding: 4px 8px;
 }
 
 .lang-menu {
+  list-style: none;
   position: absolute;
   margin-top: 6px;
-  /* top: 100%; */
+  /* left: 70%;
+   */
+  transform: translateX(-10%);
   flex-direction: column;
   background: white;
   border: 1px solid #ccc;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   z-index: 20;
   min-width: 95px;
+  padding: 0;
+}
+
+.lang-btn:hover {
+  background-color: lightgray;
+  border-radius: 3rem;
 }
 
 .dropdown-item {
-  display: grid;
+  display: block;
+  /* width: 100%; */
+  text-align: center;
+  left: 0;
+  /* ✅ 文字置中 */
+  /* margin: 0 auto; */
+  /* ✅ 居中用於防止預設 left-align */
+  color: black;
+  /* 依你的設計調整顏色 */
   padding: 8px 12px;
-  font-size: 0.85rem;
+  font-size: 1.25rem;
   text-decoration: none;
+  border: none;
 }
 
 .dropdown-item:hover {
@@ -267,15 +343,247 @@ let links = [
   align-items: center;
   border-bottom: 1px solid #333;
   margin-left: 1rem;
+  width: 150px;
+
 }
 
-.search input {
+.search-input {
   border: none;
   outline: none;
+  font-size: 16px;
+  flex: 1;
   background: transparent;
+  font-size: 1.25rem;
+  width: 100%;
 }
+
 
 .search span {
   margin-left: 0.5rem;
+  font-size: 1.25rem;
+}
+
+.login-btn {
+  font-size: 1.25rem;
+}
+
+.top-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: nowrap;
+  /* 防止換行 */
+}
+
+/* 響應式設計 */
+@media screen and (max-width: 1199px) {
+  .logo {
+    margin-left: 8rem;
+  }
+
+  .logo img {
+    height: 80px;
+  }
+
+  .title h1 {
+    font-size: 1.8rem;
+  }
+
+  .title p {
+    font-size: 0.9rem;
+  }
+
+  .cat img {
+    width: 80px;
+  }
+}
+
+@media screen and (max-width: 991px) {
+  .logo {
+    margin-left: 6rem;
+  }
+
+  .logo img {
+    height: 70px;
+  }
+
+  .title h1 {
+    font-size: 1.6rem;
+  }
+
+  .cat img {
+    width: 70px;
+  }
+
+  .search {
+    width: 180px;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .menu-toggle {
+    display: flex !important;
+  }
+
+  .top-links {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 30%;
+    max-width: 100px;
+    height: 100vh;
+    background: white;
+    flex-direction: column;
+    padding: 80px 20px 20px;
+    transition: right 0.3s ease;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+    z-index: 99;
+    align-items: center;
+  }
+
+  .top-links.menu-open {
+    right: 0;
+  }
+
+  .top-links ul {
+    width: 100%;
+    margin-bottom: 1rem;
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+    padding: 0;
+  }
+
+  .top-links li {
+    width: 100%;
+    padding: 10px 0;
+  }
+
+  .top-right {
+    flex-direction: column;
+    width: 100%;
+    gap: 1.2rem;
+    margin-top: 1rem;
+    align-items: center;
+    text-align: center;
+  }
+
+  .search {
+    width: 50%;
+    margin-left: 0;
+  }
+
+  .logo {
+    margin-left: 4rem;
+  }
+
+  .logo img {
+    height: 60px;
+  }
+
+  .title h1 {
+    font-size: 1.4rem;
+  }
+
+  .title p {
+    font-size: 0.8rem;
+  }
+
+  .cat img {
+    width: 60px;
+  }
+
+  .lang-menu {
+    position: static;
+    margin-top: 0.5rem;
+    width: 100%;
+  }
+
+  .dropdown-item {
+    padding: 12px;
+  }
+
+  .separator {
+    display: none !important;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .logo {
+    margin-left: 3rem;
+  }
+
+  .logo img {
+    height: 50px;
+  }
+
+  .title h1 {
+    font-size: 1.2rem;
+  }
+
+  .title p {
+    font-size: 0.7rem;
+  }
+
+  .cat img {
+    width: 50px;
+  }
+
+  .top-bar {
+    padding: 0.2rem 0.5rem;
+  }
+
+  .top-right {
+    gap: 0.5rem;
+    /* 在小螢幕上減少間距 */
+  }
+
+  .search {
+    width: 120px;
+    /* 在小螢幕上進一步縮小搜尋框 */
+  }
+
+  .lang-btn,
+  .login-btn {
+    padding: 4px 8px;
+    /* 調整按鈕內邊距 */
+    font-size: 1rem;
+    /* 稍微縮小字體 */
+  }
+}
+
+.menu-toggle {
+  display: none !important;
+  background: red !important;
+  border: 2px solid black !important;
+  width: 48px !important;
+  height: 48px !important;
+  z-index: 9999 !important;
+}
+
+.menu-toggle span {
+  background: #fff !important;
+  height: 6px !important;
+  margin: 6px 0 !important;
+  border-radius: 3px !important;
+}
+
+.menu-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: 98;
+  display: block;
+}
+
+/* 一定要放在最後 */
+@media screen and (max-width: 767px) {
+  .menu-toggle {
+    display: flex !important;
+  }
+
 }
 </style>

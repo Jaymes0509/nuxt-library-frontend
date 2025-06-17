@@ -12,7 +12,7 @@ export default defineNuxtConfig({
   ],
 
   css: ['@/assets/css/main.css',
-    'leaflet/dist/leaflet.css'
+    'leaflet/dist/leaflet.css',
   ],
 
   components: true,
@@ -39,6 +39,7 @@ export default defineNuxtConfig({
       }
     }
   },
+
 
   compatibilityDate: '2025-05-15',
 
