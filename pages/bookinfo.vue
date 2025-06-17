@@ -2,11 +2,7 @@
   <div class="book-detail-wrapper">
     <!-- 左半邊：封面圖片 -->
     <div class="cover-area">
-      <img
-        class="cover-image"
-        :src="bookCoverUrl"
-        :alt="`書籍《${book.title}》封面`"
-      />
+      <img class="cover-image" :src="bookCoverUrl" :alt="`書籍《${book.title}》封面`" />
     </div>
 
     <!-- 右半邊：文字內容區 -->
@@ -47,12 +43,8 @@
 
       <!-- 動作區域 -->
       <div class="action-area">
-        <button 
-          class="reserve-btn" 
-          @click="reserveBook"
-          :disabled="!book.is_available"
-          :class="{ 'disabled': !book.is_available }"
-        >
+        <button class="reserve-btn" @click="reserveBook" :disabled="!book.is_available"
+          :class="{ 'disabled': !book.is_available }">
           {{ book.is_available === 1 ? '預約此書' : '無法預約' }}
         </button>
         <button class="back-btn" @click="goBack">
@@ -135,7 +127,7 @@ const goBack = () => {
 
 const reserveBook = () => {
   if (book.value?.is_available !== 1) return
-  
+
   router.push({
     path: '/book-reservation',
     query: {
@@ -282,13 +274,16 @@ const reserveBook = () => {
   .book-detail-wrapper {
     flex-direction: row;
   }
+
   .cover-area,
   .info-area {
     align-items: flex-start;
   }
+
   .cover-area {
     max-width: 40%;
   }
+
   .info-area {
     max-width: 60%;
   }
@@ -299,7 +294,7 @@ const reserveBook = () => {
   .action-area {
     flex-direction: column;
   }
-  
+
   .reserve-btn,
   .back-btn {
     width: 100%;

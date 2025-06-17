@@ -62,18 +62,10 @@
 
             <!-- 按鈕區域 -->
             <div class="result-btn-area">
-              <button 
-                type="button"
-                @click="goToReservationRecord"
-                class="result-btn result-btn-record"
-              >
+              <button type="button" @click="goToReservationRecord" class="result-btn result-btn-record">
                 查看預約記錄
               </button>
-              <button 
-                type="button"
-                @click="goToHome"
-                class="result-btn result-btn-home"
-              >
+              <button type="button" @click="goToHome" class="result-btn result-btn-home">
                 返回首頁
               </button>
             </div>
@@ -99,16 +91,16 @@ const router = useRouter()
 
 // 從路由參數獲取書籍資訊
 const book = computed(() => ({
-  title: route.query.title || '未知書名',
-  author: route.query.author || '未知作者',
-  isbn: route.query.isbn || '未知ISBN'
+  title: String(route.query.title || '未知書名'),
+  author: String(route.query.author || '未知作者'),
+  isbn: String(route.query.isbn || '未知ISBN')
 }))
 
 // 從路由參數獲取預約資訊
 const form = computed(() => ({
-  time: route.query.time || '',
-  location: route.query.location || '',
-  method: route.query.method || ''
+  time: String(route.query.time || ''),
+  location: String(route.query.location || ''),
+  method: String(route.query.method || '')
 }))
 
 // 生成預約編號（實際應用中應該由後端生成）
@@ -221,7 +213,6 @@ onMounted(() => {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(229, 231, 235, 0.4);
-  overflow: hidden;
 }
 
 .result-bookinfo {
@@ -248,12 +239,16 @@ onMounted(() => {
   font-size: 1.5rem;
   font-weight: bold;
   color: #18181b;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .result-bookinfo-author,
 .result-bookinfo-isbn {
   font-size: 0.95rem;
   color: #4b5563;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 /* 預約資訊樣式 */
@@ -277,18 +272,23 @@ onMounted(() => {
 
 .result-info-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .result-info-label {
   color: #4b5563;
   min-width: 80px;
+  flex-shrink: 0;
 }
 
 .result-info-value {
   color: #18181b;
   font-weight: 500;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  flex: 1;
 }
 
 /* 注意事項樣式 */
@@ -359,9 +359,9 @@ onMounted(() => {
   .result-btn-area {
     flex-direction: column;
   }
-  
+
   .result-btn {
     width: 100%;
   }
 }
-</style> 
+</style>
