@@ -13,7 +13,6 @@ export default defineNuxtConfig({
 
   css: ['@/assets/css/main.css',
     'leaflet/dist/leaflet.css',
-    '@fortawesome/fontawesome-free/css/all.css'
   ],
 
   components: true,
