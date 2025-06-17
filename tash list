@@ -1,0 +1,18 @@
+[33m97ac475[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mb99000206[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: pull origin main: Fast-forward
+[33mb42efa3[m[33m ([m[1;31morigin/b99000206[m[33m)[m HEAD@{1}: reset: moving to HEAD
+[33mb42efa3[m[33m ([m[1;31morigin/b99000206[m[33m)[m HEAD@{2}: commit: 0615
+[33mb0d5c0c[m HEAD@{3}: pull origin main: Fast-forward
+[33ma3276d4[m HEAD@{4}: commit: 0614
+[33m127ed56[m HEAD@{5}: commit: 0613
+[33m2888947[m HEAD@{6}: commit: 0612
+[33mbe0d4b1[m HEAD@{7}: pull origin main: Fast-forward
+[33md80ae89[m HEAD@{8}: pull origin main: Fast-forward
+[33m9c99984[m HEAD@{9}: pull origin main: Fast-forward
+[33m9dfe21c[m HEAD@{10}: commit: 0606
+[33m276d46d[m HEAD@{11}: pull origin main: Fast-forward
+[33m4aad145[m HEAD@{12}: commit (merge): 0605
+[33m91ed065[m HEAD@{13}: commit: 0605
+[33m86c75a1[m HEAD@{14}: commit: testv1.0
+[33m0865a75[m HEAD@{15}: commit: text
+[33m185a609[m[33m ([m[1;32mmain[m[33m)[m HEAD@{16}: checkout: moving from main to b99000206
+[33m185a609[m[33m ([m[1;32mmain[m[33m)[m HEAD@{17}: clone: from https://github.com/Jaymes0509/nuxt-library-frontend.git
