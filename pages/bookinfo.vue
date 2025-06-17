@@ -133,39 +133,24 @@ const goBack = () => {
   })
 }
 
-// 添加預約書籍功能
-const reserveBook = async () => {
-  if (!book.value.is_available) {
-    alert('此書目前無法預約')
-    return
-  }
+const reserveBook = () => {
+  if (book.value?.is_available !== 1) return
+  
+  router.push({
+    path: '/book-reservation',
+    query: {
+      bookId: book.value.id,
+      title: book.value.title,
+      author: book.value.author,
+      isbn: book.value.isbn,
+      publisher: book.value.publisher,
+      classification: book.value.classification,
+      language: book.value.language,
+      description: book.value.description,
+      coverUrl: bookCoverUrl.value
+    }
+  })
 
-  try {
-    const res = await axios.post(`/api/books/${book.value.isbn}/reserve`, {}, {
-      timeout: 10000,
-      retries: 3,
-      retryDelay: 1000
-    })
-    
-    if (res.data.success) {
-      alert('預約成功')
-      // 更新書籍狀態
-      book.value.is_available = 0
-    } else {
-      alert(res.data.message || '預約失敗')
-    }
-  } catch (error) {
-    console.error('預約失敗', error)
-    if (error.code === 'ECONNABORTED') {
-      alert('連線超時，請稍後再試')
-    } else if (error.response) {
-      alert(`預約失敗：${error.response.data?.message || '未知錯誤'}`)
-    } else if (error.request) {
-      alert('無法連接到伺服器，請檢查網路連線')
-    } else {
-      alert('發生未知錯誤，請稍後再試')
-    }
-  }
 }
 </script>
 
