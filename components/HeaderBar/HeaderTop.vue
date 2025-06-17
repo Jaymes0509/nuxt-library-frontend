@@ -46,37 +46,36 @@
         <img src="/fb.png" alt="Facebook" />
       </div> -->
 
-        <!-- 語言切換選單 -->
-        <div class="top-right">
-          <div>
-            <button @click="toggleDropdown" class="lang-btn" title="語言">🌐 {{ $t('header.language') }}</button>
-            <ul v-if="showDropdown" class="lang-menu">
-              <li v-for="lang in languages" :key="lang.code" :title="lang.label">
-                <a href="#" class="dropdown-item" @click.prevent="selectLang(lang.code)">
-                  {{ lang.label }}
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          <div class="search">
-            <input type="text" :placeholder="$t('header.search')" />
-            <span>🔍</span>
-          </div>
-          <NuxtLink to="/login" class="login-btn">{{ $t('login') }}</NuxtLink>
+      <!-- 語言切換選單 -->
+      <div class="top-right">
+        <div>
+          <button @click="toggleDropdown" class="lang-btn" title="語言">🌐 {{ $t('header.language') }}</button>
+          <ul v-if="showDropdown" class="lang-menu">
+            <li v-for="lang in languages" :key="lang.code" :title="lang.label">
+              <a href="#" class="dropdown-item" @click.prevent="selectLang(lang.code)">
+                {{ lang.label }}
+              </a>
+            </li>
+          </ul>
         </div>
 
+        <div class="search">
+          <input type="text" :placeholder="$t('header.search')" />
+          <span>🔍</span>
+        </div>
+        <NuxtLink to="/login" class="login-btn">{{ $t('login') }}</NuxtLink>
       </div>
 
-      <div class="search">
-        <input type="text" v-model="query" placeholder="站內搜尋" class="search-input" @keyup.enter="submitSearch" />
-        <button class="search-icon" @click="submitSearch">
-          🔍
-        </button>
-      </div>
-
-      <NuxtLink to="/login" class="login-btn">登入</NuxtLink>
     </div>
+
+    <div class="search">
+      <input type="text" v-model="query" placeholder="站內搜尋" class="search-input" @keyup.enter="submitSearch" />
+      <button class="search-icon" @click="submitSearch">
+        🔍
+      </button>
+    </div>
+
+    <NuxtLink to="/login" class="login-btn">登入</NuxtLink>
   </template>
 
 <script setup>
