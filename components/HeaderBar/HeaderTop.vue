@@ -27,20 +27,25 @@
 
       <div class="top-links" :class="{ 'menu-open': isMenuOpen }">
         <ul>
+
           <li v-for="(link, index) in links" :key="link.href" :title="$t(link.key)">
             <a v-if="link.label !== '無障礙專區'" :href="link.href">{{ $t(link.key) }}</a>
             <button v-else class="a11y-toggle" @click="toggleAccessibility" aria-label="切換視障友善模式">
               {{ isAccessible ? $t('header.normalMode') : $t('header.accessibleMode') }}
             </button>
+
             <span v-if="index !== links.length - 1" class="separator">＊</span>
           </li>
         </ul>
-        <!-- <div class="icons">
+      </div>
+
+      <!-- <div class="icons">
         <img src="/yt.png" alt="YouTube" />
         <img src="/line.png" alt="Line" />
         <img src="/ig.png" alt="Instagram" />
         <img src="/fb.png" alt="Facebook" />
       </div> -->
+
         <!-- 語言切換選單 -->
         <div class="top-right">
           <div>
@@ -60,13 +65,25 @@
           </div>
           <NuxtLink to="/login" class="login-btn">{{ $t('login') }}</NuxtLink>
         </div>
+
       </div>
+
+      <div class="search">
+        <input type="text" v-model="query" placeholder="站內搜尋" class="search-input" @keyup.enter="submitSearch" />
+        <button class="search-icon" @click="submitSearch">
+          🔍
+        </button>
+      </div>
+
+      <NuxtLink to="/login" class="login-btn">登入</NuxtLink>
     </div>
   </template>
 
 <script setup>
 import { ref } from 'vue'
+
 import { useI18n } from 'vue-i18n'
+
 
 const { locale, t } = useI18n()
 const showDropdown = ref(false)
@@ -129,12 +146,14 @@ const closeMenu = () => {
 }
 
 let links = [
+
   { label: '首頁', href: '/', key: 'header.home' },
   { label: '網站導覽', href: '', key: 'header.sitemap' },
   { label: '開放時間', href: '/opening-hours', key: 'header.openingHours' },
   { label: '意見信箱', href: '/feedback', key: 'header.feedback' },
   { label: '無障礙專區', href: '', key: 'header.accessible' }
 ]
+
 </script>
 
 <style scoped>
@@ -198,6 +217,7 @@ let links = [
   display: flex;
   align-items: center;
   gap: 1rem;
+  margin-left: 10rem;
 }
 
 .top-links ul {
@@ -243,12 +263,9 @@ let links = [
   font-size: 1.25rem;
 }
 
-/* .icons img {
-  height: 24px;
-  margin-left: 0.5rem;
-} */
-
 .lang-btn {
+  /* position: relative; */
+  /* display: inline-block; */
   background: none;
   border: none;
   cursor: pointer;
@@ -257,22 +274,40 @@ let links = [
 }
 
 .lang-menu {
+  list-style: none;
   position: absolute;
   margin-top: 6px;
-  /* top: 100%; */
+  /* left: 70%;
+   */
+  transform: translateX(-10%);
   flex-direction: column;
   background: white;
   border: 1px solid #ccc;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   z-index: 20;
   min-width: 95px;
+  padding: 0;
+}
+
+.lang-btn:hover {
+  background-color: lightgray;
+  border-radius: 3rem;
 }
 
 .dropdown-item {
-  display: grid;
+  display: block;
+  /* width: 100%; */
+  text-align: center;
+  left: 0;
+  /* ✅ 文字置中 */
+  /* margin: 0 auto; */
+  /* ✅ 居中用於防止預設 left-align */
+  color: black;
+  /* 依你的設計調整顏色 */
   padding: 8px 12px;
   font-size: 1.25rem;
   text-decoration: none;
+  border: none;
 }
 
 .dropdown-item:hover {
@@ -286,18 +321,23 @@ let links = [
 .search {
   display: flex;
   align-items: center;
+
   border-bottom: 1px solid #333;
   margin-left: 1rem;
   width: 150px;
+
 }
 
-.search input {
+.search-input {
   border: none;
   outline: none;
+  font-size: 16px;
+  flex: 1;
   background: transparent;
   font-size: 1.25rem;
   width: 100%;
 }
+
 
 .search span {
   margin-left: 0.5rem;
@@ -525,5 +565,6 @@ let links = [
   .menu-toggle {
     display: flex !important;
   }
+
 }
 </style>

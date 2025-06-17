@@ -244,9 +244,9 @@ async function fetchReservations() {
 // 查看書籍詳情
 function viewBookDetail(reservation) {
   if (reservation.bookInfo) {
-    // 使用 router 導航到詳情頁，並傳遞書籍資訊
+    // 使用 router 導航到 bookinfo 頁面，並傳遞書籍資訊
     router.push({
-      path: `/book/${reservation.bookInfo.bookId}`,
+      path: `/bookinfo/${reservation.bookInfo.bookId}`,
       state: { bookInfo: reservation.bookInfo }
     })
   }

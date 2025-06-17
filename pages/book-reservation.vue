@@ -1,4 +1,5 @@
 <template>
+
     <div class="scroll-wrapper">
         <div class="intro">
             <div class="reservation-bg">
@@ -46,6 +47,7 @@
                                     :class="['reservation-input', { 'shake': isShaking.time }]" />
                                 <span v-if="errors.time" class="error-message">{{ errors.time }}</span>
                             </div>
+
 
                             <!-- 取書地點 -->
                             <div class="reservation-form-group">

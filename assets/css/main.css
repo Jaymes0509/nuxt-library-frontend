@@ -10,26 +10,39 @@ html.accessible-mode {
   font-size: 150%;
 }
 
-html.accessible-mode .title {
-  background-color: #000;
+html.accessible-mode .logo-link {
+  background-color: #f8f8f8;
+  color: #000;
   font-size: 150%;
 }
-
-html.accessible-mode .logo  {
-  background-color: white;
-}
-
 
 html.accessible-mode div.title {
   white-space: nowrap !important;
   margin-right: 1rem;
+  color: #000;
 }
+
+html.accessible-mode .top-links {
+  margin: 0;
+}
+
+html.accessible-mode .top-links ul {
+  display: flex;
+  justify-content: flex-start;  /* 靠左對齊 */
+  gap: 0.5rem;                  /* 按鈕之間間距 */
+  flex-wrap: nowrap;              /* 若空間不夠可換行 */
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
 
 html.accessible-mode a {
   background-color: #111;
   /* border: 1px solid #fff; */
   border-radius: 0.2rem;
   color: white !important;
+  text-wrap: nowrap;
 }
 
 html.accessible-mode a:hover {
@@ -49,7 +62,22 @@ html.accessible-mode .lang-btn {
   border-radius: 0.5rem;
   white-space: nowrap;
   color: white;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.5rem;
+  margin-left: 1rem;
+}
+
+html.accessible-mode .lang-menu {
+  background: white;
+  margin-left: 1.3rem;
+  margin-top: 0;
+}
+html.accessible-mode .dropdown-item {
+  /* background-color: #111 !important;
+  border-radius: 0.5rem;
+  white-space: nowrap;
+  color: white; */
+  margin-bottom: 0.1rem;
+  /* margin-left: 1rem; */
 }
 
 html.accessible-mode button:hover {

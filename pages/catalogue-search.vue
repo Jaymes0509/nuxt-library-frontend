@@ -203,7 +203,7 @@
           </button>
         </div>
         <div class="pagination-info">
-          顯示第 {{ (currentPage - 1) * itemsPerPage + 1 }} 到 
+          顯示第 {{ Math.min((currentPage - 1) * itemsPerPage + 1, searchResults.totalElements) }} 到 
           {{ Math.min(currentPage * itemsPerPage, searchResults.totalElements) }} 筆，
           共 {{ searchResults.totalElements }} 筆
         </div>
@@ -265,62 +265,45 @@ const languageOptions = ref([
   { value: 'de', label: '德文' }
 ]);
 
-// 添加 onMounted 邏輯
 onMounted(async () => {
-  const route = useRoute()
-  
-  // 處理從書籍詳情頁返回的情況
-  if (route.query.q) {
-    // 如果有搜尋參數，執行搜尋
-    if (route.query.q === 'advanced') {
-      // 處理進階搜尋返回
-      isAdvancedSearch.value = true
-      // 這裡可以根據需要恢復進階搜尋條件
-    } else {
-      // 處理簡單搜尋返回
-      simpleSearchQuery.value = route.query.q
-      await performSimpleSearch()
-    }
-    
-    // 恢復頁碼
-    if (route.query.page) {
-      currentPage.value = parseInt(route.query.page) || 1
-    }
-  }
-})
+  const route = useRoute();
 
-onMounted(async () => {
-  const route = useRoute()
-  
-  // 處理從書籍詳情頁返回的情況
-  if (route.query.q && route.query.from !== 'bookinfo') {
-    // 如果有搜尋參數且不是從 bookinfo 返回，執行搜尋
-    if (route.query.q === 'advanced') {
-      // 處理進階搜尋返回
-      isAdvancedSearch.value = true
-      // 這裡可以根據需要恢復進階搜尋條件
-    } else {
-      // 處理簡單搜尋返回
-      simpleSearchQuery.value = route.query.q
-      await performSimpleSearch()
+  // ✅ 進階搜尋返回
+  if (route.query.returnType === 'advanced' && route.query.returnAdvanced) {
+    try {
+      const restored = JSON.parse(route.query.returnAdvanced);
+      isAdvancedSearch.value = true;
+      advancedSearchConditions.value = restored.conditions || [];
+      yearFrom.value = restored.yearFrom || '';
+      yearTo.value = restored.yearTo || '';
+      selectedClassification.value = restored.selectedClassification || '';
+      selectedLanguages.value = restored.selectedLanguages || '';
+      currentPage.value = parseInt(route.query.returnPage) || 1;
+      await performAdvancedSearch();
+    } catch (e) {
+      console.error("還原進階搜尋失敗", e);
     }
-    
-    // 恢復頁碼
-    if (route.query.page) {
-      currentPage.value = parseInt(route.query.page) || 1
+    return; // ⚠️ early return 避免簡易搜尋干擾
+  }
+
+  // ✅ 簡易搜尋返回
+  if (route.query.q && route.query.returnType === 'simple') {
+    simpleSearchQuery.value = route.query.q;
+    currentPage.value = parseInt(route.query.returnPage) || 1;
+    await performSimpleSearch();
+  }
+
+  // ✅ 若網址有 bookId，嘗試載入書籍資料
+  const bookId = route.query.bookId;
+  if (bookId) {
+    try {
+      const response = await axios.get(`http://localhost:8080/api/books/${bookId}`);
+      book.value = response.data;
+    } catch (e) {
+      console.error('找不到書籍', e);
     }
   }
-  
-  // 原有的書籍詳情邏輯
-  const bookId = route.query.bookId
-  if (!bookId) return
-  try {
-    const response = await axios.get(`http://localhost:8080/api/books/${bookId}`)
-    book.value = response.data
-  } catch (e) {
-    console.error('找不到書籍', e)
-  }
-})
+});
 
 // 或者更完整的狀態恢復版本
 const handleReturnFromBookInfo = () => {
@@ -620,7 +603,17 @@ watch(itemsPerPage, () => {
       performSimpleSearch();
     }
   }
-});
+}, { immediate: true });
+
+watch(currentPage, () => {
+  if (searched.value) {
+    if (isAdvancedSearch.value) {
+      performAdvancedSearch();
+    } else {
+      performSimpleSearch();
+    }
+  }
+}, { immediate: true });
 
 // 添加排序監聽
 watch(sortConfig, () => {
@@ -635,24 +628,6 @@ watch(sortConfig, () => {
 
 // 修改後的導航到書籍詳情頁方法
 const navigateToBookDetail = async (book) => {
-  // 如果還沒有封面和描述，先從 Google Books API 獲取
-  if (!book.coverUrl || !book.description) {
-    try {
-      const googleBooksResponse = await axios.get(`https://www.googleapis.com/books/v1/volumes?q=isbn:${book.isbn}`);
-      if (googleBooksResponse.data.items && googleBooksResponse.data.items.length > 0) {
-        const volumeInfo = googleBooksResponse.data.items[0].volumeInfo;
-        if (volumeInfo.imageLinks && volumeInfo.imageLinks.thumbnail) {
-          book.coverUrl = volumeInfo.imageLinks.thumbnail;
-        }
-        if (volumeInfo.description) {
-          book.description = volumeInfo.description;
-        }
-      }
-    } catch (error) {
-      console.error('獲取 Google Books 資訊失敗：', error);
-    }
-  }
-
   router.push({
     path: '/bookinfo',
     query: {
@@ -664,16 +639,27 @@ const navigateToBookDetail = async (book) => {
       publishdate: book.publishdate,
       classification: book.classification,
       language: book.language,
-      description: book.description || '',
-      coverUrl: book.coverUrl || `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`,
+      summary: book.summary || '',                    // ✅ 改為 summary
+      imgUrl: book.imgUrl ||                         // ✅ 改為 imgUrl
+        'https://cdn-icons-png.flaticon.com/512/2232/2232688.png',
       is_available: book.is_available.toString(),
       categorysystem: book.categorysystem || '',
       total_copies: String(book.total_copies || 1),
       available_copies: String(book.available_copies || (book.is_available === 1 ? 1 : 0)),
-      // 保存返回資訊
+
+      // 搜尋狀態
       returnQuery: isAdvancedSearch.value ? 'advanced' : simpleSearchQuery.value,
       returnPage: currentPage.value.toString(),
-      returnType: isAdvancedSearch.value ? 'advanced' : 'simple'
+      returnType: isAdvancedSearch.value ? 'advanced' : 'simple',
+      returnAdvanced: isAdvancedSearch.value
+        ? JSON.stringify({
+            conditions: advancedSearchConditions.value,
+            yearFrom: yearFrom.value,
+            yearTo: yearTo.value,
+            selectedClassification: selectedClassification.value,
+            selectedLanguages: selectedLanguages.value
+          })
+        : undefined
     }
   });
 };

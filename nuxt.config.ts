@@ -13,7 +13,6 @@ export default defineNuxtConfig({
 
   css: ['@/assets/css/main.css',
     'leaflet/dist/leaflet.css',
-    '@fortawesome/fontawesome-free/css/all.css'
   ],
 
   components: true,
@@ -40,6 +39,7 @@ export default defineNuxtConfig({
       }
     }
   },
+
 
   compatibilityDate: '2025-05-15',
 
