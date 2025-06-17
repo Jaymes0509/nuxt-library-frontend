@@ -1,7 +1,6 @@
 <template>
   <div class="reader-login-btn" @click="goToLogin" aria-label="讀者登入" role="button">
-    <i class="fa fa-user"></i>
-    <!-- <font-awesome-icon :icon="['fad', 'user']" /> -->
+    <img src="/public/images/user.png" alt="User Icon" class="user-icon" />
     <div class="label">讀者登入</div>
   </div>
 </template>
@@ -17,8 +16,6 @@ const goToLogin = () => {
   position: fixed;
   bottom: 5rem;
   right: 3rem;
-  background: linear-gradient(180deg, #1e3c72, #2a5298);
-  color: white;
   border-radius: 50%;
   width: 60px;
   height: 60px;
@@ -46,6 +43,11 @@ const goToLogin = () => {
   /* 同時 X, Y 位移 */
   color: black;
   white-space: nowrap;
+}
+
+.user-icon {
+  width: 60px;
+  height: 60px;
 }
 
 /* 手機尺寸（寬度小於 600px） */
