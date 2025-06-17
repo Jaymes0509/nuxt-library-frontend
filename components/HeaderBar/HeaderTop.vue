@@ -60,31 +60,35 @@
         </div>
 
         <div class="search">
-          <input type="text" :placeholder="$t('header.search')" />
-          <span>🔍</span>
+          <input type="text" v-model="query" :placeholder="$t('header.search')" class="search-input"
+            @keyup.enter="submitSearch" />
+          <button class="search-icon" @click="submitSearch">
+            🔍
+          </button>
         </div>
-        <NuxtLink to="/login" class="login-btn">{{ $t('login') }}</NuxtLink>
+        <!-- <NuxtLink to="/login" class="login-btn">{{ $t('login') }}</NuxtLink> -->
       </div>
 
     </div>
 
-    <div class="search">
+    <!-- <div class="search">
       <input type="text" v-model="query" placeholder="站內搜尋" class="search-input" @keyup.enter="submitSearch" />
       <button class="search-icon" @click="submitSearch">
         🔍
       </button>
-    </div>
+    </div> -->
 
-    <NuxtLink to="/login" class="login-btn">登入</NuxtLink>
-    </div>
+    <!-- <NuxtLink to="/login" class="login-btn">登入</NuxtLink> -->
   </template>
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { useI18n } from 'vue-i18n'
 
 
+const { locale, t } = useI18n()
 const showDropdown = ref(false)
 const isMenuOpen = ref(false)
 
@@ -99,8 +103,7 @@ const languages = [
 ]
 
 function selectLang(code) {
-  // 暫時移除語言切換功能，因為沒有 useI18n
-  console.log('切換語言到:', code)
+  locale.value = code
   showDropdown.value = false
 }
 
@@ -153,7 +156,24 @@ let links = [
   { label: '意見信箱', href: '/feedback', key: 'header.feedback' },
   { label: '無障礙專區', href: '', key: 'header.accessible' }
 ]
+// async function submitSearch() {
+//   if (!query.value.trim()) return
+//   const { data, error } = await useFetch(`/api/search?q=${encodeURIComponent(query.value)}`)
 
+//   if (error.value) {
+//     console.error('搜尋失敗:', error.value)
+//   } else {
+//     results.value = data.value // 將資料儲存顯示
+//   }
+// }
+const query = ref('')
+const router = useRouter()
+
+const submitSearch = () => {
+  if (query.value.trim()) {
+    router.push(`/search?q=${encodeURIComponent(query.value.trim())}`)
+  }
+}
 </script>
 
 <style scoped>
@@ -321,7 +341,6 @@ let links = [
 .search {
   display: flex;
   align-items: center;
-
   border-bottom: 1px solid #333;
   margin-left: 1rem;
   width: 150px;
