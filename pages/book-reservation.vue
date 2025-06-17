@@ -9,6 +9,7 @@
                         <p class="reservation-subtitle">請填寫以下預約信息</p>
                     </div>
 
+<<<<<<< HEAD
                     <div v-if="!book" class="reservation-notfound">
                         <div class="reservation-notfound-inner">
                             <div class="reservation-notfound-icon">
@@ -21,6 +22,18 @@
                             <p class="reservation-notfound-text">找不到該書籍資訊，請從書籍頁面重新進入。</p>
                         </div>
                     </div>
+=======
+      <div v-if="!book" class="reservation-notfound">
+        <div class="reservation-notfound-inner">
+          <div class="reservation-notfound-icon">
+            <svg class="reservation-notfound-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p class="reservation-notfound-text">找不到該書籍資訊，請從書籍查詢頁面重新進入。</p>
+        </div>
+      </div>
+>>>>>>> ddbe2d1f648729e834cdca810b34c2780d55700b
 
                     <div v-else class="reservation-card">
                         <!-- 書籍信息區 -->
