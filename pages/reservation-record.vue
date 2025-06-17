@@ -82,16 +82,15 @@
             <div v-else class="history-grid">
               <div v-for="(reservation, index) in paginatedBooks" :key="index" class="history-grid-card">
                 <div class="history-grid-img-wrap">
-                  <img :src="getDefaultCoverUrl(index)" :alt="reservation.bookTitle" class="history-grid-img" />
+                  <img :src="getDefaultCoverUrl(index)" :alt="reservation.title" class="history-grid-img" />
                 </div>
                 <div class="history-grid-info">
-                  <h3 class="history-grid-title reservation-record-book-title">{{ reservation.bookTitle }}</h3>
+                  <h3 class="history-grid-title reservation-record-book-title">{{ reservation.title }}</h3>
                   <p class="history-grid-author">作者：{{ reservation.author }}</p>
                   <div class="history-grid-dates">
                     <p>取書地點：{{ reservation.pickupLocation }}</p>
                     <p>取書時間：{{ reservation.pickupTime }}</p>
                     <p>預約日期：{{ reservation.reservationDate }}</p>
-                    <p>預約狀態：{{ reservation.status || '待確認' }}</p>
                   </div>
                   <button class="history-detail-btn" @click="viewBookDetail(reservation)">詳情</button>
                 </div>
@@ -128,6 +127,9 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+
+// 獲取 router 實例
+const router = useRouter()
 
 // 視圖模式
 const viewMode = ref('table')
@@ -243,12 +245,27 @@ async function fetchReservations() {
 
 // 查看書籍詳情
 function viewBookDetail(reservation) {
-  if (reservation.bookInfo) {
-    // 使用 router 導航到 bookinfo 頁面，並傳遞書籍資訊
+  console.log('點擊詳情按鈕，預約資料：', reservation)
+
+  if (reservation.bookInfo && reservation.bookInfo.isbn) {
+    // 使用 query 參數跳轉到 bookinfo 頁面
+    const isbn = reservation.bookInfo.isbn
+    console.log('跳轉到 bookinfo 頁面，ISBN：', isbn)
+
     router.push({
-      path: `/bookinfo/${reservation.bookInfo.bookId}`,
-      state: { bookInfo: reservation.bookInfo }
+      path: '/bookinfo',
+      query: {
+        isbn: isbn,
+        returnQuery: '',
+        returnPage: '1',
+        from: 'reservation-record',
+        returnType: 'list'
+      }
     })
+  } else {
+    console.warn('缺少書籍資訊或 ISBN，無法跳轉')
+    // 可以顯示錯誤訊息或使用預設值
+    alert('無法獲取書籍詳情，請稍後再試')
   }
 }
 
@@ -485,18 +502,21 @@ onMounted(async () => {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  box-sizing: border-box;
 }
 
 .history-table-fill {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  width: 100%;
 }
 
 .history-table-scrollable {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  width: 100%;
 }
 
 .history-grid-table {
@@ -507,14 +527,16 @@ onMounted(async () => {
   border-radius: 8px;
   border: 1px solid rgba(229, 231, 235, 0.4);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
 }
 
 .history-grid-header,
 .history-grid-row {
   display: grid;
-  grid-template-columns: minmax(300px, 3fr) minmax(120px, 1.5fr) minmax(120px, 1.5fr) minmax(150px, 1.5fr) minmax(80px, 0.8fr);
+  grid-template-columns: minmax(200px, 3fr) minmax(100px, 1.5fr) minmax(100px, 1.5fr) minmax(120px, 1.5fr) minmax(60px, 0.8fr);
   align-items: center;
-  min-width: 900px;
+  min-width: 600px;
+  width: 100%;
 }
 
 .history-grid-header {
@@ -523,6 +545,7 @@ onMounted(async () => {
   color: #222;
   font-weight: 600;
   padding: 12px 0;
+  width: 100%;
 }
 
 .history-grid-header>div,
@@ -532,6 +555,7 @@ onMounted(async () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  box-sizing: border-box;
 }
 
 .history-grid-header>div:first-child,
@@ -544,6 +568,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   flex: 1;
+  width: 100%;
 }
 
 .history-grid-row {
@@ -551,6 +576,7 @@ onMounted(async () => {
   flex: 1;
   border-bottom: 1px solid #e5e7eb;
   transition: background 0.2s;
+  width: 100%;
 }
 
 .history-grid-row:last-child {
@@ -563,6 +589,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
 }
 
 .history-grid-row>div:first-child {
@@ -578,6 +605,8 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .history-grid-card {
@@ -587,11 +616,14 @@ onMounted(async () => {
   backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
-  height: 480px;
+  height: auto;
+  min-height: 480px;
   width: 100%;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .history-grid-card::before {
@@ -621,11 +653,13 @@ onMounted(async () => {
 }
 
 .history-grid-img-wrap {
-  height: 240px;
+  height: 200px;
   width: 100%;
   overflow: hidden;
   position: relative;
   background: #f3f4f6;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .history-grid-img {
@@ -646,6 +680,9 @@ onMounted(async () => {
   gap: 12px;
   flex: 1;
   min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .history-grid-content {
@@ -654,7 +691,8 @@ onMounted(async () => {
   gap: 12px;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
+  width: 100%;
 }
 
 .history-grid-title {
@@ -662,30 +700,33 @@ onMounted(async () => {
   font-size: 1.1rem;
   color: #18181b;
   margin: 0;
-  max-height: 2.8em;
   line-height: 1.4;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  width: 100%;
+  min-height: 2.8em;
 }
 
 .history-grid-title::after {
-  content: '...';
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  padding-left: 40px;
-  background: linear-gradient(to right, transparent, white 50%);
+  display: none;
 }
 
-.history-grid-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.9rem;
+.history-grid-author {
+  margin: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  width: 100%;
+  font-size: 0.95rem;
   color: #4b5563;
 }
 
-.history-grid-pickup {
+.history-grid-dates {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -694,24 +735,19 @@ onMounted(async () => {
   margin-top: auto;
   padding-top: 8px;
   border-top: 1px solid rgba(229, 231, 235, 0.6);
+  width: 100%;
+  flex-shrink: 0;
 }
 
-.history-grid-label {
-  color: #6b7280;
-  font-weight: 500;
-  margin-right: 4px;
-}
-
-.history-grid-author,
-.history-grid-isbn,
-.history-grid-publisher,
-.history-grid-location,
-.history-grid-time {
+.history-grid-dates p {
   margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
   line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  width: 100%;
 }
 
 .history-detail-btn {
@@ -720,18 +756,21 @@ onMounted(async () => {
   color: #fff;
   border: none;
   border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 0.95rem;
+  padding: 12px 20px;
+  font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
   width: 100%;
-  height: 40px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  max-width: 100%;
 }
 
 .history-detail-btn:hover {
@@ -825,6 +864,31 @@ onMounted(async () => {
   -webkit-appearance: none;
 }
 
+@media (max-width: 1024px) {
+  .history-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px;
+  }
+
+  .history-grid-card {
+    min-height: 450px;
+  }
+
+  .history-grid-img-wrap {
+    height: 180px;
+  }
+
+  .history-control-panel {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .history-control-panel-left {
+    justify-content: space-between;
+  }
+}
+
 @media (max-width: 768px) {
   .scroll-wrapper {
     padding: 0;
@@ -835,111 +899,37 @@ onMounted(async () => {
   }
 
   .history-bg {
-    padding: 8px 4px 60px 4px;
+    padding: 16px 12px 60px 12px;
   }
 
   .history-main {
-    gap: 12px;
+    gap: 16px;
   }
 
   .history-title {
-    font-size: 1.3rem;
-    margin-bottom: 8px;
-  }
-
-  .history-grid-header,
-  .history-grid-row {
-    grid-template-columns: minmax(120px, 2fr) minmax(80px, 1fr) minmax(60px, 0.8fr);
-    font-size: 0.8rem;
-    min-width: 0;
-  }
-
-  .history-grid-header>div,
-  .history-grid-row>div {
-    padding: 6px 8px;
-  }
-
-  .history-grid-title-cell {
-    font-size: 0.8rem;
-  }
-
-  .history-detail-btn {
-    padding: 4px 6px;
-    font-size: 0.75rem;
-    min-width: 50px;
-  }
-
-  .history-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .history-grid-card {
-    height: 320px;
-    min-width: 0;
-  }
-
-  .history-grid-img-wrap {
-    height: 100px;
-  }
-
-  .history-grid-info {
-    padding: 8px;
-    gap: 6px;
-  }
-
-  .history-pagination {
-    margin-top: 8px;
-    padding: 6px;
-    width: 100%;
-  }
-
-  .history-pagination-controls {
-    gap: 4px;
-    width: 100%;
-  }
-
-  .history-pagination-info {
-    font-size: 0.8rem;
-    white-space: normal;
-    line-height: 1.2;
-  }
-
-  .history-pagination-input {
-    width: 40px;
-  }
-}
-
-@media (max-width: 480px) {
-  .history-bg {
-    padding: 4px 2px 40px 2px;
-  }
-
-  .history-title {
-    font-size: 1.1rem;
+    font-size: 1.5rem;
+    margin-bottom: 12px;
   }
 
   .history-control-panel {
     flex-direction: column;
     align-items: stretch;
-    gap: 4px;
+    gap: 8px;
   }
 
   .history-control-panel-left {
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
   }
 
   .history-control-panel-right {
     justify-content: center;
-    gap: 4px;
   }
 
   .history-row {
     flex-direction: column;
     align-items: stretch;
-    width: 100%;
-    gap: 2px;
+    gap: 4px;
   }
 
   .history-label {
@@ -948,74 +938,270 @@ onMounted(async () => {
   }
 
   .history-select {
-    min-width: 80px;
+    min-width: 100px;
     font-size: 0.9rem;
+    height: 36px;
+    padding: 6px 12px;
+  }
+
+  .history-sort-btn,
+  .history-view-btn {
+    font-size: 0.9rem;
+    height: 36px;
+    padding: 6px 12px;
+  }
+
+  /* 表格響應式 */
+  .history-grid-header,
+  .history-grid-row {
+    grid-template-columns: minmax(120px, 2fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(100px, 1fr) minmax(60px, 0.8fr);
+    font-size: 0.85rem;
+    min-width: 500px;
+  }
+
+  .history-grid-header>div,
+  .history-grid-row>div {
+    padding: 8px 10px;
+  }
+
+  .history-grid-title-cell {
+    font-size: 0.85rem;
+  }
+
+  .history-detail-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    min-width: 50px;
+  }
+
+  /* 網格響應式 */
+  .history-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .history-grid-card {
+    min-height: 400px;
+  }
+
+  .history-grid-img-wrap {
+    height: 160px;
+  }
+
+  .history-grid-info {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .history-grid-title {
+    font-size: 1rem;
+  }
+
+  .history-grid-author {
+    font-size: 0.9rem;
+  }
+
+  .history-grid-dates {
+    font-size: 0.85rem;
+    gap: 4px;
+  }
+
+  .history-detail-btn {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    min-height: 40px;
+  }
+
+  .history-pagination {
+    margin-top: 16px;
+    padding: 12px;
+  }
+
+  .history-pagination-controls {
+    gap: 8px;
+  }
+
+  .history-pagination-info {
+    font-size: 0.85rem;
+    white-space: normal;
+    line-height: 1.3;
+  }
+
+  .history-pagination-input {
+    width: 50px;
+  }
+}
+
+@media (max-width: 480px) {
+  .history-bg {
+    padding: 12px 8px 40px 8px;
+  }
+
+  .history-title {
+    font-size: 1.3rem;
+    margin-bottom: 8px;
+  }
+
+  .history-control-panel {
+    gap: 6px;
+  }
+
+  .history-control-panel-left {
+    gap: 6px;
+  }
+
+  .history-row {
+    gap: 2px;
+  }
+
+  .history-label {
+    font-size: 0.85rem;
+  }
+
+  .history-select {
+    min-width: 80px;
+    font-size: 0.85rem;
     height: 32px;
     padding: 4px 8px;
   }
 
   .history-sort-btn,
   .history-view-btn {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     height: 32px;
     padding: 4px 8px;
   }
 
+  /* 表格響應式 */
   .history-grid-header,
   .history-grid-row {
-    grid-template-columns: minmax(80px, 2fr) minmax(60px, 1fr) minmax(40px, 0.8fr);
-    font-size: 0.7rem;
-    min-width: 0;
+    grid-template-columns: minmax(100px, 2fr) minmax(60px, 1fr) minmax(60px, 1fr) minmax(80px, 1fr) minmax(50px, 0.8fr);
+    font-size: 0.75rem;
+    min-width: 400px;
   }
 
   .history-grid-header>div,
   .history-grid-row>div {
-    padding: 4px 4px;
+    padding: 6px 8px;
   }
 
   .history-grid-title-cell {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
 
   .history-detail-btn {
-    padding: 2px 4px;
+    padding: 4px 6px;
     font-size: 0.7rem;
     min-width: 40px;
   }
 
+  /* 網格響應式 */
+  .history-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
   .history-grid-card {
-    height: 220px;
-    min-width: 0;
+    min-height: 350px;
   }
 
   .history-grid-img-wrap {
-    height: 60px;
+    height: 140px;
   }
 
   .history-grid-info {
-    padding: 4px;
-    gap: 2px;
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .history-grid-title {
+    font-size: 0.95rem;
+  }
+
+  .history-grid-author {
+    font-size: 0.85rem;
+  }
+
+  .history-grid-dates {
+    font-size: 0.8rem;
+    gap: 3px;
+  }
+
+  .history-detail-btn {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    min-height: 36px;
   }
 
   .history-pagination {
-    margin-top: 4px;
-    padding: 2px;
-    width: 100%;
+    margin-top: 12px;
+    padding: 8px;
   }
 
   .history-pagination-controls {
-    gap: 2px;
-    width: 100%;
+    gap: 4px;
   }
 
   .history-pagination-info {
-    font-size: 0.7rem;
-    white-space: normal;
-    line-height: 1.1;
+    font-size: 0.8rem;
+    line-height: 1.2;
   }
 
   .history-pagination-input {
-    width: 30px;
+    width: 40px;
+  }
+}
+
+@media (max-width: 360px) {
+  .history-bg {
+    padding: 8px 4px 30px 4px;
+  }
+
+  .history-title {
+    font-size: 1.1rem;
+  }
+
+  .history-grid-header,
+  .history-grid-row {
+    grid-template-columns: minmax(80px, 2fr) minmax(50px, 1fr) minmax(50px, 1fr) minmax(60px, 1fr) minmax(40px, 0.8fr);
+    font-size: 0.7rem;
+    min-width: 320px;
+  }
+
+  .history-grid-header>div,
+  .history-grid-row>div {
+    padding: 4px 6px;
+  }
+
+  .history-grid-card {
+    min-height: 300px;
+  }
+
+  .history-grid-img-wrap {
+    height: 120px;
+  }
+
+  .history-grid-info {
+    padding: 8px;
+    gap: 4px;
+  }
+
+  .history-grid-title {
+    font-size: 0.9rem;
+  }
+
+  .history-grid-author {
+    font-size: 0.8rem;
+  }
+
+  .history-grid-dates {
+    font-size: 0.75rem;
+  }
+
+  .history-detail-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    min-height: 32px;
   }
 }
 

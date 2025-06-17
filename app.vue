@@ -15,7 +15,7 @@
          <FooterBar />
       </div>
 
-        <!-- 讀者登入按鈕 -->
+      <!-- 讀者登入按鈕 -->
       <MemberLoginButton />
    </div>
 
@@ -26,6 +26,7 @@ import { ref } from 'vue'
 import HeaderBar from '@/components/HeaderBar/index.vue'
 import FooterBar from '@/components/FooterBar.vue'
 import Sidebar from '@/components/Sidebar.vue'
+import MemberLoginButton from '@/components/MemberLoginButton.vue'
 
 const isSidebarOpen = ref(true)
 </script>

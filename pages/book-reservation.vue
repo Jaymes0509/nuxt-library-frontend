@@ -1,4 +1,5 @@
 <template>
+
     <div class="scroll-wrapper">
         <div class="intro">
             <div class="reservation-bg">
@@ -9,8 +10,7 @@
                         <p class="reservation-subtitle">請填寫以下預約信息</p>
                     </div>
 
-<<<<<<< HEAD
-                    <div v-if="!book" class="reservation-notfound">
+                    <<<<<<< HEAD <div v-if="!book" class="reservation-notfound">
                         <div class="reservation-notfound-inner">
                             <div class="reservation-notfound-icon">
                                 <svg class="reservation-notfound-svg" fill="none" stroke="currentColor"
@@ -19,114 +19,114 @@
                                         d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </div>
-                            <p class="reservation-notfound-text">找不到該書籍資訊，請從書籍頁面重新進入。</p>
+                            <p class="reservation-notfound-text">找不到該書籍資訊，請從書籍查詢頁面重新進入。</p>
                         </div>
+                </div>
+                =======
+                <div v-if="!book" class="reservation-notfound">
+                    <div class="reservation-notfound-inner">
+                        <div class="reservation-notfound-icon">
+                            <svg class="reservation-notfound-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <p class="reservation-notfound-text">找不到該書籍資訊，請從書籍查詢頁面重新進入。</p>
                     </div>
-=======
-      <div v-if="!book" class="reservation-notfound">
-        <div class="reservation-notfound-inner">
-          <div class="reservation-notfound-icon">
-            <svg class="reservation-notfound-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <p class="reservation-notfound-text">找不到該書籍資訊，請從書籍查詢頁面重新進入。</p>
-        </div>
-      </div>
->>>>>>> ddbe2d1f648729e834cdca810b34c2780d55700b
+                </div>
+                >>>>>>> ddbe2d1f648729e834cdca810b34c2780d55700b
 
-                    <div v-else class="reservation-card">
-                        <!-- 書籍信息區 -->
-                        <div class="reservation-bookinfo">
-                            <h2 class="reservation-bookinfo-title">預約書籍</h2>
-                            <p class="reservation-bookinfo-book">{{ book.title }}</p>
-                            <p class="reservation-bookinfo-author">作者：{{ book.author }}</p>
+                <div v-else class="reservation-card">
+                    <!-- 書籍信息區 -->
+                    <div class="reservation-bookinfo">
+                        <h2 class="reservation-bookinfo-title">預約書籍</h2>
+                        <p class="reservation-bookinfo-book">{{ book.title }}</p>
+                        <p class="reservation-bookinfo-author">作者：{{ book.author }}</p>
+                    </div>
+
+                    <!-- 預約表單區 -->
+                    <div class="reservation-form">
+                        <!-- 取書時間 -->
+                        <div class="reservation-form-group">
+                            <label class="reservation-label">
+                                <svg class="reservation-label-icon" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                取書時間
+                            </label>
+                            <input type="datetime-local" v-model="form.time"
+                                :class="['reservation-input', { 'shake': isShaking.time }]" />
+                            <span v-if="errors.time" class="error-message">{{ errors.time }}</span>
                         </div>
 
-                        <!-- 預約表單區 -->
-                        <div class="reservation-form">
-                            <!-- 取書時間 -->
-                            <div class="reservation-form-group">
-                                <label class="reservation-label">
-                                    <svg class="reservation-label-icon" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    取書時間
-                                </label>
-                                <input type="datetime-local" v-model="form.time"
-                                    :class="['reservation-input', { 'shake': isShaking.time }]" />
-                                <span v-if="errors.time" class="error-message">{{ errors.time }}</span>
-                            </div>
 
-                            <!-- 取書地點 -->
-                            <div class="reservation-form-group">
-                                <label class="reservation-label">
-                                    <svg class="reservation-label-icon" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                    取書地點
-                                </label>
-                                <select v-model="form.location"
-                                    :class="['reservation-input', { 'shake': isShaking.location }]">
-                                    <option disabled value="">請選擇取書地點</option>
-                                    <option>一樓服務台</option>
-                                    <option>二樓自助區</option>
-                                </select>
-                                <span v-if="errors.location" class="error-message">{{ errors.location }}</span>
-                            </div>
+                        <!-- 取書地點 -->
+                        <div class="reservation-form-group">
+                            <label class="reservation-label">
+                                <svg class="reservation-label-icon" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                取書地點
+                            </label>
+                            <select v-model="form.location"
+                                :class="['reservation-input', { 'shake': isShaking.location }]">
+                                <option disabled value="">請選擇取書地點</option>
+                                <option>一樓服務台</option>
+                                <option>二樓自助區</option>
+                            </select>
+                            <span v-if="errors.location" class="error-message">{{ errors.location }}</span>
+                        </div>
 
-                            <!-- 取書方式 -->
-                            <div class="reservation-form-group">
-                                <label class="reservation-label">
-                                    <svg class="reservation-label-icon" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
-                                    取書方式
-                                </label>
-                                <select v-model="form.method"
-                                    :class="['reservation-input', { 'shake': isShaking.method }]">
-                                    <option disabled value="">請選擇取書方式</option>
-                                    <option>親自取書</option>
-                                    <option>他人代領</option>
-                                </select>
-                                <span v-if="errors.method" class="error-message">{{ errors.method }}</span>
-                            </div>
+                        <!-- 取書方式 -->
+                        <div class="reservation-form-group">
+                            <label class="reservation-label">
+                                <svg class="reservation-label-icon" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                取書方式
+                            </label>
+                            <select v-model="form.method" :class="['reservation-input', { 'shake': isShaking.method }]">
+                                <option disabled value="">請選擇取書方式</option>
+                                <option>親自取書</option>
+                                <option>他人代領</option>
+                            </select>
+                            <span v-if="errors.method" class="error-message">{{ errors.method }}</span>
+                        </div>
 
-                            <!-- 預約須知 -->
-                            <div class="reservation-notice">
-                                <h3 class="reservation-notice-title">預約須知</h3>
-                                <ul class="reservation-notice-list">
-                                    <li>請在預約時間內完成取書</li>
-                                    <li>超過預約時間未取書將自動取消預約,並停權帳號</li>
-                                    <li>每人最多可預約 {{ maxReservation }} 本書</li>
-                                    <li>您目前已預約 {{ userReservedCount }} 本書</li>
-                                </ul>
-                            </div>
+                        <!-- 預約須知 -->
+                        <div class="reservation-notice">
+                            <h3 class="reservation-notice-title">預約須知</h3>
+                            <ul class="reservation-notice-list">
+                                <li>請在預約時間內完成取書</li>
+                                <li>超過預約時間未取書將自動取消預約,並停權帳號</li>
+                                <li>每人最多可預約 {{ maxReservation }} 本書</li>
+                                <li>您目前已預約 {{ userReservedCount }} 本書</li>
+                            </ul>
+                        </div>
 
-                            <!-- 按鈕區域 -->
-                            <div class="reservation-btn-area">
-                                <button type="button" @click="router.back()"
-                                    class="reservation-btn reservation-btn-back">
-                                    返回
-                                </button>
-                                <button type="button" @click="handleReserve"
-                                    class="reservation-btn reservation-btn-confirm">
-                                    確認預約
-                                </button>
-                            </div>
+                        <!-- 按鈕區域 -->
+                        <div class="reservation-btn-area">
+                            <button type="button" @click="router.back()" class="reservation-btn reservation-btn-back">
+                                返回
+                            </button>
+                            <button type="button" @click="handleReserve"
+                                class="reservation-btn reservation-btn-confirm">
+                                確認預約
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
     </div>
 </template>
 

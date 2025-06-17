@@ -2,11 +2,7 @@
   <div class="book-detail-wrapper">
     <!-- 左半邊：封面圖片 -->
     <div class="cover-area">
-      <img
-        class="cover-image"
-        :src="bookCoverUrl"
-        :alt="`書籍《${book.title}》封面`"
-      />
+      <img class="cover-image" :src="bookCoverUrl" :alt="`書籍《${book.title}》封面`" />
     </div>
 
     <!-- 右半邊：文字內容區 -->
@@ -47,12 +43,8 @@
 
       <!-- 動作區域 -->
       <div class="action-area">
-        <button 
-          class="reserve-btn" 
-          @click="reserveBook"
-          :disabled="!book.is_available"
-          :class="{ 'disabled': !book.is_available }"
-        >
+        <button class="reserve-btn" @click="reserveBook" :disabled="!book.is_available"
+          :class="{ 'disabled': !book.is_available }">
           {{ book.is_available === 1 ? '預約此書' : '無法預約' }}
         </button>
         <button class="back-btn" @click="goBack">
@@ -88,6 +80,11 @@ onMounted(async () => {
     // 統一處理 is_available（支援後端回傳為 boolean 或 int）
     data.is_available = (data.is_available === 1 || data.is_available === '1' || data.is_available === true) ? 1 : 0
 
+    // 添加日誌來追蹤 imgUrl
+    console.log('API 回應的完整資料：', data)
+    console.log('API 回應中的 imgUrl：', data.imgUrl)
+    console.log('URL 參數中的 imgUrl：', route.query.imgUrl)
+
     book.value = data
   } catch (error) {
     console.error('無法取得書籍資料', error)
@@ -108,6 +105,9 @@ onMounted(async () => {
 })
 
 const bookCoverUrl = computed(() => {
+  if (book.value.imgUrl) {
+    return book.value.imgUrl
+  }
   if (route.query.imgUrl) {
     return route.query.imgUrl
   }
@@ -136,7 +136,7 @@ const goBack = () => {
 <<<<<<< HEAD
 const reserveBook = () => {
   if (book.value?.is_available !== 1) return
-  
+
   router.push({
     path: '/book-reservation',
     query: {
@@ -165,7 +165,7 @@ const reserveBook = async () => {
       retries: 3,
       retryDelay: 1000
     })
-    
+
     if (res.data.success) {
       alert('預約成功')
       // 更新書籍狀態
@@ -317,13 +317,16 @@ const reserveBook = async () => {
   .book-detail-wrapper {
     flex-direction: row;
   }
+
   .cover-area,
   .info-area {
     align-items: flex-start;
   }
+
   .cover-area {
     max-width: 40%;
   }
+
   .info-area {
     max-width: 60%;
   }
@@ -334,7 +337,7 @@ const reserveBook = async () => {
   .action-area {
     flex-direction: column;
   }
-  
+
   .reserve-btn,
   .back-btn {
     width: 100%;
