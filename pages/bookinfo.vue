@@ -88,6 +88,11 @@ onMounted(async () => {
     // 統一處理 is_available（支援後端回傳為 boolean 或 int）
     data.is_available = (data.is_available === 1 || data.is_available === '1' || data.is_available === true) ? 1 : 0
 
+    // 添加日誌來追蹤 imgUrl
+    console.log('API 回應的完整資料：', data)
+    console.log('API 回應中的 imgUrl：', data.imgUrl)
+    console.log('URL 參數中的 imgUrl：', route.query.imgUrl)
+
     book.value = data
   } catch (error) {
     console.error('無法取得書籍資料', error)
@@ -108,6 +113,9 @@ onMounted(async () => {
 })
 
 const bookCoverUrl = computed(() => {
+  if (book.value.imgUrl) {
+    return book.value.imgUrl
+  }
   if (route.query.imgUrl) {
     return route.query.imgUrl
   }

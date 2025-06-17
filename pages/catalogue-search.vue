@@ -142,7 +142,7 @@
       <div v-for="book in currentPageResults" :key="book.isbn" class="result-item">
         <div class="result-image">
           <img 
-            :src="book.coverUrl || `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`" 
+            :src="book.imgUrl || `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`" 
             :alt="book.title"
             @error="handleImageError"
             class="book-cover"
@@ -350,27 +350,30 @@ const fetchBooks = async (params) => {
       
       const content = Array.isArray(response.data.content) ? response.data.content : [];
       
-      // 為每本書獲取 Google Books 封面
+      // 為每本書獲取封面
       for (const book of content) {
-        if (book.isbn) {
+        if (book.imgUrl) {
+          // 優先使用資料庫的 imgUrl
+          book.imgUrl = book.imgUrl;
+        } else if (book.isbn) {
           try {
             const googleBooksResponse = await axios.get(`https://www.googleapis.com/books/v1/volumes?q=isbn:${book.isbn}`);
             if (googleBooksResponse.data.items && googleBooksResponse.data.items.length > 0) {
               const volumeInfo = googleBooksResponse.data.items[0].volumeInfo;
               if (volumeInfo.imageLinks && volumeInfo.imageLinks.thumbnail) {
-                book.coverUrl = volumeInfo.imageLinks.thumbnail;
+                book.imgUrl = volumeInfo.imageLinks.thumbnail;
               } else {
-                book.coverUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
+                book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
               }
             } else {
-              book.coverUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
+              book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
             }
           } catch (error) {
             console.error('獲取 Google Books 封面失敗：', error);
-            book.coverUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
+            book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
           }
         } else {
-          book.coverUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
+          book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
         }
         
         book.is_available = book.is_available === true ? 1 : 0;
@@ -536,28 +539,31 @@ const performAdvancedSearch = async () => {
       }
     });
 
-    // 為每本書獲取 Google Books 封面
+    // 為每本書獲取封面
     const content = Array.isArray(response.data.content) ? response.data.content : [];
     for (const book of content) {
-      if (book.isbn) {
+      if (book.imgUrl) {
+        // 優先使用資料庫的 imgUrl
+        book.imgUrl = book.imgUrl;
+      } else if (book.isbn) {
         try {
           const googleBooksResponse = await axios.get(`https://www.googleapis.com/books/v1/volumes?q=isbn:${book.isbn}`);
           if (googleBooksResponse.data.items && googleBooksResponse.data.items.length > 0) {
             const volumeInfo = googleBooksResponse.data.items[0].volumeInfo;
             if (volumeInfo.imageLinks && volumeInfo.imageLinks.thumbnail) {
-              book.coverUrl = volumeInfo.imageLinks.thumbnail;
+              book.imgUrl = volumeInfo.imageLinks.thumbnail;
             } else {
-              book.coverUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
+              book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
             }
           } else {
-            book.coverUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
+            book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
           }
         } catch (error) {
           console.error('獲取 Google Books 封面失敗：', error);
-          book.coverUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
+          book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
         }
       } else {
-        book.coverUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
+        book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
       }
       book.is_available = book.is_available === true || book.is_available === 1 ? 1 : 0;
     }
