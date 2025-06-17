@@ -2,6 +2,23 @@
 definePageMeta({
   layout: 'blank',
 })
+
+import { useRouter } from 'vue-router'
+import { useAuth } from '~/components/useAuth'
+
+const router = useRouter()
+const { user } = useAuth()
+
+const login = () => {
+  // 設定為管理者
+  user.value = {
+    id: 1,
+    name: '開發管理員',
+    role: 'admin'
+  }
+  // 跳轉到管理者介面
+  router.push('/manager')
+}
 </script>
 
 <template>
@@ -14,5 +31,8 @@ definePageMeta({
       </div>
       <AuthSignIn />
     </div>
+    <button @click="login" class="mt-4 px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-900 transition">
+      管理者登入（開發用）
+    </button>
   </LayoutAuth>
 </template>
