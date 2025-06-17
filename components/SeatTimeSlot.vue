@@ -23,9 +23,30 @@ const modelValue = computed({
 })
 
 const timeSlots = [
-    { label: '上午（09:00–12:00）', value: 'morning' },
-    { label: '下午（13:00–17:00）', value: 'afternoon' },
-    { label: '晚上（18:00–22:00）', value: 'evening' }
+    {
+        label: '09:00 - 11:00',
+        value: { start: '09:00', end: '11:00' }
+    },
+    {
+        label: '11:00 - 13:00',
+        value: { start: '11:00', end: '13:00' }
+    },
+    {
+        label: '13:00 - 15:00',
+        value: { start: '13:00', end: '15:00' }
+    },
+    {
+        label: '15:00 - 17:00',
+        value: { start: '15:00', end: '17:00' }
+    },
+    {
+        label: '17:00 - 19:00',
+        value: { start: '17:00', end: '19:00' }
+    },
+    {
+        label: '19:00 - 21:00',
+        value: { start: '19:00', end: '21:00' }
+    }
 ]
 </script>
 
