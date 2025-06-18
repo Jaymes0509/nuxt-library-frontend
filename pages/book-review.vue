@@ -734,4 +734,5 @@ const startWritingReview = book => {
 watch(step, val => {
   if (val === 'read') fetchRandomBooks()
 })
+
 </script>
