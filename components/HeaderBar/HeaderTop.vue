@@ -8,8 +8,8 @@
           <div class="logo">
             <img src="/public/images/libraryLogo.png" alt="Logo" />
             <div class="title">
-              <h1>{{ $t('header.title') }}</h1>
-              <p>{{ $t('header.subtitle') }}</p>
+              <h1>{{ title }}</h1>
+              <p>{{ subtitle }}</p>
             </div>
           </div>
         </NuxtLink>
@@ -27,12 +27,17 @@
 
       <div class="top-links" :class="{ 'menu-open': isMenuOpen }">
         <ul>
-
-          <li v-for="(link, index) in links" :key="link.href" :title="$t(link.key)">
-            <a v-if="link.label !== '無障礙專區'" :href="link.href">{{ $t(link.key) }}</a>
-            <button v-else class="a11y-toggle" @click="toggleAccessibility" aria-label="切換視障友善模式">
-              {{ isAccessible ? $t('header.normalMode') : $t('header.accessibleMode') }}
-            </button>
+          <li v-for="(link, index) in links" :key="link.href || link.label" :title="link.label">
+            <template v-if="link.label !== '無障礙專區'">
+              <NuxtLink :to="link.href" class="top-link">
+                {{ link.label }}
+              </NuxtLink>
+            </template>
+            <template v-else>
+              <button class="a11y-toggle" @click="toggleAccessibility" aria-label="切換視障友善模式">
+                {{ isAccessible ? '標準模式' : '無障礙模式' }}
+              </button>
+            </template>
 
             <span v-if="index !== links.length - 1" class="separator">＊</span>
           </li>
@@ -45,11 +50,10 @@
         <img src="/ig.png" alt="Instagram" />
         <img src="/fb.png" alt="Facebook" />
       </div> -->
-
       <!-- 語言切換選單 -->
       <div class="top-right">
         <div>
-          <button @click="toggleDropdown" class="lang-btn" title="語言">🌐 {{ $t('header.language') }}</button>
+          <button @click="toggleDropdown" class="lang-btn" title="語言">🌐 語言</button>
           <ul v-if="showDropdown" class="lang-menu">
             <li v-for="lang in languages" :key="lang.code" :title="lang.label">
               <a href="#" class="dropdown-item" @click.prevent="selectLang(lang.code)">
@@ -60,35 +64,28 @@
         </div>
 
         <div class="search">
-          <input type="text" v-model="query" :placeholder="$t('header.search')" class="search-input"
-            @keyup.enter="submitSearch" />
+          <input type="text" v-model="query" placeholder="站內搜尋" class="search-input" @keyup.enter="submitSearch" />
           <button class="search-icon" @click="submitSearch">
             🔍
           </button>
         </div>
-        <!-- <NuxtLink to="/login" class="login-btn">{{ $t('login') }}</NuxtLink> -->
       </div>
 
-    </div>
-
-    <!-- <div class="search">
+      <!-- <div class="search">
       <input type="text" v-model="query" placeholder="站內搜尋" class="search-input" @keyup.enter="submitSearch" />
       <button class="search-icon" @click="submitSearch">
         🔍
       </button>
     </div> -->
 
-    <!-- <NuxtLink to="/login" class="login-btn">登入</NuxtLink> -->
+      <!-- <NuxtLink to="/login" class="login-btn">登入</NuxtLink> -->
+    </div>
   </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { useI18n } from 'vue-i18n'
-
-
-const { locale, t } = useI18n()
 const showDropdown = ref(false)
 const isMenuOpen = ref(false)
 
@@ -103,7 +100,7 @@ const languages = [
 ]
 
 function selectLang(code) {
-  locale.value = code
+  // 暫時移除 i18n 功能
   showDropdown.value = false
 }
 
@@ -149,23 +146,12 @@ const closeMenu = () => {
 }
 
 let links = [
+  { label: '首頁', href: '/' },
+  { label: '網站導覽', href: '' },
+  { label: '開放時間', href: '/opening-hours' },
+  { label: '意見信箱', href: '/feedback' },
+  { label: '無障礙專區', href: '' }]
 
-  { label: '首頁', href: '/', key: 'header.home' },
-  { label: '網站導覽', href: '', key: 'header.sitemap' },
-  { label: '開放時間', href: '/opening-hours', key: 'header.openingHours' },
-  { label: '意見信箱', href: '/feedback', key: 'header.feedback' },
-  { label: '無障礙專區', href: '', key: 'header.accessible' }
-]
-// async function submitSearch() {
-//   if (!query.value.trim()) return
-//   const { data, error } = await useFetch(`/api/search?q=${encodeURIComponent(query.value)}`)
-
-//   if (error.value) {
-//     console.error('搜尋失敗:', error.value)
-//   } else {
-//     results.value = data.value // 將資料儲存顯示
-//   }
-// }
 const query = ref('')
 const router = useRouter()
 
@@ -341,10 +327,8 @@ const submitSearch = () => {
 .search {
   display: flex;
   align-items: center;
-  border-bottom: 1px solid #333;
-  margin-left: 1rem;
-  width: 150px;
-
+  border-bottom: 1px solid #444;
+  padding: 4px;
 }
 
 .search-input {
@@ -356,7 +340,6 @@ const submitSearch = () => {
   font-size: 1.25rem;
   width: 100%;
 }
-
 
 .search span {
   margin-left: 0.5rem;
@@ -585,5 +568,11 @@ const submitSearch = () => {
     display: flex !important;
   }
 
+  .search-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
 }
 </style>

@@ -63,7 +63,9 @@
               <label>分類法</label>
               <select v-model="selectedCategorySystem">
                 <option value="">全部</option>
+
                 <option v-for="opt in classificationSystemOptions" :key="opt.value" :value="opt.value">
+
                   {{ opt.label }}
                 </option>
               </select>
@@ -73,7 +75,9 @@
             <div class="condition">
               <label>語言</label>
               <select v-model="selectedLanguages">
+
                 <option value="">全部</option>
+
                 <option v-for="lang in languageOptions" :key="lang.value" :value="lang.value">
                   {{ lang.label }}
                 </option>

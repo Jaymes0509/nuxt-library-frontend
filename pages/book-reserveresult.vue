@@ -10,19 +10,31 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 class="result-success-title">預約成功！</h1>
-            <p class="result-success-subtitle">您的書籍已成功預約，請在指定時間內取書</p>
+            <h1 class="result-success-title">{{ isBatchMode ? '批量預約成功！' : '預約成功！' }}</h1>
+            <p class="result-success-subtitle">{{ isBatchMode ? `您已成功預約 ${reservationBooks.length} 本書籍` :
+              '您的書籍已成功預約，請在指定時間內取書' }}
+            </p>
           </div>
 
           <!-- 預約詳情卡片 -->
           <div class="result-card">
             <!-- 書籍資訊 -->
             <div class="result-bookinfo">
-              <h2 class="result-bookinfo-title">預約書籍資訊</h2>
-              <div class="result-bookinfo-content">
-                <p class="result-bookinfo-book">{{ book.title }}</p>
-                <p class="result-bookinfo-author">作者：{{ book.author }}</p>
-                <p class="result-bookinfo-isbn">ISBN：{{ book.isbn }}</p>
+              <h2 class="result-bookinfo-title">{{ isBatchMode ? '預約書籍清單' : '預約書籍資訊' }}</h2>
+              <div v-if="isBatchMode" class="result-books-list">
+                <div v-for="(book, index) in reservationBooks" :key="index" class="result-book-item">
+                  <span class="result-book-number">{{ index + 1 }}.</span>
+                  <div class="result-book-info">
+                    <p class="result-book-title">{{ book.title }}</p>
+                    <p class="result-book-author">作者：{{ book.author }}</p>
+                    <p class="result-book-isbn">ISBN：{{ book.isbn }}</p>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="result-bookinfo-content">
+                <p class="result-bookinfo-book">{{ reservationBooks[0].title }}</p>
+                <p class="result-bookinfo-author">作者：{{ reservationBooks[0].author }}</p>
+                <p class="result-bookinfo-isbn">ISBN：{{ reservationBooks[0].isbn }}</p>
               </div>
             </div>
 
@@ -44,7 +56,7 @@
                 </div>
                 <div class="result-info-item">
                   <span class="result-info-label">預約編號：</span>
-                  <span class="result-info-value">{{ reservationId }}</span>
+                  <span class="result-info-value">{{ reservationIds.join(', ') }}</span>
                 </div>
               </div>
             </div>
@@ -62,8 +74,8 @@
 
             <!-- 按鈕區域 -->
             <div class="result-btn-area">
-              <button type="button" @click="goToReservationRecord" class="result-btn result-btn-record">
-                查看預約記錄
+              <button type="button" @click="goToReservationList" class="result-btn result-btn-record">
+                查看預約清單
               </button>
               <button type="button" @click="goToHome" class="result-btn result-btn-home">
                 返回首頁
@@ -89,19 +101,53 @@ useHead({
 const route = useRoute()
 const router = useRouter()
 
-// 從路由參數獲取書籍資訊
-const book = computed(() => ({
-  title: String(route.query.title || '未知書名'),
-  author: String(route.query.author || '未知作者'),
-  isbn: String(route.query.isbn || '未知ISBN')
-}))
+// 獲取預約結果資料
+const reservationBooks = computed(() => {
+  const booksParam = route.query.books
+  if (!booksParam || typeof booksParam !== 'string') return []
+
+  try {
+    return JSON.parse(booksParam)
+  } catch (error) {
+    console.error('解析書籍資料失敗：', error)
+    return []
+  }
+})
+
+// 獲取預約 ID 列表
+const reservationIds = computed(() => {
+  const idsParam = route.query.reservationIds
+  if (!idsParam || typeof idsParam !== 'string') return []
+
+  try {
+    return JSON.parse(idsParam)
+  } catch (error) {
+    console.error('解析預約 ID 失敗：', error)
+    return []
+  }
+})
+
+// 檢查是否為批量預約模式
+const isBatchMode = computed(() => reservationBooks.value.length > 1)
 
 // 從路由參數獲取預約資訊
-const form = computed(() => ({
-  time: String(route.query.time || ''),
-  location: String(route.query.location || ''),
-  method: String(route.query.method || '')
-}))
+const form = computed(() => {
+  // 如果是批量預約，從第一本書籍中獲取預約資訊
+  if (isBatchMode.value && reservationBooks.value.length > 0) {
+    return {
+      time: reservationBooks.value[0].time || '',
+      location: reservationBooks.value[0].location || '',
+      method: reservationBooks.value[0].method || ''
+    }
+  }
+
+  // 單本書籍預約
+  return {
+    time: String(route.query.time || ''),
+    location: String(route.query.location || ''),
+    method: String(route.query.method || '')
+  }
+})
 
 // 生成預約編號（實際應用中應該由後端生成）
 const reservationId = computed(() => {
@@ -124,8 +170,8 @@ function formatDateTime(dateTimeStr: string) {
   })
 }
 
-// 跳轉到預約記錄頁面
-function goToReservationRecord() {
+// 跳轉到預約清單頁面
+function goToReservationList() {
   router.push('/reservation-record')
 }
 
@@ -136,8 +182,16 @@ function goToHome() {
 
 // 檢查必要參數
 onMounted(() => {
-  if (!route.query.title || !route.query.time || !route.query.location || !route.query.method) {
+  // 檢查是否有書籍資料
+  if (reservationBooks.value.length === 0) {
     router.push('/book-reservation')
+    return
+  }
+
+  // 檢查是否有預約資訊
+  if (!form.value.time || !form.value.location || !form.value.method) {
+    router.push('/book-reservation')
+    return
   }
 })
 </script>
@@ -362,6 +416,72 @@ onMounted(() => {
 
   .result-btn {
     width: 100%;
+  }
+}
+
+/* 批量預約結果樣式 */
+.result-books-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 12px;
+  background: rgba(243, 244, 246, 0.3);
+  border-radius: 8px;
+  border: 1px solid rgba(229, 231, 235, 0.4);
+}
+
+.result-book-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 6px;
+  border: 1px solid rgba(229, 231, 235, 0.4);
+}
+
+.result-book-number {
+  font-weight: 600;
+  color: #2563eb;
+  font-size: 1.1rem;
+  min-width: 24px;
+  padding-top: 2px;
+}
+
+.result-book-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.result-book-title {
+  font-weight: 600;
+  color: #18181b;
+  font-size: 1rem;
+  margin: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.result-book-author,
+.result-book-isbn {
+  color: #4b5563;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .result-book-item {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .result-book-number {
+    align-self: flex-start;
   }
 }
 </style>

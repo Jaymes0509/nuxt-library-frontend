@@ -79,7 +79,7 @@ const menuItems = computed(() => {
         {
             label: '館藏預約',
             children: [
-                { label: '我要預約', href: '/book-reservation' },
+                { label: '違規紀錄', href: '/violation-manager' },
                 { label: '預約查詢', href: '/reservation-record' }
             ]
         },
