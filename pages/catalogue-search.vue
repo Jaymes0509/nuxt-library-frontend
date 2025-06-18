@@ -61,9 +61,11 @@
             <!-- 分類法 -->
             <div class="condition">
               <label>分類法</label>
-              <select v-model="selectedClassification">
+              <select v-model="selectedCategorySystem">
                 <option value="">全部</option>
-                <option v-for="opt in classificationOptions" :key="opt.value" :value="opt.value">
+
+                <option v-for="opt in classificationSystemOptions" :key="opt.value" :value="opt.value">
+
                   {{ opt.label }}
                 </option>
               </select>
@@ -73,6 +75,9 @@
             <div class="condition">
               <label>語言</label>
               <select v-model="selectedLanguages">
+
+                <option value="">全部</option>
+
                 <option v-for="lang in languageOptions" :key="lang.value" :value="lang.value">
                   {{ lang.label }}
                 </option>
@@ -196,22 +201,22 @@ const sortConfig = ref({
 // 添加缺少的 ref 變數
 const yearFrom = ref('');
 const yearTo = ref('');
-const selectedClassification = ref('');
+const selectedCategorySystem = ref('');
 const selectedLanguages = ref('');
 
 // 分類選項
-const classificationOptions = ref([
+const classificationSystemOptions = ref([
   { value: 'CLC', label: '中國圖書分類法' },
   { value: 'LCC', label: '美國國會圖書館分類法' }
 ]);
 
 // 語言選項
 const languageOptions = ref([
-  { value: 'zh', label: '中文' },
-  { value: 'en', label: '英文' },
-  { value: 'ja', label: '日文' },
-  { value: 'fr', label: '法文' },
-  { value: 'de', label: '德文' }
+  { value: '中文', label: '中文' },
+  { value: '英文', label: '英文' },
+  { value: '日文', label: '日文' },
+  { value: '法文', label: '法文' },
+  { value: '德文', label: '德文' }
 ]);
 
 onMounted(async () => {
@@ -225,7 +230,7 @@ onMounted(async () => {
       advancedSearchConditions.value = restored.conditions || [];
       yearFrom.value = restored.yearFrom || '';
       yearTo.value = restored.yearTo || '';
-      selectedClassification.value = restored.selectedClassification || '';
+      selectedCategorySystem.value = restored.selectedCategorySystem || '';
       selectedLanguages.value = restored.selectedLanguages || '';
       currentPage.value = parseInt(route.query.returnPage) || 1;
       await performAdvancedSearch();
@@ -430,7 +435,7 @@ const performSimpleSearch = async () => {
 const performAdvancedSearch = async () => {
   // 檢查是否有任何搜尋條件
   const hasSearchConditions = advancedSearchConditions.value.some(cond => cond.value.trim());
-  const hasFilterConditions = yearFrom.value || yearTo.value || selectedClassification.value || selectedLanguages.value;
+  const hasFilterConditions = yearFrom.value || yearTo.value || selectedCategorySystem.value || selectedLanguages.value;
 
   if (!hasSearchConditions && !hasFilterConditions) {
     alert('請至少輸入一個搜尋條件');
@@ -451,20 +456,20 @@ const performAdvancedSearch = async () => {
     conditions.push({
       field: 'publishdate',
       operator: 'AND',
-      value: JSON.stringify({
+      value: {
         from: yearFrom.value || null,
         to: yearTo.value || null
-      })
+      }
     });
   }
-  if (selectedClassification.value) {
+  if (selectedCategorySystem.value) {
     conditions.push({
       field: 'categorysystem',
       operator: 'AND',
-      value: JSON.stringify({
-        cs_id: selectedClassification.value,
+      value: {
+        cs_id: selectedCategorySystem.value,
         include_children: true
-      })
+      }
     });
   }
   if (selectedLanguages.value) {
@@ -479,6 +484,7 @@ const performAdvancedSearch = async () => {
   const [sortField, sortDir] = sortConfig.value.field.split('_');
 
   try {
+    console.log('→ Advanced Search Payload:', conditions);
     const response = await axios.post('http://localhost:8080/api/books/advanced-search', conditions, {
       params: {
         page: currentPage.value - 1,
@@ -611,7 +617,7 @@ const navigateToBookDetail = async (book) => {
           conditions: advancedSearchConditions.value,
           yearFrom: yearFrom.value,
           yearTo: yearTo.value,
-          selectedClassification: selectedClassification.value,
+          selectedCategorySystem: selectedCategorySystem.value,
           selectedLanguages: selectedLanguages.value
         })
         : undefined
@@ -1048,7 +1054,7 @@ h2 {
 .book-cover {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease;
