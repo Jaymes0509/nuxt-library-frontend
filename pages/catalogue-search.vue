@@ -4,12 +4,7 @@
     <!-- Simple Search -->
     <div v-if="!isAdvancedSearch" class="simple-search">
       <div class="search-bar">
-        <input
-          v-model="simpleSearchQuery"
-          @keyup.enter="performSimpleSearch"
-          type="text"
-          placeholder="輸入關鍵字..."
-        />
+        <input v-model="simpleSearchQuery" @keyup.enter="performSimpleSearch" type="text" placeholder="輸入關鍵字..." />
         <button class="btn btn-primary" @click="performSimpleSearch">搜尋</button>
         <button class="btn btn-secondary" @click="toggleAdvancedSearch">進階搜尋</button>
       </div>
@@ -39,20 +34,13 @@
               <option value="version">版本項</option>
             </select>
             <input v-model="condition.value" type="text" placeholder="輸入搜尋內容" />
-            <button
-              v-if="index > 0"
-              class="btn btn-danger"
-              @click="removeCondition(index)"
-            >
+            <button v-if="index > 0" class="btn btn-danger" @click="removeCondition(index)">
               移除
             </button>
           </div>
           <div class="search-bar">
-            <button
-              class="btn btn-primary"
-              :class="{ 'btn-disabled': advancedSearchConditions.length >= 6 }"
-              @click="addCondition"
-            >
+            <button class="btn btn-primary" :class="{ 'btn-disabled': advancedSearchConditions.length >= 6 }"
+              @click="addCondition">
               新增條件
             </button>
             <button class="btn btn-primary" @click="performAdvancedSearch">搜尋</button>
@@ -65,19 +53,9 @@
             <!-- 出版年 -->
             <div class="condition">
               <label>出版年</label>
-              <input
-                v-model="yearFrom"
-                type="number"
-                placeholder="西元年"
-                style="width:100px;"
-              />
+              <input v-model="yearFrom" type="number" placeholder="西元年" style="width:100px;" />
               <span>至</span>
-              <input
-                v-model="yearTo"
-                type="number"
-                placeholder="西元年"
-                style="width:100px;"
-              />
+              <input v-model="yearTo" type="number" placeholder="西元年" style="width:100px;" />
             </div>
             <hr>
             <!-- 分類法 -->
@@ -85,11 +63,7 @@
               <label>分類法</label>
               <select v-model="selectedClassification">
                 <option value="">全部</option>
-                <option
-                  v-for="opt in classificationOptions"
-                  :key="opt.value"
-                  :value="opt.value"
-                >
+                <option v-for="opt in classificationOptions" :key="opt.value" :value="opt.value">
                   {{ opt.label }}
                 </option>
               </select>
@@ -98,12 +72,8 @@
             <!-- 語言 -->
             <div class="condition">
               <label>語言</label>
-              <select v-model="selectedLanguages" >
-                <option
-                  v-for="lang in languageOptions"
-                  :key="lang.value"
-                  :value="lang.value"
-                >
+              <select v-model="selectedLanguages">
+                <option v-for="lang in languageOptions" :key="lang.value" :value="lang.value">
                   {{ lang.label }}
                 </option>
               </select>
@@ -141,13 +111,9 @@
       </div>
       <div v-for="book in currentPageResults" :key="book.isbn" class="result-item">
         <div class="result-image">
-          <img 
-            :src="book.imgUrl || `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`" 
-            :alt="book.title"
-            @error="handleImageError"
-            class="book-cover"
-            onerror="this.onerror=null;this.src='https://cdn-icons-png.flaticon.com/512/2232/2232688.png';"
-          />
+          <img :src="book.imgUrl || `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`" :alt="book.title"
+            @error="handleImageError" class="book-cover"
+            onerror="this.onerror=null;this.src='https://cdn-icons-png.flaticon.com/512/2232/2232688.png';" />
         </div>
         <div class="result-info">
           <p><strong>書名:</strong> {{ book.title }}</p>
@@ -166,10 +132,7 @@
           </p>
         </div>
         <div class="result-actions">
-          <button
-            class="btn bookinfo-btn"
-            @click="navigateToBookDetail(book)"
-          >
+          <button class="btn bookinfo-btn" @click="navigateToBookDetail(book)">
             更多資訊
           </button>
         </div>
@@ -177,33 +140,19 @@
       <!-- Pagination -->
       <div class="result-pagination">
         <div class="result-pagination-controls">
-          <button 
-            class="pagination-btn"
-            :disabled="currentPage === 1"
-            @click="currentPage--"
-          >
+          <button class="pagination-btn" :disabled="currentPage === 1" @click="currentPage--">
             <span class="sr-only">上一頁</span>
           </button>
           <span>共{{ totalPages }}頁</span>
-          <input
-            type="number"
-            :value="currentPage"
-            class="pagination-input"
-            min="1"
-            :max="totalPages"
-            @change="e => goToPage(parseInt(e.target.value))"
-          />
+          <input type="number" :value="currentPage" class="pagination-input" min="1" :max="totalPages"
+            @change="e => goToPage(parseInt(e.target.value))" />
           <span>/{{ totalPages }}頁</span>
-          <button 
-            class="pagination-btn"
-            :disabled="currentPage >= totalPages"
-            @click="currentPage++"
-          >
+          <button class="pagination-btn" :disabled="currentPage >= totalPages" @click="currentPage++">
             <span class="sr-only">下一頁</span>
           </button>
         </div>
         <div class="pagination-info">
-          顯示第 {{ Math.min((currentPage - 1) * itemsPerPage + 1, searchResults.totalElements) }} 到 
+          顯示第 {{ Math.min((currentPage - 1) * itemsPerPage + 1, searchResults.totalElements) }} 到
           {{ Math.min(currentPage * itemsPerPage, searchResults.totalElements) }} 筆，
           共 {{ searchResults.totalElements }} 筆
         </div>
@@ -308,7 +257,7 @@ onMounted(async () => {
 // 或者更完整的狀態恢復版本
 const handleReturnFromBookInfo = () => {
   const route = useRoute()
-  
+
   // 檢查 URL 參數以決定是否需要恢復搜尋狀態
   if (route.query.q) {
     if (route.query.returnType === 'advanced') {
@@ -318,12 +267,12 @@ const handleReturnFromBookInfo = () => {
       simpleSearchQuery.value = route.query.q
       performSimpleSearch()
     }
-    
+
     // 恢復頁碼
     if (route.query.page) {
       currentPage.value = parseInt(route.query.page)
     }
-    
+
     // 清理 URL 參數（可選）
     router.replace({ query: {} })
   }
@@ -334,7 +283,7 @@ const fetchBooks = async (params) => {
   try {
     const [field, direction] = sortConfig.value.field.split('_');
     console.log('搜尋參數：', params);
-    
+
     const response = await axios.get('http://localhost:8080/api/books/simple-search', {
       params: {
         ...params,
@@ -343,13 +292,13 @@ const fetchBooks = async (params) => {
         sort: `${field},${direction}`
       }
     });
-    
+
     if (response.data) {
       console.log('API 回應資料：', response.data);
       console.log('API 回應資料類型：', typeof response.data);
-      
+
       const content = Array.isArray(response.data.content) ? response.data.content : [];
-      
+
       // 為每本書獲取封面
       for (const book of content) {
         if (book.imgUrl) {
@@ -375,10 +324,10 @@ const fetchBooks = async (params) => {
         } else {
           book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
         }
-        
+
         book.is_available = book.is_available === true ? 1 : 0;
       }
-      
+
       searchResults.value = {
         ...response.data,
         content
@@ -413,7 +362,7 @@ const totalPages = computed(() => searchResults.value.totalPages || 0);
 const sortedResults = computed(() => {
   const content = searchResults.value.content || [];
   if (!Array.isArray(content)) return [];
-  
+
   console.log('排序前的資料：', content);
   const [field, order] = sortConfig.value.field.split('_');
   const sorted = [...content].sort((a, b) => {
@@ -470,7 +419,7 @@ const performSimpleSearch = async () => {
     currentPage.value = 1;
     return;
   }
-  
+
   await fetchBooks({
     field: 'title', // 直接使用 'title' 作為預設搜尋欄位
     keyword: query
@@ -519,10 +468,10 @@ const performAdvancedSearch = async () => {
     });
   }
   if (selectedLanguages.value) {
-    conditions.push({ 
-      field: 'language', 
-      operator: 'AND', 
-      value: selectedLanguages.value 
+    conditions.push({
+      field: 'language',
+      operator: 'AND',
+      value: selectedLanguages.value
     });
   }
 
@@ -659,12 +608,12 @@ const navigateToBookDetail = async (book) => {
       returnType: isAdvancedSearch.value ? 'advanced' : 'simple',
       returnAdvanced: isAdvancedSearch.value
         ? JSON.stringify({
-            conditions: advancedSearchConditions.value,
-            yearFrom: yearFrom.value,
-            yearTo: yearTo.value,
-            selectedClassification: selectedClassification.value,
-            selectedLanguages: selectedLanguages.value
-          })
+          conditions: advancedSearchConditions.value,
+          yearFrom: yearFrom.value,
+          yearTo: yearTo.value,
+          selectedClassification: selectedClassification.value,
+          selectedLanguages: selectedLanguages.value
+        })
         : undefined
     }
   });
@@ -685,8 +634,10 @@ body {
 }
 
 .container {
-  width: 100%; /* 確保容器能適應螢幕 */
-  max-width: 1200px; /* 設定最大寬度，防止過寬 */
+  width: 100%;
+  /* 確保容器能適應螢幕 */
+  max-width: 1200px;
+  /* 設定最大寬度，防止過寬 */
   margin: 0 auto;
   background-color: transparent;
   padding: 20px;
@@ -763,16 +714,16 @@ body {
 }
 
 .favorite {
-  background-color: #ccc; 
+  background-color: #ccc;
   color: #333;
 }
 
 .favorite:hover {
-  background-color: #b3b3b3; 
+  background-color: #b3b3b3;
 }
 
 .not-favorite {
-  background-color: #dc3545; 
+  background-color: #dc3545;
   color: white;
 }
 
@@ -781,7 +732,7 @@ body {
 }
 
 .bookinfo-btn {
-  background-color: #007bff; 
+  background-color: #007bff;
   color: white;
 }
 
@@ -826,7 +777,7 @@ body {
 }
 
 .result-item:hover {
-  background-color: #96c0fdbe; 
+  background-color: #96c0fdbe;
   transition: background-color 0.2s ease;
   cursor: pointer;
 }
@@ -1013,7 +964,8 @@ h2 {
   }
 
   .advanced-filters {
-    order: 2; /* 確保 advanced-filters 移到下方 */
+    order: 2;
+    /* 確保 advanced-filters 移到下方 */
   }
 
   .search-bar {

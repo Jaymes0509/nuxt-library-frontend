@@ -1,16 +1,15 @@
 <template>
-
     <div class="scroll-wrapper">
         <div class="intro">
             <div class="reservation-bg">
                 <div class="reservation-container">
                     <!-- 頁面標題區 -->
                     <div class="reservation-title-area">
-                        <h1 class="reservation-title">我要預約</h1>
-                        <p class="reservation-subtitle">請填寫以下預約信息</p>
+                        <h1 class="reservation-title">{{ isBatchMode ? '批量預約' : '我要預約' }}</h1>
+                        <p class="reservation-subtitle">{{ isBatchMode ? '請為選取的書籍統一設定預約資訊' : '請填寫以下預約信息' }}</p>
                     </div>
 
-                    <<<<<<< HEAD <div v-if="!book" class="reservation-notfound">
+                    <div v-if="!books.length" class="reservation-notfound">
                         <div class="reservation-notfound-inner">
                             <div class="reservation-notfound-icon">
                                 <svg class="reservation-notfound-svg" fill="none" stroke="currentColor"
@@ -21,112 +20,109 @@
                             </div>
                             <p class="reservation-notfound-text">找不到該書籍資訊，請從書籍查詢頁面重新進入。</p>
                         </div>
-                </div>
-                =======
-                <div v-if="!book" class="reservation-notfound">
-                    <div class="reservation-notfound-inner">
-                        <div class="reservation-notfound-icon">
-                            <svg class="reservation-notfound-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <p class="reservation-notfound-text">找不到該書籍資訊，請從書籍查詢頁面重新進入。</p>
-                    </div>
-                </div>
-                >>>>>>> ddbe2d1f648729e834cdca810b34c2780d55700b
-
-                <div v-else class="reservation-card">
-                    <!-- 書籍信息區 -->
-                    <div class="reservation-bookinfo">
-                        <h2 class="reservation-bookinfo-title">預約書籍</h2>
-                        <p class="reservation-bookinfo-book">{{ book.title }}</p>
-                        <p class="reservation-bookinfo-author">作者：{{ book.author }}</p>
                     </div>
 
-                    <!-- 預約表單區 -->
-                    <div class="reservation-form">
-                        <!-- 取書時間 -->
-                        <div class="reservation-form-group">
-                            <label class="reservation-label">
-                                <svg class="reservation-label-icon" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                取書時間
-                            </label>
-                            <input type="datetime-local" v-model="form.time"
-                                :class="['reservation-input', { 'shake': isShaking.time }]" />
-                            <span v-if="errors.time" class="error-message">{{ errors.time }}</span>
+                    <div v-else class="reservation-card">
+                        <!-- 書籍信息區 -->
+                        <div class="reservation-bookinfo">
+                            <h2 class="reservation-bookinfo-title">{{ isBatchMode ? '預約書籍清單' : '預約書籍' }}</h2>
+                            <div v-if="isBatchMode" class="batch-books-list">
+                                <div v-for="(book, index) in books" :key="index" class="batch-book-item">
+                                    <span class="batch-book-number">{{ index + 1 }}.</span>
+                                    <span class="batch-book-title">{{ book.title }}</span>
+                                    <span class="batch-book-author">作者：{{ book.author }}</span>
+                                </div>
+                            </div>
+                            <div v-else>
+                                <p class="reservation-bookinfo-book">{{ books[0].title }}</p>
+                                <p class="reservation-bookinfo-author">作者：{{ books[0].author }}</p>
+                            </div>
                         </div>
 
+                        <!-- 預約表單區 -->
+                        <div class="reservation-form">
+                            <!-- 取書時間 -->
+                            <div class="reservation-form-group">
+                                <label class="reservation-label">
+                                    <svg class="reservation-label-icon" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    取書時間
+                                </label>
+                                <input type="datetime-local" v-model="form.time"
+                                    :class="['reservation-input', { 'shake': isShaking.time }]" />
+                                <span v-if="errors.time" class="error-message">{{ errors.time }}</span>
+                            </div>
 
-                        <!-- 取書地點 -->
-                        <div class="reservation-form-group">
-                            <label class="reservation-label">
-                                <svg class="reservation-label-icon" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                取書地點
-                            </label>
-                            <select v-model="form.location"
-                                :class="['reservation-input', { 'shake': isShaking.location }]">
-                                <option disabled value="">請選擇取書地點</option>
-                                <option>一樓服務台</option>
-                                <option>二樓自助區</option>
-                            </select>
-                            <span v-if="errors.location" class="error-message">{{ errors.location }}</span>
-                        </div>
+                            <!-- 取書地點 -->
+                            <div class="reservation-form-group">
+                                <label class="reservation-label">
+                                    <svg class="reservation-label-icon" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    取書地點
+                                </label>
+                                <select v-model="form.location"
+                                    :class="['reservation-input', { 'shake': isShaking.location }]">
+                                    <option disabled value="">請選擇取書地點</option>
+                                    <option>一樓服務台</option>
+                                    <option>二樓自助區</option>
+                                </select>
+                                <span v-if="errors.location" class="error-message">{{ errors.location }}</span>
+                            </div>
 
-                        <!-- 取書方式 -->
-                        <div class="reservation-form-group">
-                            <label class="reservation-label">
-                                <svg class="reservation-label-icon" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                取書方式
-                            </label>
-                            <select v-model="form.method" :class="['reservation-input', { 'shake': isShaking.method }]">
-                                <option disabled value="">請選擇取書方式</option>
-                                <option>親自取書</option>
-                                <option>他人代領</option>
-                            </select>
-                            <span v-if="errors.method" class="error-message">{{ errors.method }}</span>
-                        </div>
+                            <!-- 取書方式 -->
+                            <div class="reservation-form-group">
+                                <label class="reservation-label">
+                                    <svg class="reservation-label-icon" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                    取書方式
+                                </label>
+                                <select v-model="form.method"
+                                    :class="['reservation-input', { 'shake': isShaking.method }]">
+                                    <option disabled value="">請選擇取書方式</option>
+                                    <option>親自取書</option>
+                                    <option>他人代領</option>
+                                </select>
+                                <span v-if="errors.method" class="error-message">{{ errors.method }}</span>
+                            </div>
 
-                        <!-- 預約須知 -->
-                        <div class="reservation-notice">
-                            <h3 class="reservation-notice-title">預約須知</h3>
-                            <ul class="reservation-notice-list">
-                                <li>請在預約時間內完成取書</li>
-                                <li>超過預約時間未取書將自動取消預約,並停權帳號</li>
-                                <li>每人最多可預約 {{ maxReservation }} 本書</li>
-                                <li>您目前已預約 {{ userReservedCount }} 本書</li>
-                            </ul>
-                        </div>
+                            <!-- 預約須知 -->
+                            <div class="reservation-notice">
+                                <h3 class="reservation-notice-title">預約須知</h3>
+                                <ul class="reservation-notice-list">
+                                    <li>請在預約時間內完成取書</li>
+                                    <li>超過預約時間未取書將自動取消預約,並停權帳號</li>
+                                    <li>每人最多可預約 {{ maxReservation }} 本書</li>
+                                    <li>您目前已預約 {{ userReservedCount }} 本書</li>
+                                    <li v-if="isBatchMode">本次將預約 {{ books.length }} 本書籍</li>
+                                </ul>
+                            </div>
 
-                        <!-- 按鈕區域 -->
-                        <div class="reservation-btn-area">
-                            <button type="button" @click="router.back()" class="reservation-btn reservation-btn-back">
-                                返回
-                            </button>
-                            <button type="button" @click="handleReserve"
-                                class="reservation-btn reservation-btn-confirm">
-                                確認預約
-                            </button>
+                            <!-- 按鈕區域 -->
+                            <div class="reservation-btn-area">
+                                <button type="button" @click="goBack" class="reservation-btn reservation-btn-back">
+                                    返回
+                                </button>
+                                <button type="button" @click="handleReserve"
+                                    class="reservation-btn reservation-btn-confirm">
+                                    {{ isBatchMode ? `確認預約 ${books.length} 本書` : '確認預約' }}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
     </div>
 </template>
 
@@ -134,7 +130,7 @@
 import { useRoute, useRouter } from 'vue-router'
 import { ref, computed } from 'vue'
 import { useHead } from '#imports'
-import axios from 'axios'
+import { reservationAPI } from '~/utils/api'
 
 // 設置頁面標題
 useHead({
@@ -156,19 +152,16 @@ interface Book {
     is_available: number
 }
 
-const book = computed<Book | null>(() => {
-    const title = route.query.title
-    const author = route.query.author
-    const isbn = route.query.isbn
+const books = computed<Book[]>(() => {
+    const booksParam = route.query.books
+    if (!booksParam || typeof booksParam !== 'string') return []
 
-    if (!title || !author || !isbn) return null
-
-    return {
-        title: String(title),
-        author: String(author),
-        isbn: String(isbn),
-        is_available: 1
-    } as const
+    try {
+        return JSON.parse(booksParam)
+    } catch (error) {
+        console.error('解析書籍資料失敗：', error)
+        return []
+    }
 })
 
 const form = ref({
@@ -197,6 +190,7 @@ function shakeField(field: keyof typeof isShaking.value) {
 }
 
 function validateForm() {
+    console.log('開始驗證表單...')
     let isValid = true
     errors.value = {
         time: '',
@@ -205,39 +199,141 @@ function validateForm() {
     }
 
     if (!form.value.time) {
+        console.log('時間欄位為空')
         errors.value.time = '請選擇取書時間'
         shakeField('time')
         isValid = false
     }
     if (!form.value.location) {
+        console.log('地點欄位為空')
         errors.value.location = '請選擇取書地點'
         shakeField('location')
         isValid = false
     }
     if (!form.value.method) {
+        console.log('方式欄位為空')
         errors.value.method = '請選擇取書方式'
         shakeField('method')
         isValid = false
     }
 
+    console.log('表單驗證結果：', isValid)
+    console.log('錯誤訊息：', errors.value)
     return isValid
 }
 
 async function handleReserve() {
-    if (!validateForm()) return
-    if (book.value?.is_available !== 1) return
+    console.log('開始處理預約請求...')
+    console.log('表單資料：', form.value)
+    console.log('書籍資料：', books.value)
+    console.log('第一本書籍的詳細資料：', books.value[0])
+    console.log('is_available 值：', books.value[0]?.is_available)
+    console.log('is_available 類型：', typeof books.value[0]?.is_available)
 
-    router.push({
-        path: '/book-reserveresult',
-        query: {
-            title: String(route.query.title),
-            author: String(route.query.author),
-            isbn: String(route.query.isbn),
-            time: form.value.time,
-            location: form.value.location,
-            method: form.value.method
+    if (!validateForm()) {
+        console.log('表單驗證失敗')
+        return
+    }
+
+    if (books.value.length === 0) {
+        console.log('沒有書籍資料')
+        return
+    }
+
+    // 檢查書籍可用性，支援多種格式
+    // 對於來自預約清單的書籍，跳過可用性檢查，因為已經通過了加入清單的驗證
+    const availability = (books.value[0] as any).is_available
+    let isAvailable = true // 預設為可用
+
+    // 只有在有可用性資訊時才進行檢查
+    if (availability !== undefined && availability !== null) {
+        isAvailable = availability === 1 ||
+            availability === true ||
+            String(availability) === '1' ||
+            String(availability) === 'true' ||
+            String(availability) === 'available'
+    }
+
+    console.log('書籍可用性檢查結果：', isAvailable)
+    console.log('可用性資訊：', availability)
+
+    if (!isAvailable) {
+        console.log('書籍不可用')
+        alert('此書籍目前不可預約')
+        return
+    }
+
+    try {
+        // 準備批量預約資料，完全符合後端 ReservationBatchRequestDTO 格式
+        const reservationData = {
+            userId: 1, // 使用數字 ID
+            books: books.value.map(book => ({
+                bookId: parseInt(book.isbn) || 1, // 使用 ISBN 作為 bookId
+                reserveTime: form.value.time // ISO 格式字串，後端會解析為 LocalDateTime
+            }))
         }
-    })
+
+        console.log('發送批量預約請求：', reservationData)
+
+        // 調用批量預約 API
+        const response = await reservationAPI.batchReservation(reservationData)
+
+        console.log('批量預約回應：', response.data)
+
+        if (response.data && response.data.success) {
+            // 從回應中提取預約 ID
+            const reservationIds = response.data.results
+                .filter((result: any) => result.status === 'success')
+                .map((result: any) => result.reservationId)
+
+            console.log('提取的預約 ID：', reservationIds)
+
+            // 預約成功，跳轉到結果頁面
+            router.push({
+                path: '/book-reserveresult',
+                query: {
+                    books: JSON.stringify(books.value.map(book => ({
+                        title: book.title,
+                        author: book.author,
+                        isbn: book.isbn,
+                        time: form.value.time,
+                        location: form.value.location,
+                        method: form.value.method
+                    }))),
+                    reservationIds: JSON.stringify(reservationIds),
+                    time: form.value.time,
+                    location: form.value.location,
+                    method: form.value.method
+                }
+            })
+        } else {
+            // 檢查是否有部分失敗的預約
+            const failedResults = response.data?.results?.filter((result: any) => result.status === 'fail') || []
+            if (failedResults.length > 0) {
+                const errorMessages = failedResults.map((result: any) => result.reason).join(', ')
+                alert(`部分預約失敗：${errorMessages}`)
+            } else {
+                throw new Error('預約失敗')
+            }
+        }
+    } catch (error: any) {
+        console.error('預約失敗：', error)
+        if (error.response?.data?.message) {
+            alert(`預約失敗：${error.response.data.message}`)
+        } else if (error.response?.data?.error) {
+            alert(`預約失敗：${error.response.data.error}`)
+        } else if (error.message) {
+            alert(`預約失敗：${error.message}`)
+        } else {
+            alert('預約失敗，請稍後再試')
+        }
+    }
+}
+
+const isBatchMode = computed(() => route.query.batch === 'true')
+
+function goBack() {
+    router.back()
 }
 </script>
 
@@ -538,5 +634,61 @@ async function handleReserve() {
 .reservation-input.shake:focus {
     border-color: #dc2626;
     box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+}
+
+/* 批量預約相關樣式 */
+.batch-books-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 8px;
+    background: rgba(243, 244, 246, 0.3);
+    border-radius: 6px;
+    border: 1px solid rgba(229, 231, 235, 0.4);
+}
+
+.batch-book-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 4px;
+    font-size: 0.95rem;
+}
+
+.batch-book-number {
+    font-weight: 600;
+    color: #2563eb;
+    min-width: 20px;
+}
+
+.batch-book-title {
+    font-weight: 500;
+    color: #18181b;
+    flex: 1;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.batch-book-author {
+    color: #4b5563;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .batch-book-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .batch-book-author {
+        white-space: normal;
+    }
 }
 </style>
