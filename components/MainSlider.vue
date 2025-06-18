@@ -52,7 +52,7 @@ onMounted(() => {
 .slider {
   flex: 1;
   /* ✅ 自動撐滿父層寬度 */
-  width: 100%;
+  width: 100vh;
   height: 100%;
   /* ✅ 撐滿容器高度 */
   display: flex;
@@ -65,7 +65,8 @@ onMounted(() => {
   height: 100%;
   object-fit: cover;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+  /* box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); */
 }
 
 /* .arrow {

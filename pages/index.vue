@@ -27,7 +27,7 @@ import Announcement from '@/components/Announcement.vue'
   height: 100%;
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
-  background: #fff;
+  background: transparent;
 }
 
 /* 滾動條預設為透明 */

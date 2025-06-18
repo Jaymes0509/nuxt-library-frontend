@@ -1,0 +1,13 @@
+{
+    "editor.defaultFormatter": "Vue.volar",
+    "[vue]": {
+        "editor.defaultFormatter": "Vue.volar"
+    },
+    "editor.formatOnSave": true,
+    "[jsonc]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "vscode.typescript-language-features"
+    }
+}
