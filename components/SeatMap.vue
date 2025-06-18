@@ -1,99 +1,65 @@
 <template>
-    <div class="seat-map">
-        <div v-for="seat in seats" :key="seat.id" class="seat" :class="seat.status" :style="getPositionStyle(seat)"
-            @click="handleClick(seat)">
+    <div v-if="pending">載入中...</div>
+
+    <div v-else class="seat-map">
+        <div v-for="seat in seats.value" :key="seat.id" :class="['seat', seat.status.toLowerCase()]"
+            :style="getStyle(seat)">
             {{ seat.label }}
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { useFetch } from '#app'
 
-const seats = ref([])
+const { data: seats, pending, error } = useFetch('/api/seats/all')
 
-// 模擬 API 載入（未來請改成 useFetch('/api/seats')）
-const fetchSeats = async () => {
-    seats.value = [
-        { id: 1, label: 'A01', status: 'available', row: 0, col: 0 },
-        { id: 2, label: 'A02', status: 'available', row: 0, col: 1 },
-        { id: 3, label: 'A03', status: 'reserved', row: 0, col: 2 },
-        { id: 4, label: 'A04', status: 'available', row: 0, col: 3 },
-        { id: 5, label: 'A05', status: 'available', row: 1, col: 1 },
-        { id: 6, label: 'A06', status: 'reserved', row: 1, col: 2 },
-        { id: 7, label: 'A07', status: 'available', row: 2, col: 0 },
-        { id: 8, label: 'A08', status: 'available', row: 2, col: 1 },
-        { id: 9, label: 'A09', status: 'reserved', row: 2, col: 2 },
-        { id: 10, label: 'A10', status: 'available', row: 2, col: 3 },
-    ]
-}
+const getStyle = (seat) => ({
+    top: `${seat.rowIndex * 60}px`,
+    left: `${seat.colIndex * 60}px`,
+    position: 'absolute'
+})
 
-const getPositionStyle = (seat) => {
-    const size = 48
-    return {
-        top: `${seat.row * (size + 12)}px`,
-        left: `${seat.col * (size + 12)}px`
-    }
-}
+watchEffect(() => {
+    console.log('seats：', seats.value)
+})
 
-const handleClick = (seat) => {
-    if (seat.status !== 'available') return
-    seats.value = seats.value.map(s => ({
-        ...s,
-        status:
-            s.id === seat.id
-                ? 'selected'
-                : s.status === 'selected'
-                    ? 'available'
-                    : s.status
-    }))
-}
-
-onMounted(fetchSeats)
 </script>
 
 <style scoped>
 .seat-map {
     position: relative;
-    width: 300px;
-    height: 250px;
-    background-color: #f9f9f9;
-    border: 1px solid #ccc;
-    border-radius: 12px;
+    width: 100%;
+    height: 100%;
+    min-width: 400px;
+    min-height: 360px;
+    background-color: #f2f2f2;
+    border-radius: 10px;
+    overflow: auto;
 }
 
-/* 共用樣式 */
 .seat {
     position: absolute;
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
+    width: 50px;
+    height: 50px;
+    border: 1px solid #000;
     text-align: center;
-    line-height: 48px;
-    font-weight: bold;
-    font-size: 0.85rem;
-    user-select: none;
-    transition: 0.2s;
-    cursor: pointer;
+    line-height: 50px;
+    background-color: lightgray;
 }
 
-/* 狀態樣式 */
 .available {
-    background: #c8facc;
-    color: #000;
-    border: 2px solid #28a745;
+    background-color: #90ee90;
+    color: black;
 }
 
 .reserved {
-    background: #eee;
-    color: #999;
-    border: 2px solid #ccc;
-    cursor: not-allowed;
+    background-color: #ddd;
+    color: #666;
 }
 
-.selected {
-    background: #ffa726;
+.broken {
+    background-color: #ff6b6b;
     color: white;
-    border: 2px solid #fb8c00;
 }
 </style>
