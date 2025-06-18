@@ -1,24 +1,49 @@
 <script setup lang="ts">
 import { Loader2 } from 'lucide-vue-next'
 import PasswordInput from '@/components/PasswordInput.vue'
+import axios from 'axios'
 
 const email = ref('demo@gmail.com')
 const password = ref('password')
 const isLoading = ref(false)
 
-function onSubmit(event: Event) {
+async function onSubmit(event: Event) {
   event.preventDefault()
   if (!email.value || !password.value)
     return
 
   isLoading.value = true
 
-  setTimeout(() => {
-    if (email.value === 'demo@gmail.com' && password.value === 'password')
-      navigateTo('/')
+  // setTimeout(() => {
+  //   if (email.value === 'demo@gmail.com' && password.value === 'password')
+  //     navigateTo('/')
 
+  //   isLoading.value = false
+  // }, 3000)
+
+
+  try {
+    // 呼叫後端登入 API
+    const res = await axios.post('http://localhost:8080/api/auth/login', {
+      email: email.value,
+      password: password.value
+    })
+    // 登入成功，儲存 token
+    const token = res.data.token
+    localStorage.setItem('jwt_token', token)
+
+    console.log("*************************************************")
+    alert('token: ' + token)
+    console.log("*************************************************")
+
+    // 跳轉到首頁或會員頁
+    window.location.href = '/' // 或用 navigateTo('/')
+  } catch (err: any) {
+    alert('登入失敗：' + (err.response?.data?.message || err.message))
+  } finally {
     isLoading.value = false
-  }, 3000)
+  }
+
 }
 </script>
 
