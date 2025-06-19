@@ -17,32 +17,7 @@ onMounted(async () => {
         size: 100
       }
     })
-    // 後端回傳格式應該是 { content: [...] } 或 { data: { content: [...] } }
-    // 請根據實際回傳格式調整
 
-    // 後端回傳格式
-    //   ```json
-    // [{
-    //     "bookId": 1,
-    //     "isbn": "9789866282058",
-    //     "title": "旅遊英語萬用手冊=English travel around the world",
-    //     "author": "張瑜凌編著",
-    //     "publisher": "雅典文化出版:永續圖書總經銷",
-    //     "publishdate": "2010",
-    //     "version": "初版",
-    //     "type": "一般性圖書",
-    //     "language": "中文",
-    //     "cId": 9,
-    //     "createdAt": "2025-06-10T06:46:47",
-    //     "updatedAt": "2025-06-10T06:46:47",
-    //     "classification": "805.188",
-    //     "summary": null,
-    //     "imgUrl": null,
-    //     "is_available": true,
-    //     "categorysystem": "中國圖書分類法"
-    // },
-    // ]
-    // ```
     console.log('後端回傳資料1：', res.data)
 
     books.value = res.data || []
