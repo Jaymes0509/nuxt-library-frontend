@@ -61,7 +61,8 @@ export default defineNuxtConfig({
         target: 'http://localhost:8080',
         changeOrigin: true
       }
-
+    }
+  },
   // 移除 Vue 3 Suspense 實驗性功能警告
   vue: {
     compilerOptions: {
