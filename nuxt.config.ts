@@ -8,7 +8,7 @@ export default defineNuxtConfig({
 
   modules: [
     '@nuxtjs/tailwindcss',
-    '@pinia/nuxt',
+
     '@nuxtjs/google-fonts'
   ],
 
@@ -52,6 +52,13 @@ export default defineNuxtConfig({
   devServer: {
     port: 3000,
     host: 'localhost'
+  },
+
+  // 移除 Vue 3 Suspense 實驗性功能警告
+  vue: {
+    compilerOptions: {
+      isCustomElement: (tag) => tag === 'suspense'
+    }
   }
 
 })

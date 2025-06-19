@@ -222,7 +222,23 @@ async function loadReservationList() {
 
   try {
     console.log('開始載入預約清單...')
-    const response = await reservationAPI.getReservationList('current')
+
+    let response
+    try {
+      // 首先嘗試使用 userId = 1
+      response = await reservationAPI.getReservationList(1)
+    } catch (firstError) {
+      console.log('使用 userId=1 失敗，嘗試備用方案:', firstError)
+      try {
+        // 備用方案：嘗試 getCurrentUserReservations
+        response = await reservationAPI.getCurrentUserReservations()
+      } catch (secondError) {
+        console.log('備用方案也失敗，嘗試不傳參數:', secondError)
+        // 最後嘗試不傳參數
+        response = await reservationAPI.getReservationList()
+      }
+    }
+
     console.log('API 回應：', response.data)
 
     if (response.data && Array.isArray(response.data)) {
@@ -249,6 +265,11 @@ async function loadReservationList() {
     }
   } catch (err) {
     console.error('載入預約清單失敗：', err)
+    console.log('錯誤詳情:', {
+      status: err.response?.status,
+      statusText: err.response?.statusText,
+      data: err.response?.data
+    })
     error.value = '無法載入預約清單，請稍後再試'
     reservationList.value = []
   } finally {
@@ -326,19 +347,28 @@ async function removeSelected() {
     return
   }
 
+  const selectedCount = selectedBooks.value.length
+  console.log('要移除的書籍 IDs：', selectedBooks.value)
+
   try {
     const response = await reservationAPI.batchDeleteReservation(selectedBooks.value)
+    console.log('批量刪除 API 回應：', response)
 
-    if (response.data) {
+    // 檢查回應是否成功（可能是 status 200 或有 data）
+    if (response.status === 200 || response.data !== undefined) {
       // 重新載入清單以獲取最新資料
       await loadReservationList()
       selectedBooks.value = []
-      alert(`成功移除 ${selectedBooks.value.length} 本書籍`)
+      alert(`成功移除 ${selectedCount} 本書籍`)
     } else {
-      throw new Error('批量移除失敗')
+      throw new Error('批量移除失敗：後端回應異常')
     }
   } catch (err) {
     console.error('批量移除書籍失敗：', err)
+    if (err.response) {
+      console.log('錯誤回應狀態：', err.response.status)
+      console.log('錯誤回應資料：', err.response.data)
+    }
     alert('批量移除失敗，請稍後再試')
   }
 }

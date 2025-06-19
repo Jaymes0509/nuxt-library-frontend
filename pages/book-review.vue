@@ -1,5 +1,17 @@
 <template>
+  <!-- <div class="bg-gray-100 min-h-screen py-10"> -->
   <div class="bg-white p-8 w-full text-center">
+
+    <!-- 最大寬度容器，置中並有白色背景與圓角陰影 -->
+    <!-- <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg relative"> -->
+
+    <!-- 統一的返回按鈕 -->
+    <div v-if="step" class="mb-6 text-left">
+      <button class="fixed bg-white text-blue-600 px-4 py-2 rounded shadow-lg hover:bg-blue-100 z-20"
+        style="right: 1rem; bottom: 10rem; width: max-content;" @click="step = null">
+        ← 返回功能總覽
+      </button>
+    </div>
 
     <!-- 第一層：功能總覽 -->
     <div v-if="!step">
@@ -18,14 +30,15 @@
       <!-- 功能選單 -->
       <div class="flex justify-center gap-12 mb-12">
         <div class="bg-blue-100 hover:bg-blue-200 transition-all p-6 rounded-2xl shadow w-72 cursor-pointer text-center"
-             @click="goToWrite">
+          @click="goToWrite">
           <div class="text-4xl mb-2">📝</div>
           <div class="text-xl font-bold mb-1">撰寫心得</div>
           <div class="text-sm text-gray-700">針對您借閱的書籍，留下寶貴評論與評分</div>
         </div>
 
-        <div class="bg-green-100 hover:bg-green-200 transition-all p-6 rounded-2xl shadow w-72 cursor-pointer text-center"
-             @click="step = 'read'">
+        <div
+          class="bg-green-100 hover:bg-green-200 transition-all p-6 rounded-2xl shadow w-72 cursor-pointer text-center"
+          @click="step = 'read'">
           <div class="text-4xl mb-2">📖</div>
           <div class="text-xl font-bold mb-1">閱讀心得</div>
           <div class="text-sm text-gray-700">查看其他讀者對書籍的評價與心得內容</div>
@@ -40,15 +53,14 @@
     </div>
 
     <!-- 第二層：操作選單 -->
-    <div v-if="step === 'write' && actionMode === null" class="max-w-4xl mx-auto">
-      <button class="text-blue-600 underline mb-4" @click="step = null">← 返回功能總覽</button>
+    <div v-if="step === 'write' && actionMode === null" class="max-w-full mx-auto">
       <h2 class="text-xl font-bold mb-4">請選擇操作類型</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div class="border rounded p-6 shadow hover:shadow-md transition cursor-pointer" @click="actionMode = 'new'">
           <h3 class="text-lg font-semibold mb-2">✍ 撰寫新的書評</h3>
           <p class="text-sm text-gray-600">針對您尚未評論過的借閱書籍新增書評</p>
         </div>
-        <div class="border rounded p-6 shadow hover:shadow-md transition cursor-pointer" @click="actionMode = 'edit'">
+        <div class="border rounded p-6 shadow hover:shadow-md transition cursor-pointer" @click="goToEditReviews">
           <h3 class="text-lg font-semibold mb-2">🛠 修改或查看我的書評</h3>
           <p class="text-sm text-gray-600">檢視您已發表過的書評內容，進行修改或刪除</p>
         </div>
@@ -57,14 +69,13 @@
 
     <!-- 第二層：撰寫新書評 → 選書 -->
     <div v-if="step === 'write' && actionMode === 'new' && !selectedBookForReview" class="max-w-3xl mx-auto text-left">
-      <button class="text-blue-600 underline mb-4" @click="actionMode = null">← 返回操作選單</button>
       <h2 class="text-2xl font-bold mb-6">請選擇您想撰寫書評的書籍</h2>
 
       <div v-if="borrowedBooks.length === 0" class="text-gray-600">您目前沒有可以撰寫書評的書籍。</div>
 
-      <div v-for="book in borrowedBooks" :key="book.id"
-           class="border rounded p-4 mb-4 shadow hover:shadow-md transition cursor-pointer"
-           @click="startWritingReview(book)">
+      <div v-for="book in borrowedBooks" :key="book.bookId"
+        class="border rounded p-4 mb-4 shadow hover:shadow-md transition cursor-pointer"
+        @click="startWritingReview(book)">
         <h3 class="text-lg font-semibold">{{ book.title }}</h3>
         <p class="text-sm text-gray-600">作者：{{ book.author }}</p>
         <p class="text-sm text-blue-600 mt-2 hover:underline">點擊撰寫書評</p>
@@ -78,16 +89,19 @@
 
       <div v-if="myReviews.length === 0" class="text-gray-600">您尚未撰寫任何書評。</div>
 
-      <div v-for="review in myReviews" :key="review.id"
-           class="border rounded p-4 mb-4 shadow hover:shadow-md transition cursor-pointer">
+      <div v-for="review in myReviews" :key="review.commentId"
+        class="border rounded p-4 mb-4 shadow hover:shadow-md transition cursor-pointer">
         <h3 class="text-lg font-semibold mb-1">{{ review.bookTitle }}</h3>
-        <p class="text-sm text-gray-600 mb-2">⭐ {{ review.rating }} 分</p>
+        <p class="text-sm text-gray-600 mb-1">作者：{{ review.bookAuthor }}</p>
+        <p class="text-sm mb-2">⭐ {{ review.rating }} 分</p>
         <p class="text-gray-700">{{ review.comment }}</p>
+
         <div class="flex gap-4 mt-2">
           <button @click="editReview(review)" class="text-blue-600 hover:underline">修改</button>
           <button @click="deleteReview(review)" class="text-red-600 hover:underline">刪除</button>
         </div>
       </div>
+
     </div>
 
     <!-- 第三層：實際撰寫書評表單 -->
@@ -109,15 +123,21 @@
       </div>
 
       <div class="flex gap-4 mt-4">
-        <button @click="submitReview" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">提交</button>
+        <button @click="submitReview" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          提交
+        </button>
         <button @click="selectedBookForReview = null" class="text-gray-600 hover:underline">取消</button>
       </div>
     </div>
 
     <!-- 第三層：修改書評表單 -->
     <div v-if="step === 'editReview'" class="max-w-3xl mx-auto text-left">
-      <button class="text-blue-600 underline mb-4" @click="step = 'write'; actionMode = 'edit'">← 返回書評列表</button>
+      <button class="text-blue-600 underline mb-4"
+        @click="() => { step = 'write'; actionMode = 'edit'; editingReview = null }">
+        ← 返回書評列表
+      </button>
       <h2 class="text-2xl font-bold mb-4">修改書評：{{ editingReview.bookTitle }}</h2>
+      <p class="text-sm text-gray-500 mb-4">最後更新時間：{{ formatDate(editingReview.updatedAt) }}</p>
 
       <div class="mb-4">
         <label class="block font-medium mb-1">評分（1~5 分）：</label>
@@ -133,15 +153,18 @@
       </div>
 
       <div class="flex gap-4 mt-4">
-        <button @click="updateReview" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">儲存修改</button>
-        <button @click="step = 'write'; actionMode = 'edit'" class="text-gray-600 hover:underline">取消</button>
+        <button @click="updateReview" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          儲存修改
+        </button>
+        <button @click="() => { step = 'write'; actionMode = 'edit'; editingReview = null }"
+          class="text-gray-600 hover:underline">
+          取消
+        </button>
       </div>
     </div>
 
-
     <!-- 閱讀心得：篩選與搜尋 -->
     <div v-if="step === 'read'" class="max-w-5xl mx-auto mb-6 text-left">
-      <button class="text-blue-600 underline mb-4" @click="step = null">← 返回功能總覽</button>
       <div class="flex flex-wrap items-center gap-4 mb-6">
         <label class="font-medium">分類：</label>
         <select v-model="categoryFilter" class="border rounded px-3 py-1">
@@ -166,27 +189,47 @@
       </div>
     </div>
 
-    <!-- 閱讀心得：隨機書籍推薦 -->
+    <!-- 閱讀心得：搜尋結果 -->
+    <div v-if="step === 'read'" class="max-w-4xl mx-auto mb-12">
+      <h2 class="text-xl font-bold mb-4">搜尋結果</h2>
+      <div v-if="searchedBooks.length === 0" class="text-gray-600">找不到符合條件的書籍</div>
+      <div v-for="book in searchedBooks" :key="book.id"
+        class="border rounded p-4 shadow hover:shadow-md transition mb-4">
+        <h3 class="text-lg font-semibold mb-1">{{ book.title }}</h3>
+        <p class="text-sm text-gray-600">作者：{{ book.author }}</p>
+        <button @click="viewBookReviews(book)" class="text-blue-600 hover:underline">查看書評</button>
+      </div>
+
+      <!-- 分頁按鈕 -->
+      <div class="flex justify-center items-center gap-4 mt-4">
+        <button :disabled="currentPage === 1" @click="() => { if (currentPage > 1) currentPage--; }"
+          class="px-3 py-1 border rounded disabled:opacity-50">
+          上一頁
+        </button>
+
+        <span>第 {{ currentPage }} 頁，共 {{ searchPageInfo.totalPages }} 頁</span>
+
+        <button :disabled="currentPage === searchPageInfo.totalPages"
+          @click="() => { if (currentPage < searchPageInfo.totalPages) currentPage++; }"
+          class="px-3 py-1 border rounded disabled:opacity-50">
+          下一頁
+        </button>
+      </div>
+    </div>
+
+    <!-- 閱讀心得：隨機書籍 -->
     <div v-if="step === 'read'" class="max-w-4xl mx-auto">
-      <h2 class="text-xl font-bold mb-4">隨機書籍推薦</h2>
-      <p class="text-sm text-gray-600 mb-4">🔍 測試中：請點選 <strong>「活著」</strong> 查看範例書評，其餘書籍會顯示「尚無書評」。</p>
-      <div class="grid grid-cols-1 gap-6 mb-6">
-        <div v-for="book in filteredBooks" :key="book.id" class="border rounded p-4 shadow hover:shadow-md transition">
-          <h3 class="text-lg font-semibold mb-1">{{ book.title }}</h3>
-          <p class="text-sm text-gray-600">作者：{{ book.author }}</p>
-          <button @click="viewBookReviews(book)" class="text-blue-600 hover:underline">查看書評</button>
-        </div>
+      <h2 class="text-xl font-bold mb-4">隨機推薦書籍</h2>
+      <div v-if="randomBooks.length === 0" class="text-gray-600">目前沒有隨機書籍</div>
+      <div v-for="book in randomBooks" :key="book.id" class="border rounded p-4 shadow hover:shadow-md transition mb-4">
+        <h3 class="text-lg font-semibold mb-1">{{ book.title }}</h3>
+        <p class="text-sm text-gray-600">作者：{{ book.author }}</p>
+        <button @click="viewBookReviews(book)" class="text-blue-600 hover:underline">查看書評</button>
       </div>
     </div>
 
     <!-- 第三層：單一本書的所有書評 -->
     <div v-if="step === 'bookReviews'" class="max-w-3xl mx-auto text-left">
-      <button class="text-blue-600 underline mb-4" @click="step = 'read'">← 返回隨機書籍</button>
-
-      <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded mb-6">
-        ⚠ 尚未連接資料庫：目前為假資料展示，未來將讀取實際書評
-      </div>
-
       <h2 class="text-2xl font-bold mb-4">{{ selectedBook.title }} 的書評</h2>
 
       <div class="flex justify-end mb-4">
@@ -197,25 +240,29 @@
         </select>
       </div>
 
-      <div v-for="review in sortedBookReviews" :key="review.id" class="border rounded p-4 mb-4">
+      <div v-for="review in sortedBookReviews" :key="review.comment_id" class="border rounded p-4 mb-4">
         <div class="flex justify-between items-center mb-2">
           <h3 class="font-semibold">{{ review.reviewer }}</h3>
-          <span class="text-sm text-gray-500">{{ review.date }}</span>
+          <!-- 這裡改成用 updatedAt 或 createdAt -->
+          <span class="text-sm text-gray-500">{{ formatDate(review.updatedAt || review.createdAt) }}</span>
         </div>
         <p class="mb-2">⭐ {{ review.rating }} 分</p>
         <p class="text-gray-700">{{ review.comment }}</p>
         <p class="text-sm text-gray-500 mt-2">
-  👍 點讚數：{{ review.likes }}
-  <button @click="likeReview(review)" class="text-blue-600 hover:underline ml-2">點讚</button>
-</p>
-
+          👍 點讚數：{{ review.likes }}
+          <button @click="toggleLike(review)" :disabled="review.cooldown" class="text-blue-600 hover:underline ml-2">
+            {{ review.liked ? '取消讚' : '點讚' }}
+          </button>
+          <span v-if="review.cooldown" class="text-red-500 ml-2 text-sm">冷卻中...</span>
+        </p>
       </div>
     </div>
   </div>
+  <!-- </div> -->
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, onMounted, toRaw } from 'vue'
 import { useCookie } from '#app'
 
 const step = ref(null)
@@ -224,169 +271,468 @@ const editingReview = ref(null)
 const selectedBookForReview = ref(null)
 const actionMode = ref(null)
 const newReview = ref({ rating: '', comment: '' })
+const searchedBooks = ref([])
+const allReviews = ref([])
 
 const user = useCookie('user')
+
 const categoryFilter = ref('')
 const searchKeyword = ref('')
 const sortReviewOption = ref('latest')
 const bookReviews = ref([])
-const allReviews = ref([])
 const reviewText = ref('')
 const reviewRating = ref(5)
 
-const randomBooks = ref([])
-const borrowedBooks = ref([
-  { id: 1, title: '活著', author: '余華' },
-  { id: 3, title: '追風箏的人', author: '卡勒德胡賽尼' },
-  { id: 6, title: '房思琪的初戀樂園', author: '林奕含' }
-])
+// 分頁用變數
+const searchPageInfo = ref({ totalPages: 1, number: 0 }) // 分頁資訊
+const currentPage = ref(1) // 當前頁碼，1 起算
 
-const goToWrite = () => {
-  if (!user.value || typeof user.value !== 'string' || user.value.trim() === '') {
-    window.alert('請先登入會員後才能撰寫書評')
+// 取消點讚冷卻秒數
+const cooldownSeconds = 24 * 60 * 60
+
+const randomBooks = ref([])
+
+const borrowedBooks = ref([])
+
+const allBorrowedBooks = ref([]) // 新增完整書籍清單
+
+const fetchReviewableBooks = async () => {
+  if (!isLoggedIn.value) return
+  const userId = Number(user.value)
+
+  try {
+    const res = await fetch(`http://localhost:8080/api/book-comments/reviewable-books/${userId}`, {
+      credentials: 'include'
+    })
+    if (!res.ok) throw new Error('取得可撰寫書評的書籍失敗')
+    const data = await res.json()
+    borrowedBooks.value = data
+    allBorrowedBooks.value = data.slice() // 複製一份完整清單，保持不變
+    // console.log('fetchReviewableBooks 讀到的書籍資料:', allBorrowedBooks.value)
+
+    // console.log('fetchReviewableBooks 詳細資料:', JSON.stringify(allBorrowedBooks.value, null, 2))
+    console.log('fetchReviewableBooks 抓到的書籍資料:', data)
+  } catch (err) {
+    console.error(err)
+    borrowedBooks.value = []
+    allBorrowedBooks.value = []
+  }
+}
+
+const deleteReview = async review => {
+  if (!confirm('確定要刪除這則書評嗎？')) return
+
+  try {
+    const res = await fetch(`http://localhost:8080/api/book-comments/${review.commentId}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    })
+
+    if (!res.ok) throw new Error('刪除失敗')
+
+    // 從書評列表移除
+    allReviews.value = allReviews.value.filter(r => r.commentId !== review.commentId)
+
+    // 重新取得完整借閱書籍清單（包含有無評論的所有書）
+    await fetchAllBorrowedBooks()
+
+    // 找尋對應書籍
+    const rawBooks = toRaw(allBorrowedBooks.value)
+    const book = rawBooks.find(b => String(b.bookId) === String(review.bookId))
+
+    if (book) {
+      // 這裡判斷撰寫書評用的 borrowedBooks 是否已包含，沒包含再放入
+      const bookExists = borrowedBooks.value.some(b => b.bookId === book.bookId)
+      if (!bookExists) {
+        borrowedBooks.value.push({
+          bookId: book.bookId,
+          title: book.title,
+          author: book.author
+        })
+      }
+    } else {
+      console.warn(`找不到書籍資料，bookId: ${review.bookId}`)
+    }
+
+    alert('✅ 書評已刪除')
+    step.value = 'write'
+    actionMode.value = 'edit'
+  } catch (error) {
+    alert('❌ 書評刪除失敗，請稍後再試')
+    console.error(error)
+  }
+}
+
+const goToWrite = async () => {
+  if (!isLoggedIn.value) {
+    alert('請先登入會員後才能撰寫書評')
     return
   }
 
-  // ✅ 進入撰寫流程前先清空所有狀態
+  // 清空狀態
   selectedBook.value = null
   selectedBookForReview.value = null
   editingReview.value = null
   actionMode.value = null
   newReview.value = { rating: '', comment: '' }
 
+  // 從後端載入可撰寫書評的書籍
+  await fetchReviewableBooks()
+
   step.value = 'write'
 }
 
-
 const simulateLogin = () => {
-  document.cookie = "user=mock-member; path=/"
+  document.cookie = 'user=123; path=/'
+  user.value = '123' // 同步更新 Nuxt3 composable
   location.reload()
 }
 
 const simulateLogout = () => {
-  document.cookie = "user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+  document.cookie = 'user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/'
   location.reload()
 }
 
+const isLoggedIn = computed(() => {
+  return user.value && !isNaN(Number(user.value))
+})
+
 const fetchRandomBooks = async () => {
-  randomBooks.value = [
-    { id: 1, title: '活著', author: '余華', category: '文學' },
-    { id: 2, title: '百年孤寂', author: '馬奎斯', category: '文學' },
-    { id: 3, title: '追風箏的人', author: '卡勒德胡賽尼', category: '心理' },
-    { id: 4, title: '小王子', author: '聖修伯里', category: '文學' },
-    { id: 5, title: '1984', author: '喬治歐威爾', category: '科幻' },
-    { id: 6, title: '房思琪的初戀樂園', author: '林奕含', category: '心理' },
-    { id: 7, title: '解憂雜貨店', author: '東野圭吾', category: '文學' },
-    { id: 8, title: '我們與惡的距離', author: '公共電視', category: '心理' },
-    { id: 9, title: '天橋上的魔術師', author: '吳明益', category: '歷史' },
-    { id: 10, title: '時間的秩序', author: '羅威利', category: '科幻' }
-  ]
+  try {
+    const res = await fetch('http://localhost:8080/api/random-books', { credentials: 'include' })
+    if (!res.ok) throw new Error('取得隨機書籍失敗')
+    randomBooks.value = await res.json()
+  } catch (error) {
+    console.error(error)
+    randomBooks.value = []
+  }
 }
 
-const filteredBooks = computed(() => {
-  return randomBooks.value.filter(book => {
-    const matchCategory = categoryFilter.value === '' || book.category === categoryFilter.value
-    const matchKeyword = searchKeyword.value === '' || book.title.includes(searchKeyword.value)
-    return matchCategory && matchKeyword
-  })
+const fetchMyReviews = async () => {
+  if (!isLoggedIn.value) return
+  const userId = Number(user.value)
+
+  try {
+    if (allBorrowedBooks.value.length === 0) {
+      await fetchAllBorrowedBooks()  // 確保抓取所有借閱書籍
+    }
+
+    const res = await fetch(`http://localhost:8080/api/book-comments/user/${userId}`, {
+      credentials: 'include'
+    })
+    if (!res.ok) throw new Error('取得我的書評失敗')
+    const reviews = await res.json()
+
+    const rawBooks = toRaw(allBorrowedBooks.value)
+    allReviews.value = reviews.map(r => {
+      const book = rawBooks.find(b => String(b.bookId) === String(r.bookId)) || {}
+      return {
+        ...r,
+        bookTitle: book.title || '未知書名',
+        bookAuthor: book.author || '未知作者',
+        reviewer: '您'
+      }
+    })
+    console.log('fetchMyReviews 執行完畢, allReviews:', allReviews.value)
+  } catch (error) {
+    console.error(error)
+    allReviews.value = []
+  }
+}
+
+const fetchAllBorrowedBooks = async () => {
+  if (!isLoggedIn.value) return
+  const userId = Number(user.value)
+  try {
+    const res = await fetch(`http://localhost:8080/api/book-comments/borrowed-books/${userId}`, {
+      credentials: 'include'
+    })
+    if (!res.ok) throw new Error('取得所有借閱書籍失敗')
+    const data = await res.json()
+    allBorrowedBooks.value = data
+    borrowedBooks.value = data.slice() // 複製一份給撰寫用
+    console.log('fetchAllBorrowedBooks 取得完整借閱書籍:', data)
+  } catch (error) {
+    console.error(error)
+    allBorrowedBooks.value = []
+    borrowedBooks.value = []
+  }
+}
+
+onMounted(async () => {
+  if (isLoggedIn.value) {
+    await fetchReviewableBooks()
+    await fetchMyReviews()
+  }
 })
+
+const goToEditReviews = async () => {
+  actionMode.value = 'edit'
+  await fetchAllBorrowedBooks()  // 先確保 allBorrowedBooks 有所有借閱書籍資料
+  await fetchMyReviews()        // 再抓書評並配對書籍資料
+}
 
 const myReviews = computed(() => {
   return allReviews.value.filter(r => r.reviewer === '您')
 })
 
-const viewBookReviews = (book) => {
+const viewBookReviews = async book => {
   selectedBook.value = book
   step.value = 'bookReviews'
-  bookReviews.value = allReviews.value.filter(r => r.bookId === book.id)
+
+  try {
+    const res = await fetch(`http://localhost:8080/api/book-comments/book/${book.bookId}`, {
+      credentials: 'include'
+    })
+    if (!res.ok) throw new Error('取得書評失敗')
+    const reviews = await res.json()
+    initReviews(reviews)
+  } catch (error) {
+    console.error(error)
+    bookReviews.value = []
+  }
 }
+
+function initReviews(reviews) {
+  bookReviews.value = reviews.map(r => ({
+    ...r,
+    likes: Number(r.likes) || 0,
+    liked: false,
+    cooldown: false,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt
+  }))
+}
+
+const fetchSearchedBooks = async () => {
+  try {
+    const params = new URLSearchParams()
+    if (categoryFilter.value && categoryFilter.value.trim() !== '') params.append('category', categoryFilter.value.trim())
+    if (searchKeyword.value && searchKeyword.value.trim() !== '') params.append('keyword', searchKeyword.value.trim())
+    params.append('page', currentPage.value)
+    params.append('pageSize', 10)
+
+    const res = await fetch(`http://localhost:8080/api/search-books?${params.toString()}`, { credentials: 'include' })
+    if (!res.ok) throw new Error('取得書籍失敗')
+    const data = await res.json()
+
+    searchedBooks.value = data.content // 取分頁物件裡的資料陣列
+    searchPageInfo.value = data // 整個分頁資訊物件
+  } catch (error) {
+    console.error(error)
+    searchedBooks.value = []
+    searchPageInfo.value = { totalPages: 1, number: 0 }
+  }
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  if (isNaN(date)) return ''
+  return date.toLocaleString() // 你也可以改成自己想要的格式
+}
+
+watch([categoryFilter, searchKeyword, currentPage], () => {
+  if (categoryFilter.value.trim() !== '' || searchKeyword.value.trim() !== '') {
+    fetchSearchedBooks()
+  } else {
+    searchedBooks.value = []
+    searchPageInfo.value = { totalPages: 1, number: 0 }
+  }
+})
 
 const sortedBookReviews = computed(() => {
   if (sortReviewOption.value === 'likes') {
     return [...bookReviews.value].sort((a, b) => b.likes - a.likes)
   } else {
-    return [...bookReviews.value].sort((a, b) => new Date(b.date) - new Date(a.date))
+    // 使用 updatedAt（如果有）或 createdAt 排序
+    return [...bookReviews.value].sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
   }
 })
 
-const submitReview = () => {
+const toggleLike = async review => {
+  const commentId = review.commentId || review.id
+
+  if (!user.value) {
+    alert('請先登入才能點讚書評')
+    return
+  }
+
+  if (review.liked) {
+    if (review.cooldown) {
+      alert(`取消點讚請等待 ${cooldownSeconds} 秒冷卻時間`)
+      return
+    }
+
+    try {
+      const res = await fetch(`http://localhost:8080/api/comment/${commentId}/like?memberId=${user.value}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      if (!res.ok) throw new Error('取消點讚失敗')
+      review.liked = false
+      review.likes--
+      review.cooldown = true
+      setTimeout(() => (review.cooldown = false), cooldownSeconds * 1000)
+    } catch (error) {
+      alert(error.message)
+    }
+  } else {
+    try {
+      const res = await fetch(`http://localhost:8080/api/comment/${commentId}/like?memberId=${user.value}`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+      if (!res.ok) throw new Error('點讚失敗')
+      review.liked = true
+      review.likes++
+    } catch (error) {
+      alert(error.message)
+    }
+  }
+}
+
+const submitReview = async () => {
+  // console.log('selectedBookForReview.value', selectedBookForReview.value)
+
   if (!newReview.value.rating || !newReview.value.comment.trim()) {
     alert('請完整填寫評分與評論內容')
     return
   }
 
-  const now = new Date().toISOString().split('T')[0]
-  allReviews.value.push({
-    id: Date.now(),
-    reviewer: '您',
-    rating: newReview.value.rating,
-    comment: newReview.value.comment,
-    date: now,
-    likes: 0,
-    likedBy: [],
-    bookId: selectedBookForReview.value.id,
-    bookTitle: selectedBookForReview.value.title
-  })
+  const userId = Number(user.value)
+  if (!userId) {
+    alert('登入資訊失效或尚未登入，請重新登入後再提交書評')
+    return
+  }
 
-  
+  const payload = {
+    bookId: selectedBookForReview.value.bookId,
+    userId,
+    rating: Number(newReview.value.rating),
+    comment: newReview.value.comment
+  }
 
+  console.log('送出書評的 payload:', payload)
 
-  // 從可撰寫書評的清單中移除該書
-  borrowedBooks.value = borrowedBooks.value.filter(book => book.id !== selectedBookForReview.value.id)
+  try {
+    const res = await fetch('http://localhost:8080/api/book-comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      credentials: 'include'
+    })
 
-  // ✅ 清空所有狀態並返回首頁
-  selectedBook.value = null
-  selectedBookForReview.value = null
-  newReview.value = { rating: '', comment: '' }
-  actionMode.value = null
-  editingReview.value = null
-  step.value = null
+    if (!res.ok) throw new Error('提交失敗')
 
-  alert('您的書評已成功提交')
+    const data = await res.json()
+
+    allReviews.value.push({
+      commentId: data.commentId,
+      reviewer: '您',
+      rating: data.rating,
+      comment: data.comment,
+      date: data.createdAt,
+      likes: 0,
+      likedBy: [],
+      bookId: data.bookId,
+      bookTitle: selectedBookForReview.value.title
+    })
+
+    borrowedBooks.value = borrowedBooks.value.filter(book => book.bookId !== selectedBookForReview.value.bookId)
+
+    selectedBook.value = null
+    selectedBookForReview.value = null
+    newReview.value = { rating: '', comment: '' }
+    actionMode.value = null
+    editingReview.value = null
+    step.value = null
+
+    alert('✅ 您的書評已成功提交')
+  } catch (error) {
+    alert('❌ 書評送出失敗，請稍後再試')
+    console.error(error)
+  }
 }
 
-const likeReview = (review) => {
-  if (!user.value || typeof user.value !== 'string' || user.value.trim() === '') {
-    alert('請先登入才能點讚書評')
-    return
+const editReview = review => {
+  editingReview.value = {
+    ...review,
+    bookTitle: review.bookTitle || '未知書名',
+    bookAuthor: review.bookAuthor || '未知作者',
+    updatedAt: review.updatedAt
   }
-
-  if (review.reviewer === '您') {
-    alert('不能對自己的書評按讚喔！')
-    return
-  }
-
-  if (!review.likedBy) review.likedBy = []
-
-  if (review.likedBy.includes(user.value)) {
-    alert('您已點過讚囉！')
-    return
-  }
-
-  review.likes++
-  review.likedBy.push(user.value)
-}
-
-
-const editReview = (review) => {
-  editingReview.value = review
   reviewText.value = review.comment
   reviewRating.value = review.rating
   step.value = 'editReview'
 }
 
-const deleteReview = (review) => {
-  if (confirm('確定要刪除這則書評嗎？')) {
-    allReviews.value = allReviews.value.filter(r => r.id !== review.id)
+const updateReview = async () => {
+  // console.log('updateReview 被呼叫，editingReview:', editingReview.value)
+
+  if (!reviewRating.value || !reviewText.value.trim()) {
+    alert('請完整填寫評分與評論內容')
+    return
+  }
+
+  const userId = Number(user.value)
+  if (!userId) {
+    alert('登入資訊失效或尚未登入，請重新登入後再提交書評')
+    return
+  }
+
+  const payload = {
+    bookId: editingReview.value.bookId,
+    userId,
+    rating: reviewRating.value,
+    comment: reviewText.value
+  }
+
+  try {
+    const res = await fetch(`http://localhost:8080/api/book-comments/${editingReview.value.commentId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      credentials: 'include'
+    })
+
+    if (!res.ok) throw new Error('更新失敗')
+
+    const data = await res.json()
+    // console.log('更新後 API 回傳的書評資料', data)
+
+    const index = allReviews.value.findIndex(r => r.commentId === editingReview.value.commentId)
+    // console.log('找到的 index:', index)
+
+    if (index !== -1) {
+      allReviews.value[index].rating = data.rating
+      allReviews.value[index].comment = data.comment
+      allReviews.value[index].date = data.updatedAt || allReviews.value[index].date
+    }
+
+    // console.log('更新後的 allReviews', allReviews.value)
+    // console.log('myReviews 重新計算結果', myReviews.value)
+
+    alert('✅ 書評更新成功')
+
+    step.value = 'write'
+    actionMode.value = 'edit'
+    editingReview.value = null
+    reviewText.value = ''
+    reviewRating.value = 5
+  } catch (error) {
+    alert('❌ 書評更新失敗，請稍後再試')
+    console.error(error)
   }
 }
 
-const startWritingReview = (book) => {
+const startWritingReview = book => {
   selectedBookForReview.value = book
   newReview.value = { rating: '', comment: '' }
 }
 
-watch(step, (val) => {
+watch(step, val => {
   if (val === 'read') fetchRandomBooks()
 })
+
 </script>

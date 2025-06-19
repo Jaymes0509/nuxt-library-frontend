@@ -148,6 +148,7 @@ interface Book {
     author: string
     isbn: string
     is_available: number
+    id: number
 }
 
 const books = computed<Book[]>(() => {
@@ -288,7 +289,7 @@ async function handleReserve() {
         const reservationData = {
             userId: 1, // 使用數字 ID
             books: books.value.map(book => ({
-                bookId: parseInt(book.isbn) || 1, // 使用 ISBN 作為 bookId
+                bookId: book.id, // 使用資料庫主鍵 id 作為 bookId
                 reserveTime: form.value.time // ISO 格式字串，後端會解析為 LocalDateTime
             }))
         }
@@ -300,42 +301,33 @@ async function handleReserve() {
 
         console.log('批量預約回應：', response.data)
 
-        if (response.data && response.data.success) {
-            // 從回應中提取預約 ID
-            const reservationIds = response.data.results
-                .filter((result: any) => result.status === 'success')
-                .map((result: any) => result.reservationId)
+        // 從回應中提取預約 ID
+        const reservationIds = response.data.results
+            .filter((result: any) => result.status === 'success')
+            .map((result: any) => result.reservationId)
 
-            console.log('提取的預約 ID：', reservationIds)
+        console.log('提取的預約 ID：', reservationIds)
 
-            // 預約成功，跳轉到結果頁面
-            router.push({
-                path: '/book-reserveresult',
-                query: {
-                    books: JSON.stringify(books.value.map(book => ({
-                        title: book.title,
-                        author: book.author,
-                        isbn: book.isbn,
-                        time: form.value.time,
-                        location: form.value.location,
-                        method: form.value.method
-                    }))),
-                    reservationIds: JSON.stringify(reservationIds),
+        // 無論成功或失敗，都跳轉到結果頁面，並帶上完整的結果資訊
+        router.push({
+            path: '/book-reserveresult',
+            query: {
+                books: JSON.stringify(books.value.map(book => ({
+                    title: book.title,
+                    author: book.author,
+                    isbn: book.isbn,
                     time: form.value.time,
                     location: form.value.location,
                     method: form.value.method
-                }
-            })
-        } else {
-            // 檢查是否有部分失敗的預約
-            const failedResults = response.data?.results?.filter((result: any) => result.status === 'fail') || []
-            if (failedResults.length > 0) {
-                const errorMessages = failedResults.map((result: any) => result.reason).join(', ')
-                alert(`部分預約失敗：${errorMessages}`)
-            } else {
-                throw new Error('預約失敗')
+                }))),
+                reservationIds: JSON.stringify(reservationIds),
+                time: form.value.time,
+                location: form.value.location,
+                method: form.value.method,
+                results: JSON.stringify(response.data.results),
+                success: response.data.success
             }
-        }
+        })
     } catch (error: any) {
         console.error('預約失敗：', error)
         if (error.response?.data?.message) {
