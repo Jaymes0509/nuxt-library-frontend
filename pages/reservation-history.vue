@@ -133,7 +133,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useHead } from '#imports'
-import axios from 'axios'
+import { reservationAPI } from '~/utils/api'
 
 // 設置頁面標題
 useHead({
@@ -189,33 +189,49 @@ async function fetchReservations() {
     error.value = null
 
     try {
-        const response = await axios.get('/api/reservations')
+        console.log('開始載入預約歷史記錄...')
 
-        console.log('API 回傳資料：', response.data);
+        let response
+        try {
+            // 使用正確的 API 查詢 reservations 表 (預約歷史)
+            response = await reservationAPI.getReservations(1)
+        } catch (firstError) {
+            console.log('使用 userId=1 失敗，嘗試不傳參數:', firstError)
+            try {
+                // 備用方案：不傳參數
+                response = await reservationAPI.getReservations()
+            } catch (secondError) {
+                console.log('所有方案都失敗:', secondError)
+                throw secondError
+            }
+        }
+
+        console.log('API 回傳資料：', response.data)
 
         if (response.data && Array.isArray(response.data)) {
             reservationBooks.value = response.data.map((reservation, index) => {
-                // 直接使用扁平化的資料結構
+                // 處理 reservations 表的資料結構
                 const processedReservation = {
-                    reservationId: reservation.reservation_id || `res_${index}`,
-                    title: reservation.title || '未知書名',
-                    author: reservation.author || '未知作者',
-                    isbn: reservation.isbn || '未知ISBN',
-                    publisher: reservation.publisher || '未知出版社',
+                    reservationId: reservation.reservation_id || reservation.id || `res_${index}`,
+                    title: reservation.book_title || reservation.title || '未知書名',
+                    author: reservation.book_author || reservation.author || '未知作者',
+                    isbn: reservation.book_isbn || reservation.isbn || '未知ISBN',
+                    publisher: reservation.book_publisher || reservation.publisher || '未知出版社',
                     classification: reservation.classification || '',
                     categoryName: reservation.category_name || '',
                     pickupLocation: reservation.pickup_location || '未指定地點',
                     pickupTime: reservation.pickup_time || '',
-                    reservationDate: reservation.reservation_date || '',
-                    expiryDate: reservation.expiry_date || '',
+                    reservationDate: reservation.created_at || '',
+                    expiryDate: reservation.updated_at || '',
                     status: reservation.status || 'pending',
+                    userId: reservation.user_id,
                     // 保存完整的原始資料，以便詳情頁使用
                     bookInfo: {
                         bookId: reservation.book_id,
-                        title: reservation.title,
-                        author: reservation.author,
-                        isbn: reservation.isbn,
-                        publisher: reservation.publisher,
+                        title: reservation.book_title || reservation.title,
+                        author: reservation.book_author || reservation.author,
+                        isbn: reservation.book_isbn || reservation.isbn,
+                        publisher: reservation.book_publisher || reservation.publisher,
                         classification: reservation.classification,
                         category: {
                             cName: reservation.category_name
@@ -232,23 +248,19 @@ async function fetchReservations() {
             })
 
             console.log('總筆數：', reservationBooks.value.length)
-            console.log('資料範例：', {
-                title: reservationBooks.value[0]?.title,
-                author: reservationBooks.value[0]?.author,
-                pickupLocation: reservationBooks.value[0]?.pickupLocation,
-                pickupTime: reservationBooks.value[0]?.pickupTime,
-                status: reservationBooks.value[0]?.status
-            })
-
-            console.log('前端處理後的 reservationBooks：', reservationBooks.value);
+            console.log('前端處理後的 reservationBooks：', reservationBooks.value)
         } else {
-            console.warn('API 返回格式不符合預期：', response.data)
+            console.log('API 回應不是陣列或為空')
             reservationBooks.value = []
-            error.value = '資料格式錯誤'
         }
     } catch (err) {
         console.error('獲取預約記錄失敗：', err)
-        error.value = '無法載入預約記錄，請稍後再試。錯誤詳情：' + (err.response?.data?.statusMessage || err.message)
+        console.log('錯誤詳情:', {
+            status: err.response?.status,
+            statusText: err.response?.statusText,
+            data: err.response?.data
+        })
+        error.value = '無法載入預約記錄，請稍後再試'
         reservationBooks.value = []
     } finally {
         loading.value = false
