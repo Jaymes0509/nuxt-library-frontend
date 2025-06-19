@@ -137,47 +137,65 @@ const addToReservationList = async () => {
   try {
     console.log('開始加入預約清單，書籍：', book.value)
 
-    // 使用正確的 bookId，而不是 ISBN
     const bookId = book.value.bookId || parseInt(book.value.isbn) || 1
     console.log('使用的 bookId：', bookId)
 
-    // 使用正確的 JSON 欄位名稱和日期格式
-    const reservationData = {
-      book_id: bookId, // 使用 book_id 而不是 bookId
-      user_id: 1, // 使用 user_id 而不是 userId
-      status: 'PENDING',
-      reserve_time: new Date().toISOString() // 使用 reserve_time 而不是 reservation_date
+    // 檢查書籍是否可預約
+    if (!book.value.is_available) {
+      console.error('書籍不可預約：', book.value)
+      alert('此書籍目前不可預約')
+      return
     }
 
-    console.log('發送的資料：', reservationData)
+    // 準備加入預約清單的資料
+    const logData = {
+      book_id: bookId,
+      user_id: 1,
+      action: 'ADD_TO_LIST',
+      status: 'PENDING',
+      message: `加入預約清單：${book.value.title}`
+    }
 
-    const response = await reservationAPI.addReservation(reservationData)
+    console.log('發送預約日誌資料：', logData)
 
-    console.log('加入預約 API 回應：', response.data)
+    // 使用 addReservationLog API 記錄操作
+    const response = await reservationAPI.addReservationLog(logData)
+    console.log('API 完整回應：', response)
+    console.log('API 回應狀態：', response.status)
+    console.log('API 回應資料：', response.data)
 
     if (response.data && response.data.success) {
-      console.log('預約加入成功！')
+      console.log('成功加入預約清單！')
       alert('已成功加入預約清單！')
-    } else {
-      console.log('預約加入失敗：', response.data)
 
-      // 檢查 results 陣列中的詳細錯誤訊息
-      if (response.data && response.data.results && response.data.results.length > 0) {
-        const result = response.data.results[0]
-        console.log('詳細結果：', result)
-        if (result.success === false || result.status === 'fail') {
-          // 顯示具體的錯誤訊息
-          const errorMessage = result.reason || result.message || result.error || '加入失敗'
-          alert(`加入失敗：${errorMessage}`)
-          return
+      // 導向預約清單頁面
+      router.push({
+        path: '/reservation-record',
+        query: {
+          from: 'bookinfo',
+          book_id: bookId
         }
-      }
-
-      // 如果沒有詳細錯誤訊息，顯示一般錯誤
-      alert('加入預約清單失敗，請稍後再試')
+      })
+    } else {
+      // 處理加入失敗
+      const errorMessage = response.data?.message ||
+        response.data?.error ||
+        '加入預約清單失敗'
+      console.error('加入預約清單失敗詳情：', {
+        message: errorMessage,
+        response: response.data
+      })
+      alert(`加入失敗：${errorMessage}`)
     }
   } catch (error) {
     console.error('加入預約清單失敗：', error)
+    console.error('錯誤詳情：', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data
+    })
+
     if (error.response?.status === 409) {
       alert('此書籍已在預約清單中')
     } else if (error.response?.data?.message) {

@@ -85,7 +85,22 @@ export const reservationAPI = {
   batchDeleteReservation: (ids) => api.delete('/api/bookreservations/batch', { data: { reservationIds: ids } }),
   
   // 更新預約狀態
-  updateReservationStatus: (id, status) => api.put(`/api/bookreservations/${id}/status`, { status })
+  updateReservationStatus: (id, status) => api.put(`/api/bookreservations/${id}/status`, { status }),
+
+  // 新增預約日誌
+  addReservationLog: (data) => {
+    return api.post('/api/reservation-logs', data)
+  },
+
+  // 確認預約
+  confirmReservation: (data) => {
+    return api.post('/api/reservations/confirm', data)
+  },
+
+  // 取得使用者的預約日誌
+  getReservationLogs: (userId) => {
+    return api.get('/api/reservation-logs/user/' + userId)
+  }
 }
 
 // 書籍相關 API
