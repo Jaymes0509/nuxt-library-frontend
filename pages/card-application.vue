@@ -102,7 +102,7 @@
 
                             <select v-model="form.addressCounty" required>
                                 <option disabled value="">請選擇縣市</option>
-                                <option v-for="county in counties" :key="county">{{ county }}</option>
+                                <option v-for="county in counties" :key="county" :value="county">{{ county }}</option>
                             </select>
 
                             <select v-model="form.addressTown" required>
@@ -267,7 +267,7 @@ const counties = ref([])
 
 onMounted(async () => {
     try {
-        const data = await $fetch('/api/zipcodes/counties')
+        const data = await $fetch('http://localhost:8080/api/zipcodes/counties')
         counties.value = data || []
         console.log('縣市資料：', counties.value)
     } catch (error) {
@@ -281,7 +281,7 @@ watch(() => form.addressCounty, async (newCounty) => {
     if (!newCounty) return
 
     try {
-        const data = await $fetch('/api/zipcodes/towns', {
+        const data = await $fetch('http://localhost:8080/api/zipcodes/towns', {
             query: { county: newCounty }
         })
         towns.value = data || []
@@ -296,7 +296,7 @@ watch(() => form.addressTown, async (newTown) => {
     if (!form.addressCounty || !newTown) return
 
     try {
-        const data = await $fetch('/api/zipcodes/zip', {
+        const data = await $fetch('http://localhost:8080/api/zipcodes/zip', {
             query: {
                 county: form.addressCounty,
                 town: newTown

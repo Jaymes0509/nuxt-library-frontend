@@ -7,7 +7,7 @@ export default defineNuxtConfig({
   ssr: false,
 
   modules: [
-    '@nuxtjs/tailwindcss',
+    // '@nuxtjs/tailwindcss',
 
     '@nuxtjs/google-fonts'
   ],
@@ -52,6 +52,16 @@ export default defineNuxtConfig({
   devServer: {
     port: 3000,
     host: 'localhost'
+  },
+
+  nitro: {
+    devProxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      }
+    }
   }
+
 
 })
