@@ -16,110 +16,15 @@
                 <SeatDatePicker v-model="selectedDate" @nextStep="step = 2" />
                 <SeatTimeSlot v-model="selectedSlot" />
 
-                <SeatMap :seatList="['A1', 'A2', 'A3', 'A4', 'A5', 'A6']" :availableSeats="['A2', 'A3', 'A5']"
-                    @seat-selected="selectedSeat = $event" />
+                <SeatMap />
+
+                <!-- <SeatMap :seatList="['A1', 'A2', 'A3', 'A4', 'A5', 'A6']" :availableSeats="['A2', 'A3', 'A5']"
+                    @seat-selected="selectedSeat = $event" /> -->
 
 
-                <!-- ✅ 步驟二：申請表單 -->
-                <form v-if="step === 2" @submit.prevent="submitForm" class="form">
-                    <div class="form-group">
-                        <label class="form-label">姓名：</label>
-                        <input v-model="form.name" required />
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">性別：</label>
-                        <div class="gender-radio">
-                            <label><input type="radio" value="男" v-model="form.gender" required />男 Male</label>
-                            <label><input type="radio" value="女" v-model="form.gender" />女 Female</label>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">身分證字號：</label>
-                        <input v-model="form.idNumber" required />
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">出生日期：</label>
-                        <input v-model="form.birthDate" type="date" required />
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">國別：</label>
-                        <select v-model="form.nationality" required>
-                            <option disabled value="">請選擇國別</option>
-                            <option v-for="country in countries" :key="country" :value="country">{{ country }}</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group education-row">
-                        <label class="form-label">學歷：</label>
-                        <div class="education-options">
-                            <label v-for="edu in educationOptions" :key="edu.value">
-                                <input type="radio" :value="edu.value" v-model="form.education" name="education"
-                                    required />
-                                {{ edu.label }}
-                            </label>
-                        </div>
-                    </div>
 
 
-                    <div class="form-group">
-                        <label class="form-label">職業：</label>
-                        <select v-model="form.occupation" required>
-                            <option disabled value="">請選擇職業</option>
-                            <option v-for="job in occupations" :key="job" :value="job">{{ job }}</option>
-                        </select>
-                    </div>
 
-                    <div class="form-group">
-                        <label class="form-label">通訊地址：</label>
-                        <div class="address-row">
-
-                            <select v-model="form.addressCounty" required>
-                                <option disabled value="">請選擇縣市</option>
-                                <option v-for="county in counties" :key="county">{{ county }}</option>
-                            </select>
-
-                            <select v-model="form.addressTown" required>
-                                <option disabled value="">請選擇鄉鎮</option>
-                                <option v-for="town in towns" :key="town">{{ town }}</option>
-                            </select>
-                            <input type="text" v-model="form.addressZip" placeholder="郵遞區號 Zip" required />
-                        </div>
-                        <div class="address-detail">
-                            <input type="text" v-model="form.addressDetail" placeholder="地址 Address" required />
-                        </div>
-                    </div>
-
-
-                    <div class="form-group">
-                        <label class="form-label">電子郵件：</label>
-                        <input v-model="form.email" type="email" required />
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">聯絡電話：</label>
-                        <input v-model="form.phone" type="tel" required />
-                    </div>
-
-                    <!-- 密碼設定欄位 -->
-                    <div class="form-group">
-                        <label class="form-label">設定密碼：</label>
-                        <div class="password-wrapper">
-                            <input :type="showPassword ? 'text' : 'password'" v-model="form.password" required
-                                minlength="8" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$" title="請輸入至少8碼，包含大寫、小寫英文與數字"
-                                placeholder="請輸入至少8碼，包含大寫、小寫英文與數字" />
-                            <button type="button" @click="showPassword = !showPassword">👁</button>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <button type="button" @click="step = 1" class="back-button">← 回上一頁</button>
-                        <button type="submit">送出申請</button>
-                    </div>
-                </form>
 
                 <!-- 步驟三：成功畫面 -->
                 <div v-if="step === 3" class="success-step">

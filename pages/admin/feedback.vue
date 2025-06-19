@@ -73,7 +73,11 @@ const submitReply = async () => {
         showReplyModal.value = false
         await loadFeedback() // 重新載入留言
     } else {
-        alert('❌ 回覆失敗：' + result.message)
+        // 防止 [object Object]
+        const errorText = typeof result.message === 'string'
+            ? result.message
+            : JSON.stringify(result.message)
+        alert('❌ 回覆失敗：' + errorText)
     }
 }
 
