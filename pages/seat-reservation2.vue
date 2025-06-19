@@ -22,10 +22,6 @@
                     @seat-selected="selectedSeat = $event" /> -->
 
 
-
-
-
-
                 <!-- 步驟三：成功畫面 -->
                 <div v-if="step === 3" class="success-step">
                     <h2>✅ 申請成功！</h2>
