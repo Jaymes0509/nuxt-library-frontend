@@ -259,6 +259,7 @@ async function fetchBorrowHistory() {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
       },
+      
       timeout: 15000
     });
     
@@ -399,8 +400,8 @@ const sortedBooks = computed(() => {
   })
 })
 
-// 續借功能（前端假動作，實際應串接後端續借API）
-function renewBook(book) {
+// 續借功能
+async function renewBook(book) {
   if (book.isReturned) {
     alert('此書已歸還')
     return
@@ -418,23 +419,31 @@ function renewBook(book) {
     return
   }
 
-  // 這裡可串接後端續借API
-  alert('請串接後端續借API')
+  try {
+    // 先檢查是否可以續借
+    const checkResponse = await axios.get(`/api/borrows/renew/${book.id}/check`)
+    if (!checkResponse.data) {
+      alert('此書目前無法續借')
+      return
+    }
 
-
-  // 取得當前到期日
-  const currentDueDate = new Date(book.dueDate)
-  
-
-  // 計算新的到期日（當前到期日 + 30天）
-  const newDueDate = new Date(currentDueDate)
-  newDueDate.setDate(newDueDate.getDate() + 30)
-  
-  // 更新書籍的到期日
-  book.dueDate = newDueDate.toISOString().split('T')[0]
-  // 增加續借次數
-  book.renewCount++
-
+    // 發送續借請求
+    const response = await axios.post(`/api/borrows/renew/${book.id}`)
+    
+    if (response.status === 200) {
+      // 更新本地資料
+      const updatedBook = response.data
+      book.dueDate = updatedBook.dueDate.split('T')[0]
+      book.renewCount = updatedBook.renewCount
+      
+      alert('續借成功！')
+      // 重新整理資料
+      await refreshData()
+    }
+  } catch (error) {
+    console.error('續借失敗:', error)
+    alert(error.response?.data || '續借失敗，請稍後再試')
+  }
 }
 
 // 添加 goToPage 函數
