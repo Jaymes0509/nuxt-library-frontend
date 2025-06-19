@@ -8,12 +8,12 @@ export default defineNuxtConfig({
 
   modules: [
     '@nuxtjs/tailwindcss',
+
     '@nuxtjs/google-fonts'
   ],
 
   css: ['@/assets/css/main.css',
     'leaflet/dist/leaflet.css',
-    '@fortawesome/fontawesome-free/css/all.css'
   ],
 
   components: true,
@@ -26,22 +26,32 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
+    apiSecret: process.env.API_SECRET,
     public: {
-      apiBase: '/api'
+      apiBase: process.env.API_BASE_URL || 'http://localhost:8080',
+      appName: '圖書館預約系統'
     }
   },
-
-  nitro: {
-    devProxy: {
-      '/api': {
-        target: 'http://localhost:8080/api', // 你的 Spring Boot 後端
-        changeOrigin: true,
-        prependPath: true
-      }
-    }
-  },
-
 
   compatibilityDate: '2025-05-15',
+
+  app: {
+    head: {
+      title: '圖書館預約系統',
+      meta: [
+        { charset: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'description', content: '圖書館書籍預約系統' }
+      ],
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+      ]
+    }
+  },
+
+  devServer: {
+    port: 3000,
+    host: 'localhost'
+  }
 
 })

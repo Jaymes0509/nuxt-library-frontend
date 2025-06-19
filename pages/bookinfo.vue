@@ -2,11 +2,7 @@
   <div class="book-detail-wrapper">
     <!-- 左半邊：封面圖片 -->
     <div class="cover-area">
-      <img
-        class="cover-image"
-        :src="bookCoverUrl"
-        :alt="`書籍《${book.title}》封面`"
-      />
+      <img class="cover-image" :src="bookCoverUrl" :alt="`書籍《${book.title}》封面`" />
     </div>
 
     <!-- 右半邊：文字內容區 -->
@@ -47,13 +43,9 @@
 
       <!-- 動作區域 -->
       <div class="action-area">
-        <button 
-          class="reserve-btn" 
-          @click="reserveBook"
-          :disabled="!book.is_available"
-          :class="{ 'disabled': !book.is_available }"
-        >
-          {{ book.is_available === 1 ? '預約此書' : '無法預約' }}
+        <button class="reserve-btn" @click="addToReservationList" :disabled="!book.is_available"
+          :class="{ 'disabled': !book.is_available }">
+          {{ book.is_available === 1 ? '加入預約清單' : '無法預約' }}
         </button>
         <button class="back-btn" @click="goBack">
           ← 返回搜尋結果
@@ -66,7 +58,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import axios from 'axios'
+import { useHead } from '#imports'
+import { reservationAPI, bookAPI } from '~/utils/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -78,15 +71,17 @@ onMounted(async () => {
   if (!isbn) return
 
   try {
-    const res = await axios.get(`/api/books/isbn/${isbn}`, {
-      timeout: 10000, // 設定 10 秒超時
-      retries: 3,     // 重試 3 次
-      retryDelay: 1000 // 每次重試間隔 1 秒
-    })
+    // 使用新的 API 配置
+    const res = await bookAPI.getBookByIsbn(isbn)
     const data = res.data
 
     // 統一處理 is_available（支援後端回傳為 boolean 或 int）
     data.is_available = (data.is_available === 1 || data.is_available === '1' || data.is_available === true) ? 1 : 0
+
+    // 添加日誌來追蹤 imgUrl
+    console.log('API 回應的完整資料：', data)
+    console.log('API 回應中的 imgUrl：', data.imgUrl)
+    console.log('URL 參數中的 imgUrl：', route.query.imgUrl)
 
     book.value = data
   } catch (error) {
@@ -108,6 +103,9 @@ onMounted(async () => {
 })
 
 const bookCoverUrl = computed(() => {
+  if (book.value.imgUrl) {
+    return book.value.imgUrl
+  }
   if (route.query.imgUrl) {
     return route.query.imgUrl
   }
@@ -133,37 +131,58 @@ const goBack = () => {
   })
 }
 
-// 添加預約書籍功能
-const reserveBook = async () => {
-  if (!book.value.is_available) {
-    alert('此書目前無法預約')
-    return
-  }
-
+// 加入預約清單功能
+const addToReservationList = async () => {
   try {
-    const res = await axios.post(`/api/books/${book.value.isbn}/reserve`, {}, {
-      timeout: 10000,
-      retries: 3,
-      retryDelay: 1000
-    })
-    
-    if (res.data.success) {
-      alert('預約成功')
-      // 更新書籍狀態
-      book.value.is_available = 0
+    console.log('開始加入預約清單，書籍：', book.value)
+
+    // 使用正確的 bookId，而不是 ISBN
+    const bookId = book.value.bookId || parseInt(book.value.isbn) || 1
+    console.log('使用的 bookId：', bookId)
+
+    // 使用正確的 JSON 欄位名稱和日期格式
+    const reservationData = {
+      book_id: bookId, // 使用 book_id 而不是 bookId
+      user_id: 1, // 使用 user_id 而不是 userId
+      status: 'PENDING',
+      reserve_time: new Date().toISOString() // 使用 reserve_time 而不是 reservation_date
+    }
+
+    console.log('發送的資料：', reservationData)
+
+    const response = await reservationAPI.addReservation(reservationData)
+
+    console.log('加入預約 API 回應：', response.data)
+
+    if (response.data && response.data.success) {
+      console.log('預約加入成功！')
+      alert('已成功加入預約清單！')
     } else {
-      alert(res.data.message || '預約失敗')
+      console.log('預約加入失敗：', response.data)
+
+      // 檢查 results 陣列中的詳細錯誤訊息
+      if (response.data && response.data.results && response.data.results.length > 0) {
+        const result = response.data.results[0]
+        console.log('詳細結果：', result)
+        if (result.success === false || result.status === 'fail') {
+          // 顯示具體的錯誤訊息
+          const errorMessage = result.reason || result.message || result.error || '加入失敗'
+          alert(`加入失敗：${errorMessage}`)
+          return
+        }
+      }
+
+      // 如果沒有詳細錯誤訊息，顯示一般錯誤
+      alert('加入預約清單失敗，請稍後再試')
     }
   } catch (error) {
-    console.error('預約失敗', error)
-    if (error.code === 'ECONNABORTED') {
-      alert('連線超時，請稍後再試')
-    } else if (error.response) {
-      alert(`預約失敗：${error.response.data?.message || '未知錯誤'}`)
-    } else if (error.request) {
-      alert('無法連接到伺服器，請檢查網路連線')
+    console.error('加入預約清單失敗：', error)
+    if (error.response?.status === 409) {
+      alert('此書籍已在預約清單中')
+    } else if (error.response?.data?.message) {
+      alert(`加入失敗：${error.response.data.message}`)
     } else {
-      alert('發生未知錯誤，請稍後再試')
+      alert('加入預約清單失敗，請稍後再試')
     }
   }
 }
@@ -297,13 +316,16 @@ const reserveBook = async () => {
   .book-detail-wrapper {
     flex-direction: row;
   }
+
   .cover-area,
   .info-area {
     align-items: flex-start;
   }
+
   .cover-area {
     max-width: 40%;
   }
+
   .info-area {
     max-width: 60%;
   }
@@ -314,7 +336,7 @@ const reserveBook = async () => {
   .action-area {
     flex-direction: column;
   }
-  
+
   .reserve-btn,
   .back-btn {
     width: 100%;

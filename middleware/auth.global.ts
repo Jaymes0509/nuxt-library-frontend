@@ -1,4 +1,5 @@
 export default defineNuxtRouteMiddleware((to) => {
+  return
   const isLoggedIn = useCookie('authToken').value
   const protectedPaths = ['/seat-reservation2']
 

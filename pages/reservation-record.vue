@@ -2,7 +2,7 @@
   <div class="scroll-wrapper">
     <div class="intro">
       <div class="history-bg">
-        <h1 class="history-title">預約查詢</h1>
+        <h1 class="history-title">我的預約清單</h1>
         <div class="history-main">
           <!-- 控制面板 -->
           <div class="history-control-panel">
@@ -18,7 +18,7 @@
                 <select v-model="sortConfig.field" class="history-select">
                   <option value="title">書名</option>
                   <option value="author">作者</option>
-                  <option value="pickupTime">取書時間</option>
+                  <option value="addedDate">加入時間</option>
                 </select>
                 <button @click="toggleSortOrder" class="history-sort-btn">
                   {{ sortConfig.ascending ? '↑ 升冪' : '↓ 降冪' }}
@@ -26,17 +26,34 @@
               </div>
             </div>
             <div class="history-control-panel-right">
-              <button
-                @click="viewMode = 'table'"
-                :class="['history-view-btn', viewMode === 'table' ? 'history-view-btn-active' : '']"
-              >
+              <button @click="viewMode = 'table'"
+                :class="['history-view-btn', viewMode === 'table' ? 'history-view-btn-active' : '']">
                 表格
               </button>
-              <button
-                @click="viewMode = 'grid'"
-                :class="['history-view-btn', viewMode === 'grid' ? 'history-view-btn-active' : '']"
-              >
+              <button @click="viewMode = 'grid'"
+                :class="['history-view-btn', viewMode === 'grid' ? 'history-view-btn-active' : '']">
                 網格
+              </button>
+            </div>
+          </div>
+
+          <!-- 批量操作面板 -->
+          <div v-if="reservationList.length > 0" class="batch-control-panel">
+            <div class="batch-control-left">
+              <label class="batch-checkbox-label">
+                <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" class="batch-checkbox" />
+                <span>全選</span>
+              </label>
+              <span class="batch-info">
+                已選擇 {{ selectedCount }} 本書籍
+              </span>
+            </div>
+            <div class="batch-control-right">
+              <button @click="removeSelected" class="batch-btn batch-btn-remove" :disabled="selectedCount === 0">
+                移除選取
+              </button>
+              <button @click="batchReserve" class="batch-btn batch-btn-reserve" :disabled="selectedCount === 0">
+                批量預約 ({{ selectedCount }})
               </button>
             </div>
           </div>
@@ -57,79 +74,60 @@
           <!-- 無資料狀態 -->
           <div v-else-if="!paginatedBooks.length" class="history-empty">
             <div class="history-empty-icon">📚</div>
-            <p>目前沒有預約記錄</p>
+            <p>預約清單中沒有書籍</p>
+            <p class="history-empty-subtitle">請先搜尋書籍並加入預約清單</p>
+            <button @click="goToSearch" class="history-empty-btn">
+              前往搜尋書籍
+            </button>
           </div>
 
           <!-- 表格視圖 -->
-          <div v-else :class="['history-table-scroll', itemsPerPage > 10 ? 'history-table-scrollable' : 'history-table-fill']">
+          <div v-else
+            :class="['history-table-scroll', itemsPerPage > 10 ? 'history-table-scrollable' : 'history-table-fill']">
             <div v-if="viewMode === 'table'" class="history-grid-table">
               <div class="history-grid-header">
+                <div class="history-grid-checkbox">
+                  <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" class="batch-checkbox" />
+                </div>
                 <div>書名</div>
                 <div>作者</div>
-                <div>取書地點</div>
-                <div>取書時間</div>
+                <div>ISBN</div>
+                <div>加入時間</div>
                 <div>操作</div>
               </div>
               <div class="history-grid-body">
-                <div
-                  v-for="(reservation, index) in paginatedBooks"
-                  :key="index"
-                  class="history-grid-row"
-                >
-                  <div>{{ reservation.title }}</div>
-                  <div>{{ reservation.author }}</div>
-                  <div>{{ reservation.pickupLocation }}</div>
-                  <div>{{ formatDateTime(reservation.pickupTime) }}</div>
-                  <div>
-                    <button @click="viewBookDetail(reservation)" class="history-detail-btn">詳情</button>
+                <div v-for="(book, index) in paginatedBooks" :key="index" class="history-grid-row">
+                  <div class="history-grid-checkbox">
+                    <input type="checkbox" :checked="selectedBooks.includes(book.id)"
+                      @change="toggleSelectBook(book.id)" class="batch-checkbox" />
+                  </div>
+                  <div class="history-grid-title-cell">{{ book.title }}</div>
+                  <div>{{ book.author }}</div>
+                  <div>{{ book.isbn }}</div>
+                  <div>{{ formatDateTime(book.addedDate) }}</div>
+                  <div class="history-grid-actions">
+                    <button @click="viewBookDetail(book)" class="history-detail-btn">詳情</button>
+                    <button @click="removeFromList(book.id)" class="history-remove-btn">移除</button>
                   </div>
                 </div>
               </div>
             </div>
             <div v-else class="history-grid">
-              <div v-for="(reservation, index) in paginatedBooks" :key="reservation.reservationId" class="history-grid-card">
+              <div v-for="(book, index) in paginatedBooks" :key="index" class="history-grid-card">
+                <div class="history-grid-card-header">
+                  <input type="checkbox" :checked="selectedBooks.includes(book.id)" @change="toggleSelectBook(book.id)"
+                    class="batch-checkbox" />
+                  <button @click="removeFromList(book.id)" class="history-remove-btn-card">×</button>
+                </div>
                 <div class="history-grid-img-wrap">
-                  <img :src="getDefaultCoverUrl(index)" :alt="reservation.title" class="history-grid-img" />
+                  <img :src="getDefaultCoverUrl(index)" :alt="book.title" class="history-grid-img" />
                 </div>
                 <div class="history-grid-info">
-                  <div class="history-grid-content">
-                    <h3 class="history-grid-title" :title="reservation.title">{{ reservation.title }}</h3>
-                    <div class="history-grid-meta">
-                      <p class="history-grid-author" :title="reservation.author">
-                        <span class="history-grid-label">作者：</span>
-                        {{ reservation.author }}
-                      </p>
-                      <p class="history-grid-isbn" :title="reservation.isbn">
-                        <span class="history-grid-label">ISBN：</span>
-                        {{ reservation.isbn }}
-                      </p>
-                      <p class="history-grid-publisher" :title="reservation.publisher">
-                        <span class="history-grid-label">出版社：</span>
-                        {{ reservation.publisher }}
-                      </p>
-                      <p class="history-grid-classification" :title="reservation.classification">
-                        <span class="history-grid-label">分類：</span>
-                        {{ reservation.classification }}
-                      </p>
-                    </div>
-                    <div class="history-grid-pickup">
-                      <p class="history-grid-location" :title="reservation.pickupLocation">
-                        <span class="history-grid-label">取書地點：</span>
-                        {{ reservation.pickupLocation }}
-                      </p>
-                      <p class="history-grid-time" :title="formatDateTime(reservation.pickupTime)">
-                        <span class="history-grid-label">取書時間：</span>
-                        {{ formatDateTime(reservation.pickupTime) }}
-                      </p>
-                      <p class="history-grid-status" :class="'status-' + reservation.status">
-                        <span class="history-grid-label">狀態：</span>
-                        {{ reservation.status === 'pending' ? '待取書' : 
-                           reservation.status === 'completed' ? '已完成' : 
-                           reservation.status === 'cancelled' ? '已取消' : '未知' }}
-                      </p>
-                    </div>
-                  </div>
-                  <button class="history-detail-btn" @click="viewBookDetail(reservation)">查看詳情</button>
+                  <h3 class="history-grid-title reservation-record-book-title">{{ book.title }}</h3>
+                  <p class="history-grid-author">作者：{{ book.author }}</p>
+                  <p class="history-grid-isbn">ISBN：{{ book.isbn }}</p>
+                  <p class="history-grid-date">加入時間：{{ formatDateTime(book.addedDate) }}</p>
+                  <button class="history-detail-btn" @click="viewBookDetail(book)">詳情</button>
                 </div>
               </div>
             </div>
@@ -138,35 +136,20 @@
           <!-- 分頁控制 -->
           <div v-if="paginatedBooks.length" class="history-pagination">
             <div class="history-pagination-controls">
-              <button 
-                class="history-pagination-btn"
-                :disabled="currentPage === 1"
-                @click="currentPage--"
-              >
+              <button class="history-pagination-btn" :disabled="currentPage === 1" @click="currentPage--">
                 <span aria-hidden="true">←</span>
-                <span class="sr-only">上一頁</span>
               </button>
               <span>共{{ totalPages }}頁</span>
-              <input
-                type="number"
-                :value="currentPage"
-                class="history-pagination-input"
-                min="1"
-                :max="totalPages"
-                @change="e => goToPage(parseInt(e.target.value))"
-              />
+              <input type="number" :value="currentPage" class="history-pagination-input" min="1" :max="totalPages"
+                @change="e => goToPage(parseInt(e.target.value))" />
               <span>/{{ totalPages }}頁</span>
-              <button 
-                class="history-pagination-btn"
-                :disabled="currentPage >= totalPages"
-                @click="currentPage++"
-              >
+              <button class="history-pagination-btn" :disabled="currentPage >= totalPages" @click="currentPage++">
                 <span aria-hidden="true">→</span>
-                <span class="sr-only">下一頁</span>
               </button>
             </div>
             <div class="history-pagination-info">
-              顯示第 {{ (currentPage - 1) * itemsPerPage + 1 }} 到 {{ Math.min(currentPage * itemsPerPage, sortedBooks.length) }} 筆，共 {{ sortedBooks.length }} 筆
+              顯示第 {{ (currentPage - 1) * itemsPerPage + 1 }} 到 {{ Math.min(currentPage * itemsPerPage,
+                sortedBooks.length) }} 筆，共 {{ sortedBooks.length }} 筆
             </div>
           </div>
         </div>
@@ -178,7 +161,16 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import { useHead } from '#imports'
+import { reservationAPI } from '~/utils/api'
+
+// 設置頁面標題
+useHead({
+  title: '預約清單'
+})
+
+// 獲取 router 實例
+const router = useRouter()
 
 // 視圖模式
 const viewMode = ref('table')
@@ -194,15 +186,16 @@ const sortConfig = ref({
   ascending: true
 })
 
+// 響應式資料
+const reservationList = ref([])
+const selectedBooks = ref([])
+const loading = ref(false)
+const error = ref(null)
+
 // 預設封面圖片
 function getDefaultCoverUrl(index) {
   return `https://via.placeholder.com/300x400/4ECDC4/FFFFFF?text=${encodeURIComponent('書籍封面')}`
 }
-
-// 預約記錄資料
-const reservationBooks = ref([])
-const loading = ref(false)
-const error = ref(null)
 
 // 格式化日期時間
 function formatDateTime(dateTimeStr) {
@@ -218,97 +211,204 @@ function formatDateTime(dateTimeStr) {
   })
 }
 
-// 獲取預約記錄
-async function fetchReservations() {
-  if (loading.value) return
-  
+// 從後端 API 載入預約清單
+async function loadReservationList() {
   loading.value = true
   error.value = null
-  
+
   try {
-    const response = await axios.get('/api/reservations')
+    console.log('開始載入預約清單...')
+    const response = await reservationAPI.getReservationList('current')
+    console.log('API 回應：', response.data)
 
-    console.log('預約記錄原始資料：', JSON.stringify(response.data[0], null, 2))
-    
     if (response.data && Array.isArray(response.data)) {
-      reservationBooks.value = response.data.map((reservation, index) => {
-        // 直接使用扁平化的資料結構
-        const processedReservation = {
-          reservationId: reservation.reservation_id || `res_${index}`,
-          title: reservation.title || '未知書名',
-          author: reservation.author || '未知作者',
-          isbn: reservation.isbn || '未知ISBN',
-          publisher: reservation.publisher || '未知出版社',
-          classification: reservation.classification || '',
-          categoryName: reservation.category_name || '',
-          pickupLocation: reservation.pickup_location || '未指定地點',
-          pickupTime: reservation.pickup_time || '',
-          reservationDate: reservation.reservation_date || '',
-          expiryDate: reservation.expiry_date || '',
-          status: reservation.status || 'pending',
-          // 保存完整的原始資料，以便詳情頁使用
-          bookInfo: {
-            bookId: reservation.book_id,
-            title: reservation.title,
-            author: reservation.author,
-            isbn: reservation.isbn,
-            publisher: reservation.publisher,
-            classification: reservation.classification,
-            category: {
-              cName: reservation.category_name
-            }
-          }
+      // 轉換後端資料格式為前端所需格式
+      reservationList.value = response.data.map(item => {
+        const converted = {
+          id: item.reservation_id || item.reservationId || item.id,
+          title: item.title,
+          author: item.author,
+          isbn: item.isbn,
+          publisher: item.publisher || '',
+          addedDate: item.created_at || item.createdAt || new Date().toISOString(),
+          status: item.status || 'active'
         }
-
-        // 輸出第一筆資料的處理結果
-        if (index === 0) {
-          console.log('第一筆處理後的預約記錄：', JSON.stringify(processedReservation, null, 2))
-        }
-
-        return processedReservation
+        console.log('轉換後的項目：', converted)
+        return converted
       })
 
-      console.log('總筆數：', reservationBooks.value.length)
-      console.log('資料範例：', {
-        title: reservationBooks.value[0]?.title,
-        author: reservationBooks.value[0]?.author,
-        pickupLocation: reservationBooks.value[0]?.pickupLocation,
-        pickupTime: reservationBooks.value[0]?.pickupTime,
-        status: reservationBooks.value[0]?.status
-      })
+      console.log('載入的預約清單：', reservationList.value)
+      console.log('清單長度：', reservationList.value.length)
     } else {
-      console.warn('API 返回格式不符合預期：', response.data)
-      reservationBooks.value = []
-      error.value = '資料格式錯誤'
+      console.log('API 回應不是陣列或為空')
+      reservationList.value = []
     }
   } catch (err) {
-    console.error('獲取預約記錄失敗：', err)
-    error.value = '無法載入預約記錄，請稍後再試。錯誤詳情：' + (err.response?.data?.statusMessage || err.message)
-    reservationBooks.value = []
+    console.error('載入預約清單失敗：', err)
+    error.value = '無法載入預約清單，請稍後再試'
+    reservationList.value = []
   } finally {
     loading.value = false
   }
 }
 
-// 查看書籍詳情
-function viewBookDetail(reservation) {
-  if (reservation.bookInfo) {
-    // 使用 router 導航到 bookinfo 頁面，並傳遞書籍資訊
-    router.push({
-      path: `/bookinfo/${reservation.bookInfo.bookId}`,
-      state: { bookInfo: reservation.bookInfo }
+// 加入預約清單
+async function addToReservationList(book) {
+  try {
+    console.log('開始加入預約清單，書籍：', book)
+
+    const response = await reservationAPI.addReservation({
+      bookId: parseInt(book.isbn) || 1, // 使用 ISBN 作為 bookId
+      userId: 1, // 使用數字 ID
+      status: 'PENDING',
+      reservationDate: new Date().toISOString().slice(0, 19).replace('T', ' ') // 格式化為後端期望的格式
     })
+
+    console.log('加入預約 API 回應：', response.data)
+
+    if (response.data && response.data.success) {
+      console.log('預約加入成功，重新載入清單...')
+      // 重新載入清單以獲取最新資料
+      await loadReservationList()
+      alert('已成功加入預約清單！')
+      return true
+    } else {
+      console.log('預約加入失敗：', response.data)
+      throw new Error('加入失敗')
+    }
+  } catch (err) {
+    console.error('加入預約清單失敗：', err)
+    if (err.response?.status === 409) {
+      alert('此書籍已在預約清單中')
+    } else if (err.response?.data?.message) {
+      alert(`加入失敗：${err.response.data.message}`)
+    } else {
+      alert('加入預約清單失敗，請稍後再試')
+    }
+    return false
   }
 }
 
-// 排序功能
-function toggleSortOrder() {
-  sortConfig.value.ascending = !sortConfig.value.ascending
+// 從預約清單移除
+async function removeFromList(bookId) {
+  try {
+    const response = await reservationAPI.deleteReservation(bookId)
+
+    if (response.data) {
+      // 從本地清單中移除
+      const index = reservationList.value.findIndex(item => item.id === bookId)
+      if (index !== -1) {
+        reservationList.value.splice(index, 1)
+      }
+
+      // 同時從選取清單中移除
+      const selectedIndex = selectedBooks.value.indexOf(bookId)
+      if (selectedIndex !== -1) {
+        selectedBooks.value.splice(selectedIndex, 1)
+      }
+    } else {
+      throw new Error('移除失敗')
+    }
+  } catch (err) {
+    console.error('移除書籍失敗：', err)
+    alert('移除書籍失敗，請稍後再試')
+  }
 }
+
+// 移除選取的書籍
+async function removeSelected() {
+  if (selectedBooks.value.length === 0) {
+    alert('請先選擇要移除的書籍')
+    return
+  }
+
+  try {
+    const response = await reservationAPI.batchDeleteReservation(selectedBooks.value)
+
+    if (response.data) {
+      // 重新載入清單以獲取最新資料
+      await loadReservationList()
+      selectedBooks.value = []
+      alert(`成功移除 ${selectedBooks.value.length} 本書籍`)
+    } else {
+      throw new Error('批量移除失敗')
+    }
+  } catch (err) {
+    console.error('批量移除書籍失敗：', err)
+    alert('批量移除失敗，請稍後再試')
+  }
+}
+
+// 切換選取單本書籍
+function toggleSelectBook(bookId) {
+  const index = selectedBooks.value.indexOf(bookId)
+  if (index === -1) {
+    selectedBooks.value.push(bookId)
+  } else {
+    selectedBooks.value.splice(index, 1)
+  }
+}
+
+// 切換全選
+function toggleSelectAll() {
+  if (isAllSelected.value) {
+    selectedBooks.value = []
+  } else {
+    selectedBooks.value = paginatedBooks.value.map(book => book.id)
+  }
+}
+
+// 批量預約
+function batchReserve() {
+  if (selectedBooks.value.length === 0) {
+    alert('請先選擇要預約的書籍')
+    return
+  }
+
+  const selectedBookData = reservationList.value.filter(book =>
+    selectedBooks.value.includes(book.id)
+  )
+
+  // 將選取的書籍資料傳遞到預約頁面
+  router.push({
+    path: '/book-reservation',
+    query: {
+      batch: 'true',
+      books: JSON.stringify(selectedBookData)
+    }
+  })
+}
+
+// 查看書籍詳情
+function viewBookDetail(book) {
+  router.push({
+    path: '/bookinfo',
+    query: {
+      isbn: book.isbn,
+      returnQuery: '',
+      returnPage: '1',
+      from: 'reservation-list',
+      returnType: 'list'
+    }
+  })
+}
+
+// 前往搜尋頁面
+function goToSearch() {
+  router.push('/catalogue-search')
+}
+
+// 計算屬性
+const isAllSelected = computed(() => {
+  return paginatedBooks.value.length > 0 &&
+    paginatedBooks.value.every(book => selectedBooks.value.includes(book.id))
+})
+
+const selectedCount = computed(() => selectedBooks.value.length)
 
 // 排序後的資料
 const sortedBooks = computed(() => {
-  const books = [...reservationBooks.value]
+  const books = [...reservationList.value]
   const field = sortConfig.value.field
   const ascending = sortConfig.value.ascending
 
@@ -316,7 +416,7 @@ const sortedBooks = computed(() => {
     let valueA, valueB
 
     // 根據不同欄位類型進行排序
-    if (field === 'reservationDate') {
+    if (field === 'addedDate') {
       valueA = new Date(a[field] || 0).getTime()
       valueB = new Date(b[field] || 0).getTime()
     } else {
@@ -341,6 +441,11 @@ const paginatedBooks = computed(() => {
   return sortedBooks.value.slice(start, end)
 })
 
+// 排序功能
+function toggleSortOrder() {
+  sortConfig.value.ascending = !sortConfig.value.ascending
+}
+
 // 頁面跳轉
 function goToPage(page) {
   const pageNum = parseInt(page)
@@ -361,12 +466,13 @@ watch([() => sortConfig.value.field, () => sortConfig.value.ascending], () => {
 })
 
 // 初始化載入資料
-onMounted(async () => {
-  try {
-    await fetchReservations()
-  } catch (err) {
-    console.error('初始化載入失敗：', err)
-  }
+onMounted(() => {
+  loadReservationList()
+})
+
+// 暴露方法給其他組件使用
+defineExpose({
+  addToReservationList
 })
 </script>
 
@@ -376,7 +482,7 @@ onMounted(async () => {
   height: 100%;
   display: flex;
   flex-direction: column;
-}  
+}
 
 .intro {
   flex: 1;
@@ -413,17 +519,20 @@ onMounted(async () => {
   padding: 24px 24px 100px 24px;
   background: transparent;
 }
+
 .history-title {
   font-size: 2rem;
   font-weight: bold;
   margin-bottom: 16px;
   color: #18181b;
 }
+
 .history-main {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
+
 .history-control-panel {
   display: flex;
   justify-content: space-between;
@@ -432,27 +541,32 @@ onMounted(async () => {
   gap: 16px;
   flex-wrap: wrap;
 }
+
 .history-control-panel-left {
   display: flex;
   align-items: center;
   gap: 32px;
   flex-wrap: wrap;
 }
+
 .history-control-panel-right {
   display: flex;
   align-items: center;
   gap: 8px;
 }
+
 .history-row {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
 }
+
 .history-label {
   font-size: 1rem;
   color: #222;
 }
+
 .history-select {
   min-width: 120px;
   border: 1px solid #d1d5db;
@@ -490,6 +604,7 @@ onMounted(async () => {
   justify-content: center;
   min-width: 100px;
 }
+
 .history-view-btn {
   display: inline-flex;
   align-items: center;
@@ -503,139 +618,266 @@ onMounted(async () => {
   transition: background 0.2s, color 0.2s;
   margin-right: 4px;
 }
+
 .history-view-btn:last-child {
   margin-right: 0;
 }
+
 .history-view-btn-active {
   background: #2563eb;
   color: #fff;
 }
-.history-view-icon {
-  width: 20px;
-  height: 20px;
-  margin-right: 6px;
+
+/* 批量操作面板樣式 */
+.batch-control-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(229, 231, 235, 0.4);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
 }
+
+.batch-control-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.batch-control-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.batch-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  color: #222;
+  cursor: pointer;
+}
+
+.batch-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+.batch-info {
+  font-size: 0.95rem;
+  color: #4b5563;
+}
+
+.batch-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid;
+}
+
+.batch-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.batch-btn-remove {
+  background: #fff;
+  color: #dc2626;
+  border-color: #dc2626;
+}
+
+.batch-btn-remove:hover:not(:disabled) {
+  background: #dc2626;
+  color: #fff;
+}
+
+.batch-btn-reserve {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.batch-btn-reserve:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
 .history-table-scroll {
-  width: 100%;
-}
-.history-table-fill {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
-.history-table-scrollable {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
-.history-grid-table {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(10px);
   border-radius: 8px;
   border: 1px solid rgba(229, 231, 235, 0.4);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
 }
-.history-grid-header,
-.history-grid-row {
-  display: grid;
-  grid-template-columns: 2fr 1.5fr 1.5fr 1.5fr 1fr;
-  align-items: center;
+
+.history-table-scrollable {
+  max-height: 600px;
+  overflow-y: auto;
 }
+
+.history-table-fill {
+  min-height: 400px;
+}
+
+.history-grid-table {
+  width: 100%;
+}
+
 .history-grid-header {
+  display: grid;
+  grid-template-columns: 50px 2fr 1fr 1fr 1fr 120px;
+  gap: 16px;
+  padding: 16px 20px;
   background: rgba(243, 244, 246, 0.6);
   backdrop-filter: blur(10px);
-  color: #222;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.4);
   font-weight: 600;
-  padding: 12px 0;
+  color: #222;
+  font-size: 0.95rem;
 }
-.history-grid-header > div {
-  padding: 12px 16px;
-  text-align: center;
-}
-.history-grid-header > div:first-child {
-  text-align: left;
-}
+
 .history-grid-body {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+  max-height: 500px;
+  overflow-y: auto;
 }
+
 .history-grid-row {
-  min-height: 0;
-  flex: 1;
-  border-bottom: 1px solid #e5e7eb;
+  display: grid;
+  grid-template-columns: 50px 2fr 1fr 1fr 1fr 120px;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.2);
+  align-items: center;
   transition: background 0.2s;
 }
+
+.history-grid-row:hover {
+  background: rgba(243, 244, 246, 0.3);
+}
+
 .history-grid-row:last-child {
   border-bottom: none;
 }
-.history-grid-row > div {
-  padding: 12px 16px;
-  text-align: center;
+
+.history-grid-checkbox {
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.history-grid-row > div:first-child {
-  text-align: left;
-  justify-content: flex-start;
-}
-.history-grid-row:hover {
-  background: #f3f4f6;
-}
-.history-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-}
-.history-grid-card {
-  border: 1px solid rgba(229, 231, 235, 0.4);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  display: flex;
-  flex-direction: column;
-  height: 480px;
-  width: 100%;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
+
+.history-grid-title-cell {
+  font-weight: 500;
+  color: #18181b;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
-.history-grid-card::before {
-  content: '';
+.history-grid-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.history-detail-btn {
+  padding: 6px 12px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.history-detail-btn:hover {
+  background: #1d4ed8;
+}
+
+.history-remove-btn {
+  padding: 6px 12px;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.history-remove-btn:hover {
+  background: #b91c1c;
+}
+
+.history-remove-btn-card {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), transparent);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.history-remove-btn-card:hover {
+  background: #b91c1c;
+}
+
+.history-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  padding: 20px;
+}
+
+.history-grid-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  border: 1px solid rgba(229, 231, 235, 0.4);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
 }
 
 .history-grid-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(37, 99, 235, 0.3);
-  box-shadow: 
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06),
-    0 0 0 2px rgba(37, 99, 235, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.history-grid-card:hover::before {
-  opacity: 1;
+.history-grid-card-header {
+  position: relative;
+  padding: 12px;
+  background: rgba(243, 244, 246, 0.6);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(229, 231, 235, 0.4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .history-grid-img-wrap {
-  height: 240px;
   width: 100%;
+  height: 200px;
   overflow: hidden;
-  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: #f3f4f6;
 }
 
@@ -643,348 +885,67 @@ onMounted(async () => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.history-grid-card:hover .history-grid-img {
-  transform: scale(1.05);
 }
 
 .history-grid-info {
   padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  flex: 1;
-  min-height: 0;
-}
-
-.history-grid-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
 }
 
 .history-grid-title {
-  font-weight: 600;
   font-size: 1.1rem;
+  font-weight: 600;
   color: #18181b;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  margin-bottom: 8px;
   line-height: 1.4;
-  min-height: 2.8em;
-}
-
-.history-grid-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.9rem;
-  color: #4b5563;
-}
-
-.history-grid-pickup {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.9rem;
-  color: #4b5563;
-  margin-top: auto;
-  padding-top: 8px;
-  border-top: 1px solid rgba(229, 231, 235, 0.6);
-}
-
-.history-grid-label {
-  color: #6b7280;
-  font-weight: 500;
-  margin-right: 4px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .history-grid-author,
 .history-grid-isbn,
-.history-grid-publisher,
-.history-grid-location,
-.history-grid-time {
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  line-height: 1.4;
-}
-
-.history-detail-btn {
-  margin-top: auto;
-  background: #2563eb;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 100%;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.history-detail-btn:hover {
-  background: #1d4ed8;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-}
-
-.history-detail-btn:active {
-  transform: translateY(0);
-  box-shadow: none;
-}
-
-.history-pagination {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 24px;
-  padding: 16px;
-  background: transparent;
-  border-radius: 8px;
-}
-.history-pagination-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-.history-pagination-btn {
-  height: 36px;
-  min-width: 36px;
-  padding: 0 12px;
-  border: 1px solid #2563eb;
-  border-radius: 6px;
-  background: #fff;
-  color: #2563eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  font-size: 1.2rem;
-  line-height: 1;
-}
-.history-pagination-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.history-pagination-btn:hover:not(:disabled) {
-  background: #2563eb;
-  color: #fff;
-}
-.history-pagination-input {
-  height: 36px;
-  width: 60px;
-  text-align: center;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 1rem;
-  color: #18181b;
-  background: #fff;
-  padding: 0 8px;
-}
-.history-pagination-info {
-  font-size: 0.95rem;
+.history-grid-date {
+  font-size: 0.9rem;
   color: #4b5563;
-  text-align: center;
-  white-space: nowrap;
-  padding: 4px 8px;
+  margin-bottom: 4px;
 }
 
-/* 隱藏 Chrome, Safari, Edge, Opera 的箭頭 */
-.history-pagination-input::-webkit-outer-spin-button,
-.history-pagination-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* 隱藏 Firefox 的箭頭 */
-.history-pagination-input[type=number] {
-  appearance: none;
--webkit-appearance: none;
-}
-
-@media (max-width: 768px) {
-  .history-control-panel {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .history-control-panel-left {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .history-control-panel-right {
-    justify-content: center;
-  }
-
-  .history-grid-header,
-  .history-grid-row {
-    grid-template-columns: 1.5fr 1fr 1fr 1fr 0.8fr;
-    font-size: 0.9rem;
-  }
-
-  .history-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  }
-
-  .history-grid-card {
-    height: 440px;
-  }
-
-  .history-grid-img-wrap {
-    height: 200px;
-  }
-}
-
-@media (max-width: 640px) {
-  .history-bg {
-    padding: 16px 16px 80px 16px;
-  }
-
-  .history-grid-header,
-  .history-grid-row {
-    grid-template-columns: 1.2fr 1fr 0.8fr;
-    font-size: 0.85rem;
-  }
-
-  .history-grid-header > div,
-  .history-grid-row > div {
-    padding: 8px;
-  }
-
-  .history-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .history-grid-card {
-    height: 420px;
-  }
-
-  .history-grid-img-wrap {
-    height: 180px;
-  }
-
-  .history-grid-info {
-    padding: 12px;
-    gap: 8px;
-  }
-
-  .history-grid-content {
-    gap: 8px;
-  }
-
-  .history-grid-title {
-    font-size: 1rem;
-  }
-
-  .history-grid-meta,
-  .history-grid-pickup {
-    font-size: 0.85rem;
-  }
-
-  .history-pagination {
-    margin-top: 16px;
-    padding: 12px;
-    width: 100%;
-  }
-  
-  .history-pagination-controls {
-    gap: 8px;
-    width: 100%;
-  }
-  
-  .history-pagination-info {
-    font-size: 0.9rem;
-    white-space: normal; /* 在手機版允許文字換行 */
-    line-height: 1.4;
-  }
-  
-  .history-pagination-input {
-    width: 50px;
-  }
-}
-
-@media (max-width: 480px) {
-  .history-select,
-  .history-sort-btn,
-  .history-view-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .history-row {
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-  }
-
-  .history-label {
-    text-align: center;
-  }
-}
-
-/* 載入中狀態 */
 .history-loading {
-  text-align: center;
-  padding: 3rem;
-  color: #6b7280;
-  font-size: 1.1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #4b5563;
 }
 
 .history-loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #2563eb;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #2563eb;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  margin-bottom: 16px;
 }
 
 @keyframes spin {
-  to {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
     transform: rotate(360deg);
   }
 }
 
-/* 錯誤信息 */
 .history-error {
-  text-align: center;
-  padding: 3rem;
-  color: #dc2626;
-  font-size: 1.1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  background: rgba(220, 38, 38, 0.1);
-  border-radius: 8px;
-  margin: 1rem 0;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #dc2626;
+  text-align: center;
 }
 
 .history-error-icon {
@@ -996,61 +957,149 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 24px;
   font-weight: bold;
-}
-
-/* 無資料狀態 */
-.history-empty {
-  text-align: center;
-  padding: 3rem;
-  color: #6b7280;
-  font-size: 1.1rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  background: rgba(243, 244, 246, 0.6);
-  border-radius: 8px;
-  margin: 1rem 0;
-}
-
-.history-empty-icon {
-  font-size: 2.5rem;
+  margin-bottom: 16px;
 }
 
 .history-error-details {
-  background: rgba(0, 0, 0, 0.05);
-  padding: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
   border-radius: 4px;
-  font-family: monospace;
+  padding: 12px;
+  margin-top: 12px;
   font-size: 0.9rem;
-  white-space: pre-wrap;
-  word-break: break-all;
+  color: #991b1b;
   max-width: 100%;
   overflow-x: auto;
 }
 
-.history-grid-status {
-  margin: 0;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.9rem;
+.history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.history-empty-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+}
+
+.history-empty-subtitle {
+  font-size: 1rem;
+  color: #9ca3af;
+  margin-bottom: 24px;
+}
+
+.history-empty-btn {
+  padding: 12px 24px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
   font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.status-pending {
-  background: rgba(234, 179, 8, 0.1);
-  color: #854d0e;
+.history-empty-btn:hover {
+  background: #1d4ed8;
 }
 
-.status-completed {
-  background: rgba(34, 197, 94, 0.1);
-  color: #166534;
+.history-pagination {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  border: 1px solid rgba(229, 231, 235, 0.4);
 }
 
-.status-cancelled {
-  background: rgba(239, 68, 68, 0.1);
-  color: #991b1b;
+.history-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.history-pagination-btn {
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.history-pagination-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.history-pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.history-pagination-input {
+  width: 60px;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.history-pagination-info {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .history-control-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .history-control-panel-left,
+  .history-control-panel-right {
+    justify-content: center;
+  }
+
+  .batch-control-panel {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .batch-control-left,
+  .batch-control-right {
+    justify-content: center;
+  }
+
+  .history-grid-header,
+  .history-grid-row {
+    grid-template-columns: 40px 1.5fr 1fr 80px;
+    font-size: 0.9rem;
+  }
+
+  .history-grid-header>div:nth-child(4),
+  .history-grid-header>div:nth-child(5),
+  .history-grid-row>div:nth-child(4),
+  .history-grid-row>div:nth-child(5) {
+    display: none;
+  }
+
+  .history-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

@@ -32,7 +32,10 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { useAuth } from '~/components/useAuth'
+import { computed, reactive, ref } from 'vue'
+
+const { user } = useAuth()
 
 defineProps({ isOpen: Boolean })
 defineEmits(['update:isOpen'])
@@ -42,68 +45,83 @@ const current = ref('')
 
 const setCurrent = (label) => {
     current.value = label
-    if (menuItems.find(item => item.label === label)?.children) {
+    if (menuItems.value.find(item => item.label === label)?.children) {
         open[label] = !open[label]
     }
 }
 
-const menuItems = [
-    {
-        label: '認識本館',
-        children: [
-            { label: '本館簡介', href: '/about' },
-            { label: '服務對象', href: '/audience' },
-            { label: '空間設施', href: '#' },
-            { label: '開放時間', href: '/opening-hours' },
-            { label: '本館位置', href: '/location' }
-        ]
-    },
-    {
-        label: '活動消息',
-        children: [
-            { label: '最新活動', href: '#' },
-            { label: '活動報名', href: '#' }
-        ]
-    },
-    {
-        label: '館藏查詢',
-        children: [
-            { label: '館藏查詢', href: '/catalogue-search' }
-        ]
-    },
-    {
-        label: '館藏預約',
-        children: [
-            { label: '我要預約', href: '/book-reservation' },
-            { label: '預約查詢', href: '/reservation-record' }
-        ]
-    },
-    {
-        label: '書籍續借',
-        children: [
-            { label: '我要續借', href: '/borrow-continue' },
-            { label: '歷史查詢', href: '#' }
-        ]
-    },
-    {
-        label: '申請服務',
-        children: [
-            { label: '借閱證申請', href: '/card-application' },
-            { label: '自習座位預約', href: '/seat-reservation2' },
-            { label: '團體討論室預約', href: '#' },
-            { label: '場地租借', href: '#' },
-            { label: '團體參訪預約', href: '#' },
-            { label: '書籍薦購', href: '#' },
-        ]
-    },
-    {
-        label: '排行榜 & 評論',
-        children: [
-            { label: '借閱排行榜', href: '/borrowing-rankings' },
-            { label: '讀者書評', href: '/book-review' }
-        ]
+// 用 computed 依 user 產生 menuItems
+const menuItems = computed(() => {
+    const items = [
+        {
+            label: '認識本館',
+            children: [
+                { label: '本館簡介', href: '/about' },
+                { label: '服務對象', href: '/audience' },
+                { label: '空間設施', href: '#' },
+                { label: '開放時間', href: '/opening-hours' },
+                { label: '本館位置', href: '/location' }
+            ]
+        },
+        {
+            label: '活動消息',
+            children: [
+                { label: '最新活動', href: '#' },
+                { label: '活動報名', href: '#' }
+            ]
+        },
+        {
+            label: '館藏查詢',
+            children: [
+                { label: '館藏查詢', href: '/catalogue-search' }
+            ]
+        },
+        {
+            label: '館藏預約',
+            children: [
+                { label: '違規紀錄', href: '/violation-manager' },
+                { label: '預約查詢', href: '/reservation-record' }
+            ]
+        },
+        {
+            label: '書籍續借',
+            children: [
+                { label: '我要續借', href: '/borrow-continue' },
+                { label: '歷史查詢', href: '#' }
+            ]
+        },
+        {
+            label: '申請服務',
+            children: [
+                { label: '借閱證申請', href: '/card-application' },
+                { label: '自習座位預約', href: '#' },
+                { label: '團體討論室預約', href: '#' },
+                { label: '場地租借', href: '#' },
+                { label: '團體參訪預約', href: '#' },
+                { label: '書籍薦購', href: '#' },
+            ]
+        },
+        {
+            label: '排行榜 & 評論',
+            children: [
+                { label: '借閱排行榜', href: '/borrowing-rankings' },
+                { label: '讀者書評', href: '/book-review' }
+            ]
+        }
+    ]
+    // 只有 admin 才加管理者專區
+    if (user && user.value && user.value.role === 'admin') {
+        items.push({
+            label: '管理者專區',
+            children: [
+                { label: '管理者專區', href: '/manager' },
+                { label: '書籍管理', href: '/manager/books' },
+                { label: '帳號管理', href: '/manager/accounts' }
+            ]
+        })
     }
-]
+    return items
+})
 </script>
 
 <style scoped>
