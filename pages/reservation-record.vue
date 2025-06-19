@@ -47,12 +47,16 @@
               <span class="batch-info">
                 已選擇 {{ selectedCount }} 本書籍
               </span>
+              <span v-if="selectedCount > 10" class="batch-warning">
+                (一次最多只能預約10本書)
+              </span>
             </div>
             <div class="batch-control-right">
               <button @click="removeSelected" class="batch-btn batch-btn-remove" :disabled="selectedCount === 0">
                 移除選取
               </button>
-              <button @click="batchReserve" class="batch-btn batch-btn-reserve" :disabled="selectedCount === 0">
+              <button @click="batchReserve" class="batch-btn batch-btn-reserve"
+                :disabled="selectedCount === 0 || selectedCount > 10">
                 批量預約 ({{ selectedCount }})
               </button>
             </div>
@@ -365,6 +369,12 @@ function batchReserve() {
     return
   }
 
+  // 檢查一次預約數量限制
+  if (selectedBooks.value.length > 10) {
+    alert('一次最多只能預約10本書籍，請重新選擇')
+    return
+  }
+
   const selectedBookData = reservationList.value.filter(book =>
     selectedBooks.value.includes(book.id)
   )
@@ -672,6 +682,12 @@ defineExpose({
 .batch-info {
   font-size: 0.95rem;
   color: #4b5563;
+}
+
+.batch-warning {
+  font-size: 0.9rem;
+  color: #dc2626;
+  font-weight: 500;
 }
 
 .batch-btn {

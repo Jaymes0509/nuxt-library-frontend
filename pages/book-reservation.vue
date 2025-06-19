@@ -52,7 +52,7 @@
                                     取書時間
                                 </label>
                                 <input type="datetime-local" v-model="form.time"
-                                    :class="['reservation-input', { 'shake': isShaking.time }]" />
+                                    :class="['reservation-input', { 'shake': isShaking.time }]" :max="maxDateTime" />
                                 <span v-if="errors.time" class="error-message">{{ errors.time }}</span>
                             </div>
 
@@ -100,11 +100,9 @@
                             <div class="reservation-notice">
                                 <h3 class="reservation-notice-title">預約須知</h3>
                                 <ul class="reservation-notice-list">
-                                    <li>請在預約時間內完成取書</li>
-                                    <li>超過預約時間未取書將自動取消預約,並停權帳號</li>
-                                    <li>每人最多可預約 {{ maxReservation }} 本書</li>
-                                    <li>您目前已預約 {{ userReservedCount }} 本書</li>
-                                    <li v-if="isBatchMode">本次將預約 {{ books.length }} 本書籍</li>
+                                    <li><strong>違規情況：</strong></li>
+                                    <li class="violation-item">• 預約成立後7天內未完成借閱將自動取消預約</li>
+                                    <li>您目前已預約 {{ userReservedCount }} 本書，本次將預約 {{ books.length }} 本書籍</li>
                                 </ul>
                             </div>
 
@@ -198,12 +196,34 @@ function validateForm() {
         method: ''
     }
 
+    // 驗證取書時間
     if (!form.value.time) {
         console.log('時間欄位為空')
         errors.value.time = '請選擇取書時間'
         shakeField('time')
         isValid = false
+    } else {
+        // 檢查取書時間是否小於現在時間
+        const selectedTime = new Date(form.value.time)
+        const currentTime = new Date()
+
+        if (selectedTime < currentTime) {
+            console.log('取書時間小於現在時間')
+            errors.value.time = '取書時間不能小於現在時間，請重新選擇'
+            shakeField('time')
+            isValid = false
+        }
+
+        // 檢查是否超過7天
+        const maxTime = new Date(currentTime.getTime() + 7 * 24 * 60 * 60 * 1000) // 7天後
+        if (selectedTime > maxTime) {
+            console.log('取書時間超過7天')
+            errors.value.time = '取書時間不能超過7天後'
+            shakeField('time')
+            isValid = false
+        }
     }
+
     if (!form.value.location) {
         console.log('地點欄位為空')
         errors.value.location = '請選擇取書地點'
@@ -331,6 +351,13 @@ async function handleReserve() {
 }
 
 const isBatchMode = computed(() => route.query.batch === 'true')
+
+// 計算最大時間（7天後）
+const maxDateTime = computed(() => {
+    const now = new Date()
+    const maxTime = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) // 7天後
+    return maxTime.toISOString().slice(0, 16) // 格式：YYYY-MM-DDTHH:MM
+})
 
 function goBack() {
     router.back()
@@ -542,6 +569,27 @@ function goBack() {
 
 .reservation-notice-list li {
     margin-bottom: 4px;
+}
+
+.violation-item {
+    color: #18181b;
+    font-weight: 500;
+    margin-left: 16px;
+}
+
+.violation-text {
+    color: #dc2626;
+    font-weight: 500;
+}
+
+.consequence-text {
+    color: #18181b;
+    font-weight: 400;
+}
+
+.reservation-notice-list strong {
+    color: #dc2626;
+    font-weight: 600;
 }
 
 .reservation-btn-area {
