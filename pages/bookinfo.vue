@@ -29,13 +29,14 @@
           <li><strong>ISBN：</strong>{{ book.isbn }}</li>
           <li><strong>出版社：</strong>{{ book.publisher }}</li>
           <li><strong>出版年：</strong>{{ book.publishdate }}</li>
-          <li><strong>分類號：</strong>{{ book.classification }}</li>
+          <li><strong>版本項：</strong>{{ book.version }}</li>
           <li><strong>分類系統：</strong>{{ book.categorysystem }}</li>
+          <li><strong>分類號：</strong>{{ book.classification }}</li>
           <li><strong>語言：</strong>{{ book.language }}</li>
           <li>
             <strong>在架狀態：</strong>
             <span :class="book.is_available === 1 ? 'available' : 'unavailable'">
-              {{ book.is_available === 1 ? '可借閱' : '不可借閱' }}
+              {{ book.is_available === 1 ? '是' : '否' }}
             </span>
           </li>
         </ul>
