@@ -7,7 +7,7 @@ export default defineNuxtConfig({
   ssr: false,
 
   modules: [
-    '@nuxtjs/tailwindcss',
+    //'@nuxtjs/tailwindcss',
 
     '@nuxtjs/google-fonts'
   ],
@@ -45,6 +45,15 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+      ],
+      script: [
+        {
+          children: `
+            window.__VUE_OPTIONS_API__ = true;
+            window.__VUE_PROD_DEVTOOLS__ = false;
+            window.__VUE_PROD_HYDRATION_MISMATCH_DETAILS__ = false;
+          `
+        }
       ]
     }
   },
@@ -58,6 +67,9 @@ export default defineNuxtConfig({
   vue: {
     compilerOptions: {
       isCustomElement: (tag) => tag === 'suspense'
+    },
+    config: {
+      silent: true
     }
   }
 

@@ -317,26 +317,47 @@ async function addToReservationList(book) {
 // 從預約清單移除
 async function removeFromList(bookId) {
   try {
+    console.log('嘗試移除預約，ID：', bookId)
     const response = await reservationAPI.deleteReservation(bookId)
+    console.log('刪除 API 回應：', response)
 
-    if (response.data) {
+    // 檢查 HTTP 狀態碼而不是 response.data
+    if (response.status === 200 || (response.status >= 200 && response.status < 300)) {
+      console.log('刪除成功，從本地清單移除')
+
       // 從本地清單中移除
       const index = reservationList.value.findIndex(item => item.id === bookId)
       if (index !== -1) {
         reservationList.value.splice(index, 1)
+        console.log('從本地清單移除成功，索引：', index)
       }
 
       // 同時從選取清單中移除
       const selectedIndex = selectedBooks.value.indexOf(bookId)
       if (selectedIndex !== -1) {
         selectedBooks.value.splice(selectedIndex, 1)
+        console.log('從選取清單移除成功')
       }
+
+      alert('移除成功！')
     } else {
-      throw new Error('移除失敗')
+      throw new Error(`移除失敗，HTTP狀態碼：${response.status}`)
     }
   } catch (err) {
     console.error('移除書籍失敗：', err)
-    alert('移除書籍失敗，請稍後再試')
+    console.log('錯誤詳情：', {
+      status: err.response?.status,
+      statusText: err.response?.statusText,
+      data: err.response?.data
+    })
+
+    if (err.response?.status === 404) {
+      alert('預約記錄不存在，可能已被刪除')
+    } else if (err.response?.status === 400) {
+      alert('移除失敗：請求參數錯誤')
+    } else {
+      alert('移除書籍失敗，請稍後再試')
+    }
   }
 }
 

@@ -28,6 +28,7 @@ import FooterBar from '@/components/FooterBar.vue'
 import Sidebar from '@/components/Sidebar.vue'
 import MemberLoginButton from '@/components/MemberLoginButton.vue'
 
+// 定義 sidebar 開關狀態
 const isSidebarOpen = ref(true)
 </script>
 
