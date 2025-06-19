@@ -48,14 +48,35 @@ api.interceptors.response.use(
 
 // 預約相關 API
 export const reservationAPI = {
-  // 獲取預約清單
-  getReservationList: (userId) => api.get('/api/bookreservations', { params: { userId } }),
+  // 獲取預約清單 - 修改為可選參數
+  getReservationList: (userId) => {
+    if (userId) {
+      return api.get('/api/bookreservations', { params: { userId } })
+    } else {
+      return api.get('/api/bookreservations')
+    }
+  },
+  
+  // 獲取當前用戶的預約清單
+  getCurrentUserReservations: () => api.get('/api/bookreservations/current'),
+  
+  // 獲取預約歷史記錄
+  getReservations: (userId) => {
+    if (userId) {
+      return api.get('/api/bookreservations/history', { params: { userId } })
+    } else {
+      return api.get('/api/bookreservations/history')
+    }
+  },
   
   // 新增單本預約
   addReservation: (data) => api.post('/api/bookreservations', data),
   
   // 批量預約
-  batchReservation: (data) => api.post('/api/bookreservations/batch', data),
+  batchReservation: (data) => {
+    console.log(JSON.stringify(data, null, 2))
+    return api.post('/api/bookreservations/batch', data)
+  },
   
   // 刪除預約
   deleteReservation: (id) => api.delete(`/api/bookreservations/${id}`),

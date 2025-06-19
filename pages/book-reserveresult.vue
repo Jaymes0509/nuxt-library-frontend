@@ -5,15 +5,35 @@
         <div class="result-container">
           <!-- 成功訊息區 -->
           <div class="result-success-area">
-            <div class="result-success-icon">
-              <svg class="result-success-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="result-success-icon" :class="{ 'result-error-icon': !isAllSuccess }">
+              <svg v-if="isAllSuccess" class="result-success-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
+              <svg v-else class="result-error-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </div>
-            <h1 class="result-success-title">{{ isBatchMode ? '批量預約成功！' : '預約成功！' }}</h1>
-            <p class="result-success-subtitle">{{ isBatchMode ? `您已成功預約 ${reservationBooks.length} 本書籍` :
-              '您的書籍已成功預約，請在指定時間內取書' }}
+            <h1 class="result-success-title">
+              {{ isAllSuccess ? (isBatchMode ? '批量預約成功！' : '預約成功！') : '部分預約失敗' }}
+            </h1>
+            <p class="result-success-subtitle">
+              {{ isAllSuccess
+                ? (isBatchMode ? `您已成功預約 ${reservationBooks.length} 本書籍` : '您的書籍已成功預約，請在指定時間內取書')
+                : `成功預約 ${successResults.length} 本，失敗 ${failedResults.length} 本書籍`
+              }}
             </p>
+          </div>
+
+          <!-- 失敗結果詳情 -->
+          <div v-if="!isAllSuccess && failedResults.length > 0" class="result-error-detail">
+            <h3 class="result-error-title">預約失敗詳情</h3>
+            <div class="result-error-list">
+              <div v-for="item in failedResults" :key="item.bookId" class="result-error-item">
+                <span class="result-error-bookid">書籍ID {{ item.bookId }}</span>
+                <span class="result-error-reason">{{ item.reason || '未知錯誤' }}</span>
+              </div>
+            </div>
           </div>
 
           <!-- 預約詳情卡片 -->
@@ -56,7 +76,7 @@
                 </div>
                 <div class="result-info-item">
                   <span class="result-info-label">預約編號：</span>
-                  <span class="result-info-value">{{ reservationIds.join(', ') }}</span>
+                  <span class="result-info-value">{{ batchReservationId || '生成中...' }}</span>
                 </div>
               </div>
             </div>
@@ -126,6 +146,26 @@ const reservationIds = computed(() => {
     return []
   }
 })
+
+// 獲取預約結果
+const results = computed(() => {
+  const resultsParam = route.query.results
+  if (!resultsParam || typeof resultsParam !== 'string') return []
+
+  try {
+    return JSON.parse(resultsParam)
+  } catch (error) {
+    console.error('解析預約結果失敗：', error)
+    return []
+  }
+})
+
+// 檢查預約是否全部成功
+const isAllSuccess = computed(() => route.query.success === 'true')
+
+// 獲取成功和失敗的結果
+const successResults = computed(() => results.value.filter(item => item.status === 'success'))
+const failedResults = computed(() => results.value.filter(item => item.status === 'fail'))
 
 // 檢查是否為批量預約模式
 const isBatchMode = computed(() => reservationBooks.value.length > 1)
@@ -483,5 +523,58 @@ onMounted(() => {
   .result-book-number {
     align-self: flex-start;
   }
+}
+
+.result-error-icon {
+  background: #dc2626 !important;
+}
+
+.result-error-svg {
+  width: 40px;
+  height: 40px;
+  color: white;
+}
+
+/* 失敗結果詳情樣式 */
+.result-error-detail {
+  background: rgba(254, 242, 242, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.result-error-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #dc2626;
+  margin-bottom: 16px;
+}
+
+.result-error-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result-error-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  border-left: 4px solid #dc2626;
+}
+
+.result-error-bookid {
+  font-weight: 500;
+  color: #374151;
+}
+
+.result-error-reason {
+  color: #dc2626;
+  font-size: 0.9rem;
 }
 </style>
