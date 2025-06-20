@@ -2,7 +2,7 @@
     <div v-if="pending">載入中...</div>
     <div v-else class="seat-map">
         <div v-for="seat in seats" :key="seat.label"
-            :class="['seat', statusMap[seat.label]?.toLowerCase() || 'available']" :style="getStyle(seat)"
+            :class="['seat', statusMap[seat.label.toUpperCase()]?.toLowerCase() || 'available']" :style="getStyle(seat)"
             @click="handleClick(seat.label)">
             {{ seat.label }}
         </div>
@@ -32,19 +32,38 @@ async function refreshStatus() {
 onMounted(refreshStatus)
 
 async function handleClick(label) {
-    console.log('當前狀態:', statusMap.value[label])
+    const seatStatus = statusMap.value[label.toUpperCase()]
+    console.log('當前狀態:', seatStatus)
 
+    if (!seatStatus) {
+        alert('❌ 無法取得座位狀態')
+        return
+    }
 
-    if (statusMap.value[label] === 'AVAILABLE') {
+    const normalized = seatStatus.toLowerCase()
+
+    if (normalized === 'broken') {
+        alert('❌ 此座位已損壞，無法預約')
+        return
+    }
+
+    if (normalized === 'reserved') {
+        alert('❌ 這個座位已被預約')
+        return
+    }
+
+    if (normalized === 'available') {
         const res = await fetch(`http://localhost:8080/api/seats/reserve/${label}`, {
             method: 'PUT'
         })
         const text = await res.text()
         alert(text)
-        await refreshStatus() // 預約後刷新
-    } else {
-        alert('❌ 這個座位已被預約或無法使用')
+        await refreshStatus()
+        return
     }
+
+    alert('❌ 無效的座位狀態')
+
 }
 
 function getStyle(seat) {
@@ -76,13 +95,16 @@ function getStyle(seat) {
 
 .available {
     background: #90ee90;
+    cursor: pointer;
 }
 
 .reserved {
     background: #ccc;
+    cursor: url('/images/not_allowed_cursor.ico'), not-allowed;
 }
 
 .broken {
     background: #ff6b6b;
+    cursor: url('/images/repair_cursor.ico'), not-allowed;
 }
 </style>
