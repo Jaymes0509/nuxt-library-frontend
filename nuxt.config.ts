@@ -9,7 +9,8 @@ export default defineNuxtConfig({
   modules: [
     // '@nuxtjs/tailwindcss',
 
-    '@nuxtjs/google-fonts'
+    '@nuxtjs/google-fonts',
+    'leaflet/dist/leaflet.css',
   ],
 
   css: ['@/assets/css/main.css',
