@@ -9,7 +9,8 @@ export default defineNuxtConfig({
   modules: [
     // '@nuxtjs/tailwindcss',
 
-    '@nuxtjs/google-fonts'
+    '@nuxtjs/google-fonts',
+    'leaflet/dist/leaflet.css',
   ],
 
   css: ['@/assets/css/main.css',
@@ -52,24 +53,7 @@ export default defineNuxtConfig({
   devServer: {
     port: 3000,
     host: 'localhost'
-  },
 
-
-  nitro: {
-    devProxy: {
-      '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true
-      }
-    }
-  },
-  // 移除 Vue 3 Suspense 實驗性功能警告
-  vue: {
-    compilerOptions: {
-      isCustomElement: (tag) => tag === 'suspense'
-
-    }
   }
-
 
 })
