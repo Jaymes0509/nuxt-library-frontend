@@ -164,241 +164,45 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import axios from 'axios'
+import { borrowApi, borrowUtils } from '~/utils/borrowApi'
 
-// 檢查是否可以續借（到期日前3天）
-function canRenew(dueDate) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const dueDateObj = new Date(dueDate)
-  const diffTime = dueDateObj.getTime() - today.getTime()
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  return diffDays <= 3 && diffDays > 0
-}
-
-// 檢查是否逾期
-function isOverdue(dueDate) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const dueDateObj = new Date(dueDate)
-  return today > dueDateObj
-}
-
-// 格式化到期日顯示
-function formatDueDate(dueDate, isReturned) {
-  if (isReturned) {
-    return '已歸還'
-  }
-  if (isOverdue(dueDate)) {
-    return `${dueDate} (逾期)`
-  }
-  return dueDate
-}
-
-// 取得按鈕文字
-function getButtonText(book) {
-  if (book.isReturned) {
-    return '已歸還'
-  }
-  if (isOverdue(book.dueDate)) {
-    return '已逾期'
-  }
-  if (book.renewCount >= 2) {
-    return '已達上限'
-  }
-  if (!canRenew(book.dueDate)) {
-    return '尚未到續借時間'
-  }
-  return '續借'
-}
-
-// 視圖模式
-const viewMode = ref('table') // 'table' 或 'grid'
-
-// 分頁設定
+const viewMode = ref('table')
 const pageSizes = [10, 20, 30, 50, 100]
 const itemsPerPage = ref(10)
 const currentPage = ref(1)
-
-// 排序設定
-const sortConfig = ref({
-  field: 'title',
-  ascending: true
-})
-
-// 串接API取得1號會員的歷史紀錄
+const sortConfig = ref({ field: 'title', ascending: true })
 const borrowedBooks = ref([])
+const loading = ref(false)
+const renewing = ref(null)
 
-// 預設封面圖片
-function getDefaultCoverUrl(index) {
-  const colors = ['#f87171', '#fb923c', '#fbbf24', '#34d399', '#60a5fa', '#818cf8', '#a78bfa', '#f472b6']
-  const colorIndex = index % colors.length
-  return `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="${colors[colorIndex]}"/><text x="50" y="50" font-family="Arial" font-size="14" fill="white" text-anchor="middle" dominant-baseline="middle">無封面</text></svg>`
-}
-
-// 重試機制
-async function retryRequest(url, options, maxRetries = 3) {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      console.log(`嘗試第 ${i + 1} 次請求...`);
-      const response = await axios.get(url, options);
-      return response;
-    } catch (err) {
-      if (i === maxRetries - 1) throw err;
-      console.log(`第 ${i + 1} 次請求失敗，等待重試...`);
-      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-    }
-  }
-}
-
+// 取得借閱歷史
 async function fetchBorrowHistory() {
+  loading.value = true
   try {
-    console.log('開始獲取借閱記錄...');
-    const res = await retryRequest('http://localhost:8080/api/borrows/member/1/history', {
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      
-      timeout: 15000
-    });
-    
-    console.log('API 響應狀態:', res.status);
-    console.log('API 響應數據:', res.data);
-    
-    if (!Array.isArray(res.data)) {
-      console.error('API 響應不是數組:', res.data);
-      borrowedBooks.value = [];
-      return;
-    }
-    
-    // 確保所有記錄都被處理
-    borrowedBooks.value = res.data.map(item => {
-      console.log('處理借閱記錄:', item);
-      
-      // 檢查並記錄關聯資料
-      if (!item.book) {
-        console.warn('借閱記錄缺少書籍資訊:', item.borrowId);
-      }
-      if (!item.member) {
-        console.warn('借閱記錄缺少會員資訊:', item.borrowId);
-      }
-      
-      // 建立處理後的記錄
-      const processedItem = {
+    const result = await borrowApi.getBorrowHistory()
+    if (result.success) {
+      borrowedBooks.value = result.data.map(item => ({
         id: item.borrowId,
-        title: item.book?.title || '無標題',
-        author: item.book?.author || '無作者',
+        title: item.bookTitle || '無標題',
+        author: item.bookAuthor || '無作者',
         borrowDate: item.borrowDate?.split('T')[0] || '',
         dueDate: item.dueDate?.split('T')[0] || '',
         renewCount: item.renewCount || 0,
         isReturned: item.status === 'RETURNED',
         status: item.status,
-        book: item.book,
-        member: item.member,
-        coverUrl: item.book?.coverUrl || null
-      };
-      
-      console.log('處理後的記錄:', processedItem);
-      return processedItem;
-    });
-    
-    // 檢查處理後的資料
-    if (borrowedBooks.value.length === 0) {
-      console.warn('沒有找到任何借閱記錄');
+        coverUrl: null
+      }))
     } else {
-      console.log('處理完成，共', borrowedBooks.value.length, '筆記錄');
-      borrowedBooks.value.forEach((book, index) => {
-        console.log(`第 ${index + 1} 筆記錄:`, book);
-      });
+      borrowedBooks.value = []
+      alert(result.message || '取得借閱紀錄失敗')
     }
   } catch (err) {
-    console.error('獲取借閱記錄失敗:');
-    console.error('錯誤類型:', err.name);
-    console.error('錯誤訊息:', err.message);
-    
-    if (err.response) {
-      // 伺服器回應了錯誤狀態碼
-      console.error('錯誤狀態碼:', err.response.status);
-      console.error('錯誤資料:', err.response.data);
-      console.error('錯誤標頭:', err.response.headers);
-    } else if (err.request) {
-      // 請求已發送但沒有收到回應
-      console.error('請求已發送但沒有收到回應');
-      console.error('請求配置:', err.config);
-      
-      // 如果是超時錯誤，嘗試重新連接
-      if (err.code === 'ECONNABORTED') {
-        console.log('嘗試重新連接...');
-        try {
-          const retryRes = await retryRequest('http://localhost:8080/api/borrows/test', {
-            timeout: 5000
-          });
-          console.log('後端服務測試回應:', retryRes.data);
-        } catch (retryErr) {
-          console.error('後端服務測試失敗:', retryErr.message);
-        }
-      }
-    } else {
-      // 請求設定時發生錯誤
-      console.error('請求設定錯誤:', err.message);
-    }
-    
-    if (err.code) {
-      console.error('錯誤代碼:', err.code);
-    }
-    
-    borrowedBooks.value = [];
+    borrowedBooks.value = []
+    alert('取得借閱紀錄失敗')
+  } finally {
+    loading.value = false
   }
 }
-
-// 重新整理資料
-async function refreshData() {
-  try {
-    await fetchBorrowHistory();
-  } catch (err) {
-    console.error('重新整理資料失敗:', err);
-  }
-}
-
-onMounted(async () => {
-  try {
-    await fetchBorrowHistory();
-  } catch (err) {
-    console.error('初始化資料失敗:', err);
-  }
-})
-
-// 排序功能
-function toggleSortOrder() {
-  sortConfig.value.ascending = !sortConfig.value.ascending
-}
-
-function updateSort(field) {
-  if (sortConfig.value.field === field) {
-    sortConfig.value.ascending = !sortConfig.value.ascending
-  } else {
-    sortConfig.value.field = field
-    sortConfig.value.ascending = true
-  }
-}
-
-function getSortIcon(field) {
-  if (sortConfig.value.field !== field) return ''
-  return sortConfig.value.ascending ? '↑' : '↓'
-}
-
-// 排序後的資料
-const sortedBooks = computed(() => {
-  return [...borrowedBooks.value].sort((a, b) => {
-    const field = sortConfig.value.field
-    const modifier = sortConfig.value.ascending ? 1 : -1
-    
-    if (a[field] < b[field]) return -1 * modifier
-    if (a[field] > b[field]) return 1 * modifier
-    return 0
-  })
-})
 
 // 續借功能
 async function renewBook(book) {
@@ -410,65 +214,89 @@ async function renewBook(book) {
     alert('此書已達到續借上限，無法再次續借')
     return
   }
-  if (isOverdue(book.dueDate)) {
+  if (borrowUtils.isOverdue(book.dueDate)) {
     alert('此書已逾期，無法續借')
     return
   }
-  if (!canRenew(book.dueDate)) {
+  if (!borrowUtils.canRenew(book.dueDate)) {
     alert('尚未到續借時間（到期前3天內才能續借）')
     return
   }
-
   try {
-    // 先檢查是否可以續借
-    const checkResponse = await axios.get(`/api/borrows/renew/${book.id}/check`)
-    if (!checkResponse.data) {
+    renewing.value = book.id
+    const checkResponse = await borrowApi.checkRenewable(book.id)
+    if (!checkResponse.success || !checkResponse.data.canRenew) {
       alert('此書目前無法續借')
       return
     }
-
-    // 發送續借請求
-    const response = await axios.post(`/api/borrows/renew/${book.id}`)
-    
-    if (response.status === 200) {
-      // 更新本地資料
-      const updatedBook = response.data
-      book.dueDate = updatedBook.dueDate.split('T')[0]
-      book.renewCount = updatedBook.renewCount
-      
+    const response = await borrowApi.renewBook(book.id)
+    if (response.success) {
       alert('續借成功！')
-      // 重新整理資料
-      await refreshData()
+      await fetchBorrowHistory()
+    } else {
+      alert('續借失敗: ' + response.message)
     }
   } catch (error) {
-    console.error('續借失敗:', error)
-    alert(error.response?.data || '續借失敗，請稍後再試')
+    alert('續借失敗: ' + error.message)
+  } finally {
+    renewing.value = null
   }
 }
 
-// 添加 goToPage 函數
-function goToPage(page) {
-  const pageNum = parseInt(page)
-  if (pageNum && !isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages.value) {
-    currentPage.value = pageNum
+// 工具函數直接用 borrowUtils
+const canRenew = borrowUtils.canRenew
+const isOverdue = borrowUtils.isOverdue
+const formatDueDate = borrowUtils.formatDueDate
+const getButtonText = borrowUtils.getButtonText
 
-  }
+// 排序
+function toggleSortOrder() {
+  sortConfig.value.ascending = !sortConfig.value.ascending
 }
-
-// 計算總頁數
-const totalPages = computed(() => Math.ceil(sortedBooks.value.length / itemsPerPage.value))
-
-// 監聽每頁顯示數量變更
-watch(itemsPerPage, () => {
-  currentPage.value = 1
+const sortedBooks = computed(() => {
+  const books = [...borrowedBooks.value]
+  const field = sortConfig.value.field
+  const ascending = sortConfig.value.ascending
+  return books.sort((a, b) => {
+    let valueA = a[field] || ''
+    let valueB = b[field] || ''
+    if (field === 'borrowDate' || field === 'dueDate') {
+      valueA = new Date(valueA).getTime()
+      valueB = new Date(valueB).getTime()
+    } else {
+      valueA = valueA.toString().toLowerCase()
+      valueB = valueB.toString().toLowerCase()
+    }
+    if (valueA < valueB) return ascending ? -1 : 1
+    if (valueA > valueB) return ascending ? 1 : -1
+    return 0
+  })
 })
-
-// 計算當前頁面應該顯示的資料
+const totalPages = computed(() => Math.ceil(sortedBooks.value.length / itemsPerPage.value))
 const paginatedBooks = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value
   const end = start + itemsPerPage.value
   return sortedBooks.value.slice(start, end)
 })
+function goToPage(page) {
+  const pageNum = parseInt(page)
+  if (pageNum && !isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages.value) {
+    currentPage.value = pageNum
+  }
+}
+watch(itemsPerPage, () => {
+  currentPage.value = 1
+})
+onMounted(() => {
+  fetchBorrowHistory()
+})
+
+// 封面預設
+function getDefaultCoverUrl(index) {
+  const colors = ['#f87171', '#fb923c', '#fbbf24', '#34d399', '#60a5fa', '#818cf8', '#a78bfa', '#f472b6']
+  const colorIndex = index % colors.length
+  return `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="${colors[colorIndex]}"/><text x="50" y="50" font-family="Arial" font-size="14" fill="white" text-anchor="middle" dominant-baseline="middle">無封面</text></svg>`
+}
 </script>
 
 <style scoped>
