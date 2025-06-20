@@ -100,6 +100,16 @@ export const reservationAPI = {
   // 取得使用者的預約日誌
   getReservationLogs: (userId) => {
     return api.get('/api/reservation-logs', { params: { userId } })
+  },
+
+  // 刪除預約日誌
+  deleteReservationLog: (logId) => {
+    return api.delete(`/api/reservation-logs/${logId}`)
+  },
+
+  // 批量刪除預約日誌
+  batchDeleteReservationLogs: (logIds) => {
+    return api.delete('/api/reservation-logs/batch', { data: { logIds } })
   }
 }
 

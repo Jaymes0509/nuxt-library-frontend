@@ -10,7 +10,6 @@ export default defineNuxtConfig({
     // '@nuxtjs/tailwindcss',
 
     '@nuxtjs/google-fonts',
-    'leaflet/dist/leaflet.css',
   ],
 
   css: ['@/assets/css/main.css',

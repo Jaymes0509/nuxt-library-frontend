@@ -3,7 +3,19 @@
         <div class="intro">
             <div class="history-bg">
                 <h1 class="history-title">預約記錄</h1>
-                <div class="history-main">
+
+                <!-- 登入檢查 -->
+                <div v-if="!isLoggedIn" class="login-required">
+                    <div class="login-required-icon">🔒</div>
+                    <h2>需要登入會員</h2>
+                    <p>您需要登入會員才能查看預約記錄</p>
+                    <button @click="goToLogin" class="login-required-btn">
+                        前往登入
+                    </button>
+                </div>
+
+                <!-- 預約記錄內容（只有登入後才顯示） -->
+                <div v-else class="history-main">
                     <!-- 控制面板 -->
                     <div class="history-control-panel">
                         <div class="history-control-panel-left">
@@ -146,6 +158,10 @@ const router = useRouter()
 // 視圖模式
 const viewMode = ref('table')
 
+// 登入狀態檢查
+const isLoggedIn = ref(false)
+const user = ref(null)
+
 // 分頁設定
 const pageSizes = [10, 20, 30, 50, 100]
 const itemsPerPage = ref(10)
@@ -166,6 +182,45 @@ function getDefaultCoverUrl(index) {
 const reservationBooks = ref([])
 const loading = ref(false)
 const error = ref(null)
+
+// 檢查登入狀態
+const checkLoginStatus = () => {
+    // 檢查 localStorage 中的用戶資訊
+    const storedUser = localStorage.getItem('user')
+    const jwtToken = localStorage.getItem('jwt_token')
+    const authToken = localStorage.getItem('authToken')
+
+    console.log('=== 登入狀態檢查 ===')
+    console.log('storedUser:', storedUser)
+    console.log('jwtToken:', jwtToken)
+    console.log('authToken:', authToken)
+
+    if (storedUser) {
+        try {
+            user.value = JSON.parse(storedUser)
+            isLoggedIn.value = true
+            console.log('✅ 用戶已登入：', user.value)
+        } catch (e) {
+            console.error('❌ 解析用戶資訊失敗：', e)
+            isLoggedIn.value = false
+        }
+    } else if (jwtToken || authToken) {
+        // 如果有 token 但沒有用戶資訊，也視為已登入
+        isLoggedIn.value = true
+        console.log('✅ 檢測到登入 token')
+    } else {
+        isLoggedIn.value = false
+        console.log('❌ 用戶未登入')
+    }
+
+    console.log('最終登入狀態：', isLoggedIn.value)
+    console.log('==================')
+}
+
+// 跳轉到登入頁面
+const goToLogin = () => {
+    router.push('/login')
+}
 
 // 格式化日期時間
 function formatDateTime(dateTimeStr) {
@@ -354,10 +409,13 @@ watch([() => sortConfig.value.field, () => sortConfig.value.ascending], () => {
 
 // 初始化載入資料
 onMounted(async () => {
-    try {
-        await fetchReservations()
-    } catch (err) {
-        console.error('初始化載入失敗：', err)
+    checkLoginStatus()
+    if (isLoggedIn.value) {
+        try {
+            await fetchReservations()
+        } catch (err) {
+            console.error('初始化載入失敗：', err)
+        }
     }
 })
 </script>
@@ -827,5 +885,61 @@ onMounted(async () => {
     .history-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* 登入提示樣式 */
+.login-required {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    text-align: center;
+    color: #6b7280;
+    background: transparent;
+    border-radius: 12px;
+    margin: 20px;
+}
+
+.login-required-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+}
+
+.login-required h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 12px;
+}
+
+.login-required p {
+    font-size: 1rem;
+    color: #6b7280;
+    margin-bottom: 24px;
+    max-width: 400px;
+}
+
+.login-required-btn {
+    padding: 12px 32px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.login-required-btn:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+}
+
+.login-required-btn:active {
+    transform: translateY(0);
 }
 </style>

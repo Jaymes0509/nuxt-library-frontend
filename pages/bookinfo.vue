@@ -134,6 +134,17 @@ const goBack = () => {
 
 // 加入預約清單功能
 const addToReservationList = async () => {
+  // 檢查登入狀態
+  const storedUser = localStorage.getItem('user')
+  const jwtToken = localStorage.getItem('jwt_token')
+  const authToken = localStorage.getItem('authToken')
+
+  if (!storedUser && !jwtToken && !authToken) {
+    alert('請先登入會員才能使用預約功能')
+    router.push('/login')
+    return
+  }
+
   try {
     console.log('開始加入預約清單，書籍：', book.value)
 
@@ -168,24 +179,22 @@ const addToReservationList = async () => {
       console.log('成功加入預約清單！')
       alert('已成功加入預約清單！')
 
-      // 導向預約清單頁面
-      router.push({
-        path: '/reservation-record',
-        query: {
-          from: 'bookinfo',
-          book_id: bookId
-        }
-      })
+      // 移除跳轉邏輯，只顯示成功訊息
+      // 用戶可以繼續瀏覽書籍詳情或手動返回
     } else {
       // 處理加入失敗
       const errorMessage = response.data?.message ||
         response.data?.error ||
         '加入預約清單失敗'
+
+      // 移除「系統錯誤：」前綴
+      const cleanErrorMessage = errorMessage.replace(/^系統錯誤：/, '')
+
       console.error('加入預約清單失敗詳情：', {
-        message: errorMessage,
+        message: cleanErrorMessage,
         response: response.data
       })
-      alert(`加入失敗：${errorMessage}`)
+      alert(`加入失敗：${cleanErrorMessage}`)
     }
   } catch (error) {
     console.error('加入預約清單失敗：', error)

@@ -2,8 +2,20 @@
   <div class="scroll-wrapper">
     <div class="intro">
       <div class="history-bg">
-        <h1 class="history-title">我的預約清單</h1>
-        <div class="history-main">
+        <h1 class="history-title">預約清單</h1>
+
+        <!-- 登入檢查 -->
+        <div v-if="!isLoggedIn" class="login-required">
+          <div class="login-required-icon">🔒</div>
+          <h2>需要登入會員</h2>
+          <p>您需要登入會員才能使用預約清單功能</p>
+          <button @click="goToLogin" class="login-required-btn">
+            前往登入
+          </button>
+        </div>
+
+        <!-- 預約清單內容（只有登入後才顯示） -->
+        <div v-else class="history-main">
           <!-- 控制面板 -->
           <div class="history-control-panel">
             <div class="history-control-panel-left">
@@ -165,16 +177,20 @@ import { useRouter } from 'vue-router'
 import { useHead } from '#imports'
 import { reservationAPI } from '~/utils/api'
 
-// 設置頁面標題
-useHead({
-  title: '預約清單'
-})
+// ===== 頁面設定 =====
+useHead({ title: '預約清單' })
 
-// 獲取 router 實例
+// ===== 響應式資料 =====
 const router = useRouter()
-
-// 視圖模式
 const viewMode = ref('table')
+const reservationList = ref([])
+const selectedBooks = ref([])
+const loading = ref(false)
+const error = ref(null)
+
+// 登入狀態檢查
+const isLoggedIn = ref(false)
+const user = ref(null)
 
 // 分頁設定
 const pageSizes = [10, 20, 30, 50, 100]
@@ -187,19 +203,11 @@ const sortConfig = ref({
   ascending: true
 })
 
-// 響應式資料
-const reservationList = ref([])
-const selectedBooks = ref([])
-const loading = ref(false)
-const error = ref(null)
+// ===== 工具函數 =====
+const getDefaultCoverUrl = (index) =>
+  `https://via.placeholder.com/300x400/4ECDC4/FFFFFF?text=${encodeURIComponent('書籍封面')}`
 
-// 預設封面圖片
-function getDefaultCoverUrl(index) {
-  return `https://via.placeholder.com/300x400/4ECDC4/FFFFFF?text=${encodeURIComponent('書籍封面')}`
-}
-
-// 格式化日期時間
-function formatDateTime(dateTimeStr) {
+const formatDateTime = (dateTimeStr) => {
   if (!dateTimeStr) return ''
   const date = new Date(dateTimeStr)
   return date.toLocaleString('zh-TW', {
@@ -212,32 +220,49 @@ function formatDateTime(dateTimeStr) {
   })
 }
 
-// 從後端 API 載入預約清單
-async function loadReservationList() {
+// ===== API 錯誤處理 =====
+const handleApiError = (error, defaultMessage) => {
+  console.error(defaultMessage, error)
+  console.log('錯誤詳情:', {
+    status: error.response?.status,
+    statusText: error.response?.statusText,
+    data: error.response?.data
+  })
+
+  if (error.response?.status === 404) {
+    return '記錄不存在，可能已被刪除'
+  } else if (error.response?.status === 400) {
+    return '請求參數錯誤'
+  } else if (error.response?.data?.message) {
+    return error.response.data.message
+  }
+
+  return defaultMessage
+}
+
+// ===== 資料轉換 =====
+const convertReservationLogToBook = (item) => ({
+  id: item.logId,
+  title: item.title,
+  author: item.author,
+  isbn: item.bookId,
+  addedDate: item.createdAt,
+  status: item.status,
+  action: item.action
+})
+
+// ===== 核心 API 操作 =====
+const loadReservationList = async () => {
   loading.value = true
   error.value = null
 
   try {
     console.log('開始載入預約清單...')
-    // 直接呼叫 reservation_logs API
     const response = await reservationAPI.getReservationLogs(1)
     console.log('API 回應：', response.data)
 
     if (response.data && Array.isArray(response.data)) {
-      // 轉換 reservation_logs 為前端所需格式
-      reservationList.value = response.data.map(item => {
-        const converted = {
-          id: item.logId,
-          title: item.title,
-          author: item.author,
-          isbn: item.bookId, // 若有需要顯示 ISBN，請後端一併帶回
-          addedDate: item.createdAt,
-          status: item.status,
-          action: item.action
-        }
-        console.log('轉換後的項目：', converted)
-        return converted
-      })
+      reservationList.value = response.data.map(convertReservationLogToBook)
       console.log('載入的預約清單：', reservationList.value)
       console.log('清單長度：', reservationList.value.length)
     } else {
@@ -245,105 +270,63 @@ async function loadReservationList() {
       reservationList.value = []
     }
   } catch (err) {
-    console.error('載入預約清單失敗：', err)
-    console.log('錯誤詳情:', {
-      status: err.response?.status,
-      statusText: err.response?.statusText,
-      data: err.response?.data
-    })
-    error.value = '無法載入預約清單，請稍後再試'
+    const errorMessage = handleApiError(err, '載入預約清單失敗')
+    error.value = errorMessage
     reservationList.value = []
   } finally {
     loading.value = false
   }
 }
 
-// 加入預約清單
-async function addToReservationList(book) {
+const addToReservationList = async (book) => {
   try {
     console.log('開始加入預約清單，書籍：', book)
 
     const response = await reservationAPI.addReservation({
-      bookId: parseInt(book.isbn) || 1, // 使用 ISBN 作為 bookId
-      userId: 1, // 使用數字 ID
+      bookId: parseInt(book.isbn) || 1,
+      userId: 1,
       status: 'PENDING',
-      reservationDate: new Date().toISOString().slice(0, 19).replace('T', ' ') // 格式化為後端期望的格式
+      reservationDate: new Date().toISOString().slice(0, 19).replace('T', ' ')
     })
 
     console.log('加入預約 API 回應：', response.data)
 
-    if (response.data && response.data.success) {
+    if (response.data?.success) {
       console.log('預約加入成功，重新載入清單...')
-      // 重新載入清單以獲取最新資料
       await loadReservationList()
       alert('已成功加入預約清單！')
       return true
     } else {
-      console.log('預約加入失敗：', response.data)
       throw new Error('加入失敗')
     }
   } catch (err) {
-    console.error('加入預約清單失敗：', err)
-    if (err.response?.status === 409) {
-      alert('此書籍已在預約清單中')
-    } else if (err.response?.data?.message) {
-      alert(`加入失敗：${err.response.data.message}`)
-    } else {
-      alert('加入預約清單失敗，請稍後再試')
-    }
+    const errorMessage = handleApiError(err, '加入預約清單失敗')
+    alert(errorMessage)
     return false
   }
 }
 
-// 從預約清單移除
-async function removeFromList(bookId) {
+const removeFromList = async (bookId) => {
   try {
     console.log('嘗試移除預約，ID：', bookId)
-    const response = await reservationAPI.deleteReservation(bookId)
+    const response = await reservationAPI.deleteReservationLog(bookId)
     console.log('刪除 API 回應：', response)
 
-    // 檢查 HTTP 狀態碼而不是 response.data
     if (response.status === 200 || (response.status >= 200 && response.status < 300)) {
-      console.log('刪除成功，從本地清單移除')
-
-      // 從本地清單中移除
-      const index = reservationList.value.findIndex(item => item.id === bookId)
-      if (index !== -1) {
-        reservationList.value.splice(index, 1)
-        console.log('從本地清單移除成功，索引：', index)
-      }
-
-      // 同時從選取清單中移除
-      const selectedIndex = selectedBooks.value.indexOf(bookId)
-      if (selectedIndex !== -1) {
-        selectedBooks.value.splice(selectedIndex, 1)
-        console.log('從選取清單移除成功')
-      }
-
+      console.log('刪除成功，重新載入清單')
+      await loadReservationList()
+      removeFromSelection(bookId)
       alert('移除成功！')
     } else {
       throw new Error(`移除失敗，HTTP狀態碼：${response.status}`)
     }
   } catch (err) {
-    console.error('移除書籍失敗：', err)
-    console.log('錯誤詳情：', {
-      status: err.response?.status,
-      statusText: err.response?.statusText,
-      data: err.response?.data
-    })
-
-    if (err.response?.status === 404) {
-      alert('預約記錄不存在，可能已被刪除')
-    } else if (err.response?.status === 400) {
-      alert('移除失敗：請求參數錯誤')
-    } else {
-      alert('移除書籍失敗，請稍後再試')
-    }
+    const errorMessage = handleApiError(err, '移除書籍失敗')
+    alert(errorMessage)
   }
 }
 
-// 移除選取的書籍
-async function removeSelected() {
+const removeSelected = async () => {
   if (selectedBooks.value.length === 0) {
     alert('請先選擇要移除的書籍')
     return
@@ -353,30 +336,49 @@ async function removeSelected() {
   console.log('要移除的書籍 IDs：', selectedBooks.value)
 
   try {
-    const response = await reservationAPI.batchDeleteReservation(selectedBooks.value)
-    console.log('批量刪除 API 回應：', response)
+    const selectedIds = [...selectedBooks.value]
+    const results = await Promise.allSettled(
+      selectedIds.map(id => reservationAPI.deleteReservationLog(id))
+    )
 
-    // 檢查回應是否成功（可能是 status 200 或有 data）
-    if (response.status === 200 || response.data !== undefined) {
-      // 重新載入清單以獲取最新資料
-      await loadReservationList()
-      selectedBooks.value = []
-      alert(`成功移除 ${selectedCount} 本書籍`)
-    } else {
-      throw new Error('批量移除失敗：後端回應異常')
-    }
+    const successCount = results.filter(result =>
+      result.status === 'fulfilled' &&
+      (result.value.status === 200 || result.value.status === 204)
+    ).length
+
+    const errorCount = selectedCount - successCount
+
+    await loadReservationList()
+    selectedBooks.value = []
+
+    showBatchResult(successCount, errorCount, selectedCount)
   } catch (err) {
     console.error('批量移除書籍失敗：', err)
-    if (err.response) {
-      console.log('錯誤回應狀態：', err.response.status)
-      console.log('錯誤回應資料：', err.response.data)
-    }
     alert('批量移除失敗，請稍後再試')
   }
 }
 
-// 切換選取單本書籍
-function toggleSelectBook(bookId) {
+// ===== 輔助函數 =====
+const removeFromSelection = (bookId) => {
+  const selectedIndex = selectedBooks.value.indexOf(bookId)
+  if (selectedIndex !== -1) {
+    selectedBooks.value.splice(selectedIndex, 1)
+    console.log('從選取清單移除成功')
+  }
+}
+
+const showBatchResult = (successCount, errorCount, totalCount) => {
+  if (errorCount === 0) {
+    alert(`成功移除 ${successCount} 本書籍`)
+  } else if (successCount === 0) {
+    alert(`移除失敗，所有 ${errorCount} 本書籍都無法刪除`)
+  } else {
+    alert(`部分成功：成功移除 ${successCount} 本書籍，${errorCount} 本書籍刪除失敗`)
+  }
+}
+
+// ===== 選取操作 =====
+const toggleSelectBook = (bookId) => {
   const index = selectedBooks.value.indexOf(bookId)
   if (index === -1) {
     selectedBooks.value.push(bookId)
@@ -385,8 +387,7 @@ function toggleSelectBook(bookId) {
   }
 }
 
-// 切換全選
-function toggleSelectAll() {
+const toggleSelectAll = () => {
   if (isAllSelected.value) {
     selectedBooks.value = []
   } else {
@@ -394,35 +395,8 @@ function toggleSelectAll() {
   }
 }
 
-// 批量預約
-function batchReserve() {
-  if (selectedBooks.value.length === 0) {
-    alert('請先選擇要預約的書籍')
-    return
-  }
-
-  // 檢查一次預約數量限制
-  if (selectedBooks.value.length > 10) {
-    alert('一次最多只能預約10本書籍，請重新選擇')
-    return
-  }
-
-  const selectedBookData = reservationList.value.filter(book =>
-    selectedBooks.value.includes(book.id)
-  )
-
-  // 將選取的書籍資料傳遞到預約頁面
-  router.push({
-    path: '/book-reservation',
-    query: {
-      batch: 'true',
-      books: JSON.stringify(selectedBookData)
-    }
-  })
-}
-
-// 查看書籍詳情
-function viewBookDetail(book) {
+// ===== 導航函數 =====
+const viewBookDetail = (book) => {
   router.push({
     path: '/bookinfo',
     query: {
@@ -435,12 +409,47 @@ function viewBookDetail(book) {
   })
 }
 
-// 前往搜尋頁面
-function goToSearch() {
+const goToSearch = () => {
   router.push('/catalogue-search')
 }
 
-// 計算屬性
+const batchReserve = () => {
+  if (selectedBooks.value.length === 0) {
+    alert('請先選擇要預約的書籍')
+    return
+  }
+
+  if (selectedBooks.value.length > 10) {
+    alert('一次最多只能預約10本書籍，請重新選擇')
+    return
+  }
+
+  const selectedBookData = reservationList.value.filter(book =>
+    selectedBooks.value.includes(book.id)
+  )
+
+  router.push({
+    path: '/book-reservation',
+    query: {
+      batch: 'true',
+      books: JSON.stringify(selectedBookData)
+    }
+  })
+}
+
+// ===== 排序和分頁 =====
+const toggleSortOrder = () => {
+  sortConfig.value.ascending = !sortConfig.value.ascending
+}
+
+const goToPage = (page) => {
+  const pageNum = parseInt(page)
+  if (pageNum && !isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages.value) {
+    currentPage.value = pageNum
+  }
+}
+
+// ===== 計算屬性 =====
 const isAllSelected = computed(() => {
   return paginatedBooks.value.length > 0 &&
     paginatedBooks.value.every(book => selectedBooks.value.includes(book.id))
@@ -448,7 +457,6 @@ const isAllSelected = computed(() => {
 
 const selectedCount = computed(() => selectedBooks.value.length)
 
-// 排序後的資料
 const sortedBooks = computed(() => {
   const books = [...reservationList.value]
   const field = sortConfig.value.field
@@ -457,7 +465,6 @@ const sortedBooks = computed(() => {
   return books.sort((a, b) => {
     let valueA, valueB
 
-    // 根據不同欄位類型進行排序
     if (field === 'addedDate') {
       valueA = new Date(a[field] || 0).getTime()
       valueB = new Date(b[field] || 0).getTime()
@@ -466,56 +473,80 @@ const sortedBooks = computed(() => {
       valueB = (b[field] || '').toString().toLowerCase()
     }
 
-    // 進行排序比較
     if (valueA < valueB) return ascending ? -1 : 1
     if (valueA > valueB) return ascending ? 1 : -1
     return 0
   })
 })
 
-// 計算總頁數
 const totalPages = computed(() => Math.ceil(sortedBooks.value.length / itemsPerPage.value))
 
-// 計算當前頁面應該顯示的資料
 const paginatedBooks = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value
   const end = start + itemsPerPage.value
   return sortedBooks.value.slice(start, end)
 })
 
-// 排序功能
-function toggleSortOrder() {
-  sortConfig.value.ascending = !sortConfig.value.ascending
-}
-
-// 頁面跳轉
-function goToPage(page) {
-  const pageNum = parseInt(page)
-  if (pageNum && !isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages.value) {
-    currentPage.value = pageNum
-  }
-}
-
-// 監聽每頁顯示筆數變動，自動跳回第一頁
+// ===== 監聽器 =====
 watch(itemsPerPage, () => {
   currentPage.value = 1
 })
 
-// 監聽排序設定變化
 watch([() => sortConfig.value.field, () => sortConfig.value.ascending], () => {
-  // 當排序設定改變時，重置到第一頁
   currentPage.value = 1
 })
 
-// 初始化載入資料
+// ===== 生命週期 =====
 onMounted(() => {
-  loadReservationList()
+  checkLoginStatus()
+  if (isLoggedIn.value) {
+    loadReservationList()
+  }
 })
 
-// 暴露方法給其他組件使用
+// ===== 暴露方法 =====
 defineExpose({
   addToReservationList
 })
+
+// ===== 登入狀態檢查 =====
+const checkLoginStatus = () => {
+  // 檢查 localStorage 中的用戶資訊
+  const storedUser = localStorage.getItem('user')
+  const jwtToken = localStorage.getItem('jwt_token')
+  const authToken = localStorage.getItem('authToken')
+
+  console.log('=== 登入狀態檢查 ===')
+  console.log('storedUser:', storedUser)
+  console.log('jwtToken:', jwtToken)
+  console.log('authToken:', authToken)
+
+  if (storedUser) {
+    try {
+      user.value = JSON.parse(storedUser)
+      isLoggedIn.value = true
+      console.log('✅ 用戶已登入：', user.value)
+    } catch (e) {
+      console.error('❌ 解析用戶資訊失敗：', e)
+      isLoggedIn.value = false
+    }
+  } else if (jwtToken || authToken) {
+    // 如果有 token 但沒有用戶資訊，也視為已登入
+    isLoggedIn.value = true
+    console.log('✅ 檢測到登入 token')
+  } else {
+    isLoggedIn.value = false
+    console.log('❌ 用戶未登入')
+  }
+
+  console.log('最終登入狀態：', isLoggedIn.value)
+  console.log('==================')
+}
+
+// 跳轉到登入頁面
+const goToLogin = () => {
+  router.push('/login')
+}
 </script>
 
 <style scoped>
@@ -1170,5 +1201,61 @@ defineExpose({
   .history-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* 登入提示樣式 */
+.login-required {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+  color: #6b7280;
+  background: transparent;
+  border-radius: 12px;
+  margin: 20px;
+}
+
+.login-required-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+}
+
+.login-required h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.login-required p {
+  font-size: 1rem;
+  color: #6b7280;
+  margin-bottom: 24px;
+  max-width: 400px;
+}
+
+.login-required-btn {
+  padding: 12px 32px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.login-required-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+}
+
+.login-required-btn:active {
+  transform: translateY(0);
 }
 </style>

@@ -57,6 +57,29 @@ html.accessible-mode button {
   margin-top: 0.1rem;
 }
 
+/* 預約清單和預約記錄頁面的按鈕保持原來的顏色 */
+html.accessible-mode .history-detail-btn,
+html.accessible-mode .history-remove-btn,
+html.accessible-mode .history-remove-btn-card,
+html.accessible-mode .history-sort-btn,
+html.accessible-mode .history-view-btn,
+html.accessible-mode .history-view-btn-active,
+html.accessible-mode .batch-btn,
+html.accessible-mode .batch-btn-remove,
+html.accessible-mode .batch-btn-reserve,
+html.accessible-mode .history-pagination-btn,
+html.accessible-mode .history-empty-btn {
+  color: initial !important;
+  background-color: initial !important;
+}
+
+/* 升冪、降冪、網格按鈕保持原來的背景色 */
+html.accessible-mode .history-sort-btn,
+html.accessible-mode .history-view-btn,
+html.accessible-mode .history-view-btn-active {
+  background-color: initial !important;
+}
+
 html.accessible-mode .lang-btn {
   background-color: #111 !important;
   border-radius: 0.5rem;
@@ -84,6 +107,21 @@ html.accessible-mode button:hover {
   color: yellow;
 }
 
+/* 預約清單和預約記錄頁面的按鈕hover效果保持原來的顏色 */
+html.accessible-mode .history-detail-btn:hover,
+html.accessible-mode .history-remove-btn:hover,
+html.accessible-mode .history-remove-btn-card:hover,
+html.accessible-mode .history-sort-btn:hover,
+html.accessible-mode .history-view-btn:hover,
+html.accessible-mode .history-view-btn-active:hover,
+html.accessible-mode .batch-btn:hover,
+html.accessible-mode .batch-btn-remove:hover,
+html.accessible-mode .batch-btn-reserve:hover,
+html.accessible-mode .history-pagination-btn:hover,
+html.accessible-mode .history-empty-btn:hover {
+  color: initial !important;
+}
+
 html.accessible-mode :focus {
   outline: 3px solid red;
   outline-offset: 2px;
@@ -95,40 +133,6 @@ html.accessible-mode .sidebar+.toggle-area {
 
 html.accessible-mode .separator {
   display: none;
-}
-
-html.accessible-mode .history-title,
-html.accessible-mode .history-label,
-html.accessible-mode .history-grid-header > div,
-html.accessible-mode .history-grid-row > div,
-html.accessible-mode .history-grid-title-cell,
-html.accessible-mode .history-grid-title,
-html.accessible-mode .history-grid-author,
-html.accessible-mode .history-grid-date,
-html.accessible-mode .history-empty,
-html.accessible-mode .history-empty-subtitle,
-html.accessible-mode .history-pagination-info,
-html.accessible-mode .history-row,
-html.accessible-mode .batch-info,
-html.accessible-mode .batch-warning,
-html.accessible-mode .history-detail-btn,
-html.accessible-mode .history-remove-btn,
-html.accessible-mode .history-remove-btn-card,
-html.accessible-mode .history-sort-btn,
-html.accessible-mode .history-view-btn,
-html.accessible-mode .history-view-btn-active,
-html.accessible-mode .batch-btn,
-html.accessible-mode .history-pagination-btn,
-html.accessible-mode .history-select,
-html.accessible-mode .history-error,
-html.accessible-mode .history-error-details {
-  color: #fff !important;
-}
-
-html.accessible-mode .history-sort-btn,
-html.accessible-mode .history-view-btn,
-html.accessible-mode .history-view-btn-active {
-  color: #fff !important;
 }
 
 /* 恢復其他區塊顏色 */
