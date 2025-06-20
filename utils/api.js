@@ -99,7 +99,7 @@ export const reservationAPI = {
 
   // 取得使用者的預約日誌
   getReservationLogs: (userId) => {
-    return api.get('/api/reservation-logs/user/' + userId)
+    return api.get('/api/reservation-logs', { params: { userId } })
   }
 }
 

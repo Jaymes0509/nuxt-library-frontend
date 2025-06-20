@@ -95,7 +95,6 @@
                 </div>
                 <div>書名</div>
                 <div>作者</div>
-                <div>ISBN</div>
                 <div>加入時間</div>
                 <div>操作</div>
               </div>
@@ -107,7 +106,6 @@
                   </div>
                   <div class="history-grid-title-cell">{{ book.title }}</div>
                   <div>{{ book.author }}</div>
-                  <div>{{ book.isbn }}</div>
                   <div>{{ formatDateTime(book.addedDate) }}</div>
                   <div class="history-grid-actions">
                     <button @click="viewBookDetail(book)" class="history-detail-btn">詳情</button>
@@ -129,7 +127,6 @@
                 <div class="history-grid-info">
                   <h3 class="history-grid-title reservation-record-book-title">{{ book.title }}</h3>
                   <p class="history-grid-author">作者：{{ book.author }}</p>
-                  <p class="history-grid-isbn">ISBN：{{ book.isbn }}</p>
                   <p class="history-grid-date">加入時間：{{ formatDateTime(book.addedDate) }}</p>
                   <button class="history-detail-btn" @click="viewBookDetail(book)">詳情</button>
                 </div>
@@ -222,41 +219,25 @@ async function loadReservationList() {
 
   try {
     console.log('開始載入預約清單...')
-
-    let response
-    try {
-      // 首先嘗試使用 userId = 1
-      response = await reservationAPI.getReservationList(1)
-    } catch (firstError) {
-      console.log('使用 userId=1 失敗，嘗試備用方案:', firstError)
-      try {
-        // 備用方案：嘗試 getCurrentUserReservations
-        response = await reservationAPI.getCurrentUserReservations()
-      } catch (secondError) {
-        console.log('備用方案也失敗，嘗試不傳參數:', secondError)
-        // 最後嘗試不傳參數
-        response = await reservationAPI.getReservationList()
-      }
-    }
-
+    // 直接呼叫 reservation_logs API
+    const response = await reservationAPI.getReservationLogs(1)
     console.log('API 回應：', response.data)
 
     if (response.data && Array.isArray(response.data)) {
-      // 轉換後端資料格式為前端所需格式
+      // 轉換 reservation_logs 為前端所需格式
       reservationList.value = response.data.map(item => {
         const converted = {
-          id: item.reservation_id || item.reservationId || item.id,
+          id: item.logId,
           title: item.title,
           author: item.author,
-          isbn: item.isbn,
-          publisher: item.publisher || '',
-          addedDate: item.created_at || item.createdAt || new Date().toISOString(),
-          status: item.status || 'active'
+          isbn: item.bookId, // 若有需要顯示 ISBN，請後端一併帶回
+          addedDate: item.createdAt,
+          status: item.status,
+          action: item.action
         }
         console.log('轉換後的項目：', converted)
         return converted
       })
-
       console.log('載入的預約清單：', reservationList.value)
       console.log('清單長度：', reservationList.value.length)
     } else {
@@ -799,9 +780,10 @@ defineExpose({
   width: 100%;
 }
 
-.history-grid-header {
+.history-grid-header,
+.history-grid-row {
   display: grid;
-  grid-template-columns: 50px 2fr 1fr 1fr 1fr 120px;
+  grid-template-columns: 50px 2fr 1fr 1fr 1fr;
   gap: 16px;
   padding: 16px 20px;
   background: rgba(243, 244, 246, 0.6);
@@ -812,6 +794,24 @@ defineExpose({
   font-size: 0.95rem;
 }
 
+.history-grid-header>div:nth-child(3),
+.history-grid-header>div:nth-child(4),
+.history-grid-header>div:nth-child(5),
+.history-grid-row>div:nth-child(3),
+.history-grid-row>div:nth-child(4),
+.history-grid-row>div:nth-child(5) {
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+.history-grid-header>div,
+.history-grid-row>div {
+  /* border: 1px solid #222; */
+  box-sizing: border-box;
+}
+
 .history-grid-body {
   max-height: 500px;
   overflow-y: auto;
@@ -819,7 +819,7 @@ defineExpose({
 
 .history-grid-row {
   display: grid;
-  grid-template-columns: 50px 2fr 1fr 1fr 1fr 120px;
+  grid-template-columns: 50px 2fr 1fr 1fr 1fr;
   gap: 16px;
   padding: 16px 20px;
   border-bottom: 1px solid rgba(229, 231, 235, 0.2);
@@ -850,7 +850,10 @@ defineExpose({
 
 .history-grid-actions {
   display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
+  justify-content: center;
+  align-items: center;
 }
 
 .history-detail-btn {
@@ -969,7 +972,6 @@ defineExpose({
 }
 
 .history-grid-author,
-.history-grid-isbn,
 .history-grid-date {
   font-size: 0.9rem;
   color: #4b5563;

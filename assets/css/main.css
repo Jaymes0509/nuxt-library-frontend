@@ -97,5 +97,50 @@ html.accessible-mode .separator {
   display: none;
 }
 
+html.accessible-mode .history-title,
+html.accessible-mode .history-label,
+html.accessible-mode .history-grid-header > div,
+html.accessible-mode .history-grid-row > div,
+html.accessible-mode .history-grid-title-cell,
+html.accessible-mode .history-grid-title,
+html.accessible-mode .history-grid-author,
+html.accessible-mode .history-grid-date,
+html.accessible-mode .history-empty,
+html.accessible-mode .history-empty-subtitle,
+html.accessible-mode .history-pagination-info,
+html.accessible-mode .history-row,
+html.accessible-mode .batch-info,
+html.accessible-mode .batch-warning,
+html.accessible-mode .history-detail-btn,
+html.accessible-mode .history-remove-btn,
+html.accessible-mode .history-remove-btn-card,
+html.accessible-mode .history-sort-btn,
+html.accessible-mode .history-view-btn,
+html.accessible-mode .history-view-btn-active,
+html.accessible-mode .batch-btn,
+html.accessible-mode .history-pagination-btn,
+html.accessible-mode .history-select,
+html.accessible-mode .history-error,
+html.accessible-mode .history-error-details {
+  color: #fff !important;
+}
+
+html.accessible-mode .history-sort-btn,
+html.accessible-mode .history-view-btn,
+html.accessible-mode .history-view-btn-active {
+  color: #fff !important;
+}
+
+/* 恢復其他區塊顏色 */
+html.accessible-mode .history-label,
+html.accessible-mode .history-select,
+html.accessible-mode .history-select option,
+html.accessible-mode .history-select optgroup,
+html.accessible-mode select,
+html.accessible-mode option,
+html.accessible-mode span {
+  color: initial !important;
+}
+
 
 
