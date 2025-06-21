@@ -1,7 +1,18 @@
 // frontend/nuxt-library-frontend/composables/useAuth.js
 import { ref } from 'vue'
 
-const user = ref(JSON.parse(localStorage.getItem('user')) || null)
+// 從 localStorage 讀取用戶資訊
+const getStoredUser = () => {
+  try {
+    const stored = localStorage.getItem('user')
+    return stored ? JSON.parse(stored) : null
+  } catch (e) {
+    console.error('解析用戶資訊失敗：', e)
+    return null
+  }
+}
+
+const user = ref(getStoredUser())
 
 export function useAuth() {
     // 登入方法
@@ -13,18 +24,36 @@ export function useAuth() {
             headers: { 'Content-Type': 'application/json' }
         })
         const data = await res.json()
-        user.value = data // 假設 data 裡有 role
+        setUser(data) // 使用 setUser 方法保存用戶資訊
     }
 
     // 登出方法
     function logout() {
         user.value = null
+        localStorage.removeItem('user')
+        localStorage.removeItem('jwt_token')
+        localStorage.removeItem('authToken')
     }
 
     function setUser(u) {
         user.value = u
         localStorage.setItem('user', JSON.stringify(u))
+        // 觸發 storage 事件，讓其他組件知道用戶狀態改變
+        window.dispatchEvent(new StorageEvent('storage', {
+            key: 'user',
+            newValue: JSON.stringify(u)
+        }))
     }
 
-    return { user, login, logout, setUser }
+    // 檢查登入狀態
+    function checkLoginStatus() {
+        const storedUser = getStoredUser()
+        if (storedUser) {
+            user.value = storedUser
+            return true
+        }
+        return false
+    }
+
+    return { user, login, logout, setUser, checkLoginStatus }
 }

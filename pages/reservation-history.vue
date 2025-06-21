@@ -138,6 +138,8 @@
                 </div>
             </div>
         </div>
+        <CustomAlert :show="customAlert.show" :title="customAlert.title" :message="customAlert.message"
+            @close="closeAlert" />
     </div>
 </template>
 
@@ -146,6 +148,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useHead } from '#imports'
 import { reservationAPI } from '~/utils/api'
+import CustomAlert from '~/components/CustomAlert.vue'
 
 // 設置頁面標題
 useHead({
@@ -157,6 +160,23 @@ const router = useRouter()
 
 // 視圖模式
 const viewMode = ref('table')
+
+// 自訂提示視窗
+const customAlert = ref({
+    show: false,
+    title: '',
+    message: ''
+})
+
+const showAlert = (title, message) => {
+    customAlert.value.title = title
+    customAlert.value.message = message
+    customAlert.value.show = true
+}
+
+const closeAlert = () => {
+    customAlert.value.show = false
+}
 
 // 登入狀態檢查
 const isLoggedIn = ref(false)
@@ -344,7 +364,7 @@ function viewBookDetail(reservation) {
     } else {
         console.warn('缺少書籍資訊或 ISBN，無法跳轉')
         // 可以顯示錯誤訊息或使用預設值
-        alert('無法獲取書籍詳情，請稍後再試')
+        showAlert('提示', '無法獲取書籍詳情，請稍後再試')
     }
 }
 

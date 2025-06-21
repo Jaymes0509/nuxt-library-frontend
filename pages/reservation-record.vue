@@ -168,6 +168,8 @@
         </div>
       </div>
     </div>
+    <CustomAlert :show="customAlert.show" :title="customAlert.title" :message="customAlert.message"
+      @close="closeAlert" />
   </div>
 </template>
 
@@ -176,6 +178,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useHead } from '#imports'
 import { reservationAPI } from '~/utils/api'
+import CustomAlert from '~/components/CustomAlert.vue'
 
 // ===== 頁面設定 =====
 useHead({ title: '預約清單' })
@@ -187,6 +190,23 @@ const reservationList = ref([])
 const selectedBooks = ref([])
 const loading = ref(false)
 const error = ref(null)
+
+// 自訂提示視窗
+const customAlert = ref({
+  show: false,
+  title: '',
+  message: ''
+})
+
+const showAlert = (title, message) => {
+  customAlert.value.title = title
+  customAlert.value.message = message
+  customAlert.value.show = true
+}
+
+const closeAlert = () => {
+  customAlert.value.show = false
+}
 
 // 登入狀態檢查
 const isLoggedIn = ref(false)
@@ -294,14 +314,14 @@ const addToReservationList = async (book) => {
     if (response.data?.success) {
       console.log('預約加入成功，重新載入清單...')
       await loadReservationList()
-      alert('已成功加入預約清單！')
+      showAlert('成功', '已成功加入預約清單！')
       return true
     } else {
       throw new Error('加入失敗')
     }
   } catch (err) {
     const errorMessage = handleApiError(err, '加入預約清單失敗')
-    alert(errorMessage)
+    showAlert('錯誤', errorMessage)
     return false
   }
 }
@@ -316,19 +336,19 @@ const removeFromList = async (bookId) => {
       console.log('刪除成功，重新載入清單')
       await loadReservationList()
       removeFromSelection(bookId)
-      alert('移除成功！')
+      showAlert('成功', '移除成功！')
     } else {
       throw new Error(`移除失敗，HTTP狀態碼：${response.status}`)
     }
   } catch (err) {
     const errorMessage = handleApiError(err, '移除書籍失敗')
-    alert(errorMessage)
+    showAlert('移除失敗', errorMessage)
   }
 }
 
 const removeSelected = async () => {
   if (selectedBooks.value.length === 0) {
-    alert('請先選擇要移除的書籍')
+    showAlert('提示', '請先選擇要移除的書籍')
     return
   }
 
@@ -354,7 +374,7 @@ const removeSelected = async () => {
     showBatchResult(successCount, errorCount, selectedCount)
   } catch (err) {
     console.error('批量移除書籍失敗：', err)
-    alert('批量移除失敗，請稍後再試')
+    showAlert('錯誤', '批量移除失敗，請稍後再試')
   }
 }
 
@@ -369,11 +389,11 @@ const removeFromSelection = (bookId) => {
 
 const showBatchResult = (successCount, errorCount, totalCount) => {
   if (errorCount === 0) {
-    alert(`成功移除 ${successCount} 本書籍`)
+    showAlert('成功', `成功移除 ${successCount} 本書籍`)
   } else if (successCount === 0) {
-    alert(`移除失敗，所有 ${errorCount} 本書籍都無法刪除`)
+    showAlert('失敗', `移除失敗，所有 ${errorCount} 本書籍都無法刪除`)
   } else {
-    alert(`部分成功：成功移除 ${successCount} 本書籍，${errorCount} 本書籍刪除失敗`)
+    showAlert('部分成功', `成功移除 ${successCount} 本書籍，${errorCount} 本書籍刪除失敗`)
   }
 }
 
@@ -415,12 +435,12 @@ const goToSearch = () => {
 
 const batchReserve = () => {
   if (selectedBooks.value.length === 0) {
-    alert('請先選擇要預約的書籍')
+    showAlert('提示', '請先選擇要預約的書籍')
     return
   }
 
   if (selectedBooks.value.length > 10) {
-    alert('一次最多只能預約10本書籍，請重新選擇')
+    showAlert('提示', '一次最多只能預約10本書籍，請重新選擇')
     return
   }
 

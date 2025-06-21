@@ -7,15 +7,19 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '~/components/useAuth'
 
 const router = useRouter()
-const { user } = useAuth()
+const { user, setUser } = useAuth()
 
 const login = () => {
   // 設定為管理者
-  user.value = {
+  const adminUser = {
     id: 1,
     name: '開發管理員',
     role: 'admin'
   }
+
+  // 使用 setUser 方法保存用戶資訊
+  setUser(adminUser)
+
   // 跳轉到管理者介面
   router.push('/manager')
 }
