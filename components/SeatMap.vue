@@ -7,6 +7,9 @@
             {{ seat.label }}
         </div>
     </div>
+    <div v-if="selectedSeat" style="margin-top: 20px; font-size: 18px;">
+        您選的座位為: <strong>{{ selectedSeat }}</strong>
+    </div>
 </template>
 
 <script setup>
@@ -30,6 +33,8 @@ async function refreshStatus() {
 }
 
 onMounted(refreshStatus)
+
+const selectedSeat = ref('') // 使用者點選的座位
 
 async function handleClick(label) {
     const seatStatus = statusMap.value[label.toUpperCase()]
@@ -58,6 +63,7 @@ async function handleClick(label) {
         })
         const text = await res.text()
         alert(text)
+        selectedSeat.value = label // 記錄使用者點選的座位
         await refreshStatus()
         return
     }
