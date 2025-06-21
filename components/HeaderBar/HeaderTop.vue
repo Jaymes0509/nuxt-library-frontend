@@ -69,6 +69,26 @@
             🔍
           </button>
         </div>
+
+        <!-- 登入狀態顯示器 -->
+        <div class="login-status">
+          <div v-if="isLoggedIn" class="user-info" @click="toggleUserMenu" :aria-expanded="showUserMenu">
+            <img src="/images/zheng.jpg" alt="會員頭像" class="user-avatar-img" />
+            <span class="user-name">{{ userInfo.name || '會員' }}</span>
+            <span class="user-menu-arrow">{{ showUserMenu ? '▲' : '▼' }}</span>
+            <div v-if="showUserMenu" class="user-menu" @click.stop>
+              <div class="user-menu-header">
+                <span class="user-role">{{ userInfo.role === 'admin' ? '管理員' : '一般會員' }}</span>
+              </div>
+              <button @click="logout" class="user-menu-item">
+                🚪 登出
+              </button>
+            </div>
+          </div>
+          <NuxtLink v-else to="/login" class="login-btn">
+            🔑 登入
+          </NuxtLink>
+        </div>
       </div>
 
       <!-- <div class="search">
@@ -83,14 +103,104 @@
   </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const showDropdown = ref(false)
 const isMenuOpen = ref(false)
+const showUserMenu = ref(false)
+
+// 登入狀態相關
+const isLoggedIn = ref(false)
+const userInfo = ref({})
+
+// 自動登出
+const idleTimer = ref(null)
+const IDLE_TIMEOUT = 60 * 60 * 1000 // 1 小時
+
+const resetIdleTimer = () => {
+  if (idleTimer.value) clearTimeout(idleTimer.value)
+
+  if (isLoggedIn.value) {
+    idleTimer.value = setTimeout(() => {
+      alert('您已閒置超過 1 小時，系統已自動將您登出。')
+      logout()
+    }, IDLE_TIMEOUT)
+  }
+}
+
+const activityEvents = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart']
 
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
+  // 關閉用戶選單
+  showUserMenu.value = false
+}
+
+const toggleUserMenu = () => {
+  showUserMenu.value = !showUserMenu.value
+  // 關閉語言選單
+  showDropdown.value = false
+}
+
+// 點擊外部區域關閉選單
+const closeMenus = (event) => {
+  const target = event.target
+  const isUserInfo = target.closest('.user-info')
+  const isLangMenu = target.closest('.lang-btn, .lang-menu')
+
+  if (!isUserInfo) {
+    showUserMenu.value = false
+  }
+
+  if (!isLangMenu) {
+    showDropdown.value = false
+  }
+}
+
+// 檢查登入狀態
+const checkLoginStatus = () => {
+  const storedUser = localStorage.getItem('user')
+  const jwtToken = localStorage.getItem('jwt_token')
+  const authToken = localStorage.getItem('authToken')
+
+  if (storedUser) {
+    try {
+      userInfo.value = JSON.parse(storedUser)
+      isLoggedIn.value = true
+      console.log('✅ 用戶已登入：', userInfo.value)
+    } catch (e) {
+      console.error('❌ 解析用戶資訊失敗：', e)
+      isLoggedIn.value = false
+      userInfo.value = {}
+    }
+  } else if (jwtToken || authToken) {
+    // 如果有 token 但沒有用戶資訊，也視為已登入
+    isLoggedIn.value = true
+    userInfo.value = { name: '會員', role: 'user' }
+    console.log('✅ 檢測到登入 token')
+  } else {
+    isLoggedIn.value = false
+    userInfo.value = {}
+    console.log('❌ 用戶未登入')
+  }
+}
+
+// 登出功能
+const logout = () => {
+  localStorage.removeItem('user')
+  localStorage.removeItem('jwt_token')
+  localStorage.removeItem('authToken')
+  isLoggedIn.value = false
+  userInfo.value = {}
+  showUserMenu.value = false
+  console.log('✅ 用戶已登出')
+
+  // 清除計時器
+  if (idleTimer.value) clearTimeout(idleTimer.value)
+
+  // 重新導向到首頁
+  router.push('/')
 }
 
 const languages = [
@@ -134,6 +244,43 @@ onMounted(() => {
   if (localStorage.getItem('accessibleMode') === 'true') {
     document.documentElement.classList.add('accessible-mode')
     isAccessible.value = true
+  }
+
+  // 檢查登入狀態
+  checkLoginStatus()
+
+  // 監聽 localStorage 變化
+  window.addEventListener('storage', checkLoginStatus)
+
+  // 監聽點擊事件，關閉選單
+  document.addEventListener('click', closeMenus)
+
+  // 自動登出設定
+  activityEvents.forEach(event => {
+    window.addEventListener(event, resetIdleTimer, true)
+  })
+  resetIdleTimer()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('storage', checkLoginStatus)
+  document.removeEventListener('click', closeMenus)
+
+  // 自動登出清理
+  if (idleTimer.value) clearTimeout(idleTimer.value)
+  activityEvents.forEach(event => {
+    window.removeEventListener(event, resetIdleTimer, true)
+  })
+})
+
+// 監聽登入狀態變化以啟動/停止計時器
+watch(isLoggedIn, (loggedIn) => {
+  if (loggedIn) {
+    resetIdleTimer()
+  } else {
+    if (idleTimer.value) {
+      clearTimeout(idleTimer.value)
+    }
   }
 })
 
@@ -489,6 +636,20 @@ const submitSearch = () => {
   .separator {
     display: none !important;
   }
+
+  /* 手機版登入狀態樣式 */
+  .user-info {
+    padding: 6px 10px;
+  }
+
+  .user-name {
+    font-size: 0.8rem;
+  }
+
+  .login-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
 }
 
 @media screen and (max-width: 480px) {
@@ -533,6 +694,20 @@ const submitSearch = () => {
     font-size: 1rem;
     /* 稍微縮小字體 */
   }
+
+  /* 超小螢幕登入狀態樣式 */
+  .user-info {
+    padding: 4px 8px;
+  }
+
+  .user-name {
+    font-size: 0.75rem;
+  }
+
+  .login-btn {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
 }
 
 .menu-toggle {
@@ -574,5 +749,118 @@ const submitSearch = () => {
     cursor: pointer;
     font-size: 1.1rem;
   }
+}
+
+/* 登入狀態顯示器樣式 */
+.login-status {
+  display: flex;
+  align-items: center;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px 4px 4px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.user-info:hover {
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.user-avatar-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.user-menu-arrow {
+  font-size: 0.8rem;
+  color: #6b7280;
+  transition: transform 0.2s;
+}
+
+.user-info[aria-expanded="true"] .user-menu-arrow {
+  transform: rotate(180deg);
+}
+
+.user-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 120px;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.user-menu-header {
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.user-role {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.user-menu-item {
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #374151;
+  transition: background 0.2s;
+}
+
+.user-menu-item:hover {
+  background: #f3f4f6;
+}
+
+.login-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #2563eb;
+  color: white;
+  text-decoration: none;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 1px solid #2563eb;
+}
+
+.login-btn:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
 }
 </style>

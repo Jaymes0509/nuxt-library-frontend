@@ -79,7 +79,6 @@ const menuItems = computed(() => {
         {
             label: '館藏預約',
             children: [
-                { label: '違規紀錄', href: '/violation-manager' },
                 { label: '預約清單', href: '/reservation-record' },
                 { label: '預約紀錄', href: '/reservation-history' }
             ]
@@ -117,7 +116,8 @@ const menuItems = computed(() => {
             children: [
                 { label: '管理者專區', href: '/manager' },
                 { label: '書籍管理', href: '/manager/books' },
-                { label: '帳號管理', href: '/manager/accounts' }
+                { label: '帳號管理', href: '/manager/accounts' },
+                { label: '違規紀錄', href: '/manager/violations' }
             ]
         })
     }
