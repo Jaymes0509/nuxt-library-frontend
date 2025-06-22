@@ -139,7 +139,7 @@
                     </div>
 
                     <div class="form-group">
-                        <button type="button" @click="step = 1" class="back-button">← 回上一頁</button>
+                        <ButtonsBackButton :step="step" @update:step="step = $event" />
                         <button type="submit">送出申請</button>
                     </div>
                 </form>
@@ -151,13 +151,13 @@
                     <div v-if="loading" class="loading-spinner"></div>
                     <p v-if="loading">即將返回首頁...</p>
 
-                    <button v-if="!loading" @click="delayedGoHome">回首頁</button>
+                    <ButtonsGoHome v-if="!loading" />
                 </div>
 
                 <div v-if="step === 4" class="already-applied-step">
                     <h2>⚠️ 您已申請過借閱證</h2>
                     <p>系統判定您已辦理借閱證，請勿重複申請。如有疑問請洽客服。</p>
-                    <button @click="delayedGoHome">回首頁</button>
+                    <ButtonsGoHome />
                 </div>
 
             </div>
@@ -648,15 +648,6 @@ button[type='submit'] {
 
 button[type='submit']:hover {
     background-color: #0056b3;
-}
-
-.back-button {
-    margin: 1rem;
-    padding: 8px 14px;
-    background-color: lightgray;
-    border: 1px solid #999;
-    border-radius: 6px;
-    cursor: pointer;
 }
 
 .success-step {

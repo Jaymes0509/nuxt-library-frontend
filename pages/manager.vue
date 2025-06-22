@@ -1,5 +1,5 @@
 <script setup>
-import { useAuth } from '~/components/useAuth'
+import { useAuth } from '~/composables/useAuth'
 const { user } = useAuth()
 const router = useRouter()
 
