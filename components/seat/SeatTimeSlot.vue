@@ -1,10 +1,10 @@
 <template>
     <div class="seat-time-slot">
-        <label>🕒 請選擇時段：</label>
+        <label>🕒 請選擇預計就座時段：</label>
         <div class="options">
-            <label v-for="slot in timeSlots" :key="slot.value" class="time-option">
-                <input type="radio" name="timeSlot" :value="slot.value" v-model="modelValue"
-                    @change="emit('nextStep')" />
+            <label v-for="slot in timeSlots" :key="slot.label" class="time-option"
+                :class="{ disabled: isSlotDisabled(slot) }">
+                <input type="radio" name="timeSlot" :value="slot.value" v-model="modelValue" />
                 {{ slot.label }}
             </label>
         </div>
@@ -12,15 +12,22 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
 const props = defineProps({
-    modelValue: String
+    modelValue: Object, // slot value 是物件 { start: '09:00', end: '11:00' }
+    selectedDate: String
 })
-const emit = defineEmits(['update:modelValue', 'nextStep'])
+
+const emit = defineEmits(['update:modelValue'])
 
 const modelValue = computed({
     get: () => props.modelValue,
     set: (val) => emit('update:modelValue', val)
 })
+
+const now = new Date()
+const todayStr = now.toISOString().split('T')[0]
 
 const timeSlots = [
     {
@@ -48,6 +55,17 @@ const timeSlots = [
         value: { start: '19:00', end: '21:00' }
     }
 ]
+
+// 判斷是否過時（只針對今天）
+const isSlotDisabled = (slot) => {
+    if (props.selectedDate !== todayStr) return false
+    const nowMinutes = now.getHours() * 60 + now.getMinutes()
+
+    const [endH, endM] = slot.value.end.split(':').map(Number)
+
+    const slotEndMinutes = endH * 60 + endM
+    return nowMinutes >= slotEndMinutes  // 過了結束時間才禁用
+}
 </script>
 
 <style scoped>
@@ -67,5 +85,10 @@ const timeSlots = [
     align-items: center;
     gap: 0.5rem;
     font-size: 16px;
+}
+
+.time-option.disabled {
+    opacity: 0.5;
+    pointer-events: none;
 }
 </style>

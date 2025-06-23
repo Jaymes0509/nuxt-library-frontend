@@ -4,7 +4,7 @@ definePageMeta({
 })
 
 import { useRouter } from 'vue-router'
-import { useAuth } from '~/components/useAuth'
+import { useAuth } from '~/composables/useAuth'
 
 const router = useRouter()
 const { user, setUser } = useAuth()

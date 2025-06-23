@@ -91,7 +91,7 @@
                 <div v-if="loading" class="loading-spinner"></div>
                 <p v-if="loading">即將返回首頁...</p>
 
-                <button v-if="!loading" @click="delayedGoHome">回首頁</button>
+                <ButtonsGoHome v-if="!loading" />
             </div>
 
 
@@ -166,7 +166,7 @@ const submitForm = async () => {
             },
             credentials: 'include'
         });
- 
+
         alert("✅ 送出成功！");
         submitted.value = true;
         step.value = 3;
@@ -388,24 +388,24 @@ a:hover {
 }
 
 .form-group.textarea-wrapper {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1rem;
 }
 
 .form-group.textarea-wrapper .form-label {
-  min-width: 80px;
-  margin-right: 1rem;
-  font-weight: bold;
-  margin-top: 0.3rem;
-  text-align: right;
-  margin-left: 2.5rem;
+    min-width: 80px;
+    margin-right: 1rem;
+    font-weight: bold;
+    margin-top: 0.3rem;
+    text-align: right;
+    margin-left: 2.5rem;
 }
 
 .textarea-container {
     position: relative;
     flex: 1;
-    
+
 }
 
 .textarea-container textarea {
