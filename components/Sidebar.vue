@@ -73,7 +73,7 @@ const menuItems = computed(() => {
         {
             label: '館藏查詢',
             children: [
-                { label: '館藏查詢', href: '/catalogue-search' }
+                { label: '館藏查詢', href: '/catalogue-search' },
             ]
         },
         {
@@ -84,10 +84,12 @@ const menuItems = computed(() => {
             ]
         },
         {
-            label: '書籍續借',
+            label: '讀者服務',
             children: [
-                { label: '我要續借', href: '/borrow-continue' },
-                { label: '歷史查詢', href: '#' }
+                { label: '借書查詢', href: '/borrow-search' },
+                { label: '我要借書', href: '/borrow-record' },
+                { label: '我要續借', href: '/borrow-continue' }
+                
             ]
         },
         {

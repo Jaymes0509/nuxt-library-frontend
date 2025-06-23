@@ -72,7 +72,7 @@
                     {{ formatDueDate(book.dueDate, book.isReturned) }}
                   </div>
                   <div>{{ book.renewCount }}/2</div>
-                  <div>
+                  <div class="history-grid-actions">
                     <button 
                       @click="renewBook(book)" 
                       class="history-detail-btn"
@@ -84,6 +84,13 @@
                       :disabled="!canRenew(book.dueDate) || book.renewCount >= 2 || book.isReturned || isOverdue(book.dueDate)"
                     >
                       {{ getButtonText(book) }}
+                    </button>
+                    <button
+                      @click="returnBook(book)"
+                      class="history-return-btn"
+                      :disabled="book.isReturned"
+                    >
+                      還書
                     </button>
                   </div>
                 </div>
@@ -107,18 +114,27 @@
                     </p>
                     <p>續借次數：{{ book.renewCount }}/2</p>
                   </div>
-                  <button 
-                    class="history-detail-btn"
-                    :class="{ 
-                      'history-detail-btn-disabled': !canRenew(book.dueDate) || book.renewCount >= 2 || book.isReturned,
-                      'history-detail-btn-overdue': isOverdue(book.dueDate) && !book.isReturned,
-                      'history-detail-btn-returned': book.isReturned
-                    }"
-                    @click="renewBook(book)"
-                    :disabled="!canRenew(book.dueDate) || book.renewCount >= 2 || book.isReturned || isOverdue(book.dueDate)"
-                  >
-                    {{ getButtonText(book) }}
-                  </button>
+                  <div class="history-grid-actions">
+                    <button 
+                      class="history-detail-btn"
+                      :class="{ 
+                        'history-detail-btn-disabled': !canRenew(book.dueDate) || book.renewCount >= 2 || book.isReturned,
+                        'history-detail-btn-overdue': isOverdue(book.dueDate) && !book.isReturned,
+                        'history-detail-btn-returned': book.isReturned
+                      }"
+                      @click="renewBook(book)"
+                      :disabled="!canRenew(book.dueDate) || book.renewCount >= 2 || book.isReturned || isOverdue(book.dueDate)"
+                    >
+                      {{ getButtonText(book) }}
+                    </button>
+                    <button
+                      @click="returnBook(book)"
+                      class="history-return-btn"
+                      :disabled="book.isReturned"
+                    >
+                      還書
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -160,11 +176,14 @@
       </div>
     </div>
   </div>
+  <CustomAlert :show="customAlert.show" :title="customAlert.title" :message="customAlert.message"
+    @close="closeAlert" />
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { borrowApi, borrowUtils } from '~/utils/borrowApi'
+import CustomAlert from '~/components/CustomAlert.vue'
 
 const viewMode = ref('table')
 const pageSizes = [10, 20, 30, 50, 100]
@@ -174,6 +193,22 @@ const sortConfig = ref({ field: 'title', ascending: true })
 const borrowedBooks = ref([])
 const loading = ref(false)
 const renewing = ref(null)
+
+const customAlert = ref({
+  show: false,
+  title: '',
+  message: ''
+})
+
+const showAlert = (title, message) => {
+  customAlert.value.title = title
+  customAlert.value.message = message
+  customAlert.value.show = true
+}
+
+const closeAlert = () => {
+  customAlert.value.show = false
+}
 
 // 取得借閱歷史
 async function fetchBorrowHistory() {
@@ -194,11 +229,11 @@ async function fetchBorrowHistory() {
       }))
     } else {
       borrowedBooks.value = []
-      alert(result.message || '取得借閱紀錄失敗')
+      showAlert('錯誤', result.message || '取得借閱紀錄失敗')
     }
   } catch (err) {
     borrowedBooks.value = []
-    alert('取得借閱紀錄失敗')
+    showAlert('錯誤', '取得借閱紀錄失敗')
   } finally {
     loading.value = false
   }
@@ -207,39 +242,59 @@ async function fetchBorrowHistory() {
 // 續借功能
 async function renewBook(book) {
   if (book.isReturned) {
-    alert('此書已歸還')
+    showAlert('提示', '此書已歸還')
     return
   }
   if (book.renewCount >= 2) {
-    alert('此書已達到續借上限，無法再次續借')
+    showAlert('提示', '此書已達到續借上限，無法再次續借')
     return
   }
   if (borrowUtils.isOverdue(book.dueDate)) {
-    alert('此書已逾期，無法續借')
+    showAlert('提示', '此書已逾期，無法續借')
     return
   }
   if (!borrowUtils.canRenew(book.dueDate)) {
-    alert('尚未到續借時間（到期前3天內才能續借）')
+    showAlert('提示', '尚未到續借時間（到期前3天內才能續借）')
     return
   }
   try {
     renewing.value = book.id
     const checkResponse = await borrowApi.checkRenewable(book.id)
     if (!checkResponse.success || !checkResponse.data.canRenew) {
-      alert('此書目前無法續借')
+      showAlert('提示', '此書目前無法續借')
       return
     }
     const response = await borrowApi.renewBook(book.id)
     if (response.success) {
-      alert('續借成功！')
+      showAlert('成功', '續借成功！')
       await fetchBorrowHistory()
     } else {
-      alert('續借失敗: ' + response.message)
+      showAlert('失敗', '續借失敗: ' + response.message)
     }
   } catch (error) {
-    alert('續借失敗: ' + error.message)
+    showAlert('失敗', '續借失敗: ' + error.message)
   } finally {
     renewing.value = null
+  }
+}
+
+// 還書功能
+async function returnBook(book) {
+  if (book.isReturned) {
+    showAlert('提示', '此書已歸還');
+    return;
+  }
+  
+  try {
+    const response = await borrowApi.returnBook(book.id);
+    if (response.success) {
+      showAlert('成功', '還書成功！');
+      await fetchBorrowHistory();
+    } else {
+      showAlert('失敗', response.message || '還書失敗');
+    }
+  } catch (error) {
+    showAlert('失敗', error.message || '還書失敗，請稍後再試');
   }
 }
 
@@ -249,52 +304,54 @@ const isOverdue = borrowUtils.isOverdue
 const formatDueDate = borrowUtils.formatDueDate
 const getButtonText = borrowUtils.getButtonText
 
-// 排序
-function toggleSortOrder() {
-  sortConfig.value.ascending = !sortConfig.value.ascending
-}
 const sortedBooks = computed(() => {
   const books = [...borrowedBooks.value]
-  const field = sortConfig.value.field
-  const ascending = sortConfig.value.ascending
-  return books.sort((a, b) => {
-    let valueA = a[field] || ''
-    let valueB = b[field] || ''
-    if (field === 'borrowDate' || field === 'dueDate') {
-      valueA = new Date(valueA).getTime()
-      valueB = new Date(valueB).getTime()
-    } else {
-      valueA = valueA.toString().toLowerCase()
-      valueB = valueB.toString().toLowerCase()
-    }
-    if (valueA < valueB) return ascending ? -1 : 1
-    if (valueA > valueB) return ascending ? 1 : -1
-    return 0
-  })
+  if (sortConfig.value.field) {
+    books.sort((a, b) => {
+      const fieldA = a[sortConfig.value.field]
+      const fieldB = b[sortConfig.value.field]
+      let comparison = 0
+      if (fieldA > fieldB) {
+        comparison = 1
+      } else if (fieldA < fieldB) {
+        comparison = -1
+      }
+      return sortConfig.value.ascending ? comparison : -comparison
+    })
+  }
+  return books
 })
-const totalPages = computed(() => Math.ceil(sortedBooks.value.length / itemsPerPage.value))
+
+const totalPages = computed(() => {
+  return Math.ceil(sortedBooks.value.length / itemsPerPage.value)
+})
+
 const paginatedBooks = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value
   const end = start + itemsPerPage.value
   return sortedBooks.value.slice(start, end)
 })
-function goToPage(page) {
-  const pageNum = parseInt(page)
-  if (pageNum && !isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages.value) {
-    currentPage.value = pageNum
-  }
+
+const goToPage = (page) => {
+  currentPage.value = page
 }
+
+const toggleSortOrder = () => {
+  sortConfig.value.ascending = !sortConfig.value.ascending
+}
+
 watch(itemsPerPage, () => {
   currentPage.value = 1
 })
+
 onMounted(() => {
   fetchBorrowHistory()
 })
 
 // 封面預設
 function getDefaultCoverUrl(index) {
-  const colors = ['#f87171', '#fb923c', '#fbbf24', '#34d399', '#60a5fa', '#818cf8', '#a78bfa', '#f472b6']
-  const colorIndex = index % colors.length
+  const colors = ['#4A90E2', '#50E3C2', '#B8E986', '#F8E71C', '#F5A623', '#BD10E0', '#9013FE', '#4A4A4A'];
+  const colorIndex = index % colors.length;
   return `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="${colors[colorIndex]}"/><text x="50" y="50" font-family="Arial" font-size="14" fill="white" text-anchor="middle" dominant-baseline="middle">無封面</text></svg>`
 }
 </script>
@@ -456,7 +513,7 @@ function getDefaultCoverUrl(index) {
 .history-grid-header,
 .history-grid-row {
   display: grid;
-  grid-template-columns: 2fr 1.5fr 1fr 1fr 0.8fr 0.8fr;
+  grid-template-columns: 2fr 1.5fr 1fr 1fr 0.8fr 1.2fr;
   align-items: center;
 }
 
@@ -565,68 +622,87 @@ function getDefaultCoverUrl(index) {
   margin-bottom: 4px;
 }
 
-.history-grid-dates {
-  font-size: 0.9rem;
-  color: #4b5563;
-  margin-bottom: 8px;
-  flex-grow: 1;
-}
-
 .history-detail-btn {
-  background: #2563eb;
-  color: #fff;
+  padding: 6px 14px;
+  background-color: #3b82f6;
+  color: white;
   border: none;
   border-radius: 6px;
-  padding: 8px 16px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s;
-  width: 100%;
-  margin-top: auto;
+  transition: all 0.2s ease;
 }
 
-.history-detail-btn:hover {
-  background: #1d4ed8;
+.history-detail-btn:hover:not(:disabled) {
+  background-color: #2b6cb0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.history-return-btn {
+  padding: 6px 14px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.history-return-btn:hover:not(:disabled) {
+  background-color: #c82333;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.history-return-btn:disabled {
+  background-color: #a0aec0;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .history-detail-btn-disabled {
-  background: #9ca3af;
+  background-color: #a0aec0;
   cursor: not-allowed;
-}
-
-.history-detail-btn-disabled:hover {
-  background: #9ca3af;
+  opacity: 0.6;
 }
 
 .history-detail-btn-overdue {
-  background: #dc2626;
-}
-
-.history-detail-btn-overdue:hover {
-  background: #b91c1c;
+  background: #e53e3e;
 }
 
 .history-detail-btn-returned {
-  background: #16a34a;
-  cursor: not-allowed;
-}
-
-.history-detail-btn-returned:hover {
-  background: #16a34a;
+  background: #38a169;
 }
 
 .text-red-600 {
-  color: #dc2626;
+  color: #e53e3e;
 }
 
 .text-green-600 {
-  color: #16a34a;
+  color: #38a169;
 }
 
 .font-medium {
   font-weight: 500;
 }
 
+.history-grid-dates {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: #4a5568;
+}
+
+.history-grid-actions {
+  margin-top: auto;
+  padding-top: 12px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Pagination Styles */
 .history-pagination {
   display: flex;
   flex-direction: column;
@@ -679,92 +755,9 @@ function getDefaultCoverUrl(index) {
   background: #fff;
 }
 
-.history-pagination-input::-webkit-outer-spin-button,
-.history-pagination-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.history-pagination-input[type=number] {
-  appearance: textfield;
-  -moz-appearance: textfield;
-}
-
 .history-pagination-info {
   font-size: 0.95rem;
   color: #4b5563;
   text-align: center;
-}
-
-/* 響應式設計 */
-@media (max-width: 768px) {
-  .history-control-panel {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .history-control-panel-left {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .history-control-panel-right {
-    justify-content: center;
-  }
-
-  .history-grid-header,
-  .history-grid-row {
-    grid-template-columns: 1.5fr 1fr 1fr 1fr 0.8fr 0.8fr;
-    font-size: 0.9rem;
-  }
-
-  .history-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .history-bg {
-    padding: 16px 16px 80px 16px;
-  }
-
-  .history-grid-header,
-  .history-grid-row {
-    grid-template-columns: 1.2fr 1fr 0.8fr;
-    font-size: 0.85rem;
-  }
-
-  .history-grid-header > div,
-  .history-grid-row > div {
-    padding: 8px;
-  }
-
-  .history-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .history-pagination-controls {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .history-select,
-  .history-sort-btn,
-  .history-view-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .history-row {
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-  }
-
-  .history-label {
-    text-align: center;
-  }
 }
 </style>
