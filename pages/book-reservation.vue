@@ -126,7 +126,7 @@
 
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useHead } from '#imports'
 import { reservationAPI } from '~/utils/api'
 
@@ -243,6 +243,18 @@ function validateForm() {
     return isValid
 }
 
+const reservationList = ref([])
+
+onMounted(async () => {
+    // 取得目前用戶的預約清單
+    try {
+        const response = await reservationAPI.getReservationList(1)
+        reservationList.value = response.data || []
+    } catch (e) {
+        reservationList.value = []
+    }
+})
+
 async function handleReserve() {
     console.log('開始處理預約請求...')
     console.log('表單資料：', form.value)
@@ -284,13 +296,21 @@ async function handleReserve() {
         return
     }
 
+    // 檢查是否有重複預約
+    const reservedBookIds = reservationList.value.map(item => item.book_id || item.id)
+    const duplicateBooks = books.value.filter(book => reservedBookIds.includes(book.id))
+    if (duplicateBooks.length > 0) {
+        alert(`您已預約過：${duplicateBooks.map(b => b.title).join('、')}，不可重複預約！`)
+        return
+    }
+
     try {
         // 準備批量預約資料，完全符合後端 ReservationBatchRequestDTO 格式
         const reservationData = {
             userId: 1, // 使用數字 ID
             books: books.value.map(book => ({
                 bookId: book.id, // 使用資料庫主鍵 id 作為 bookId
-                reserveTime: form.value.time // ISO 格式字串，後端會解析為 LocalDateTime
+                reserve_time: form.value.time // 只帶 reserve_time，不帶 reservation_date
             }))
         }
 
@@ -298,8 +318,7 @@ async function handleReserve() {
 
         // 調用批量預約 API
         const response = await reservationAPI.batchReservation(reservationData)
-
-        console.log('批量預約回應：', response.data)
+        console.log('API 原始回傳：', response.data)
 
         // 從回應中提取預約 ID
         const reservationIds = response.data.results

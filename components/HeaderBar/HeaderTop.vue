@@ -531,8 +531,32 @@ const submitSearch = () => {
   font-size: 1.25rem;
 }
 
-.login-btn {
-  font-size: 1.25rem;
+.login-btn,
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 4px 16px;
+  font-size: 1rem;
+  background: #fff;
+  color: #222;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  font-weight: 500;
+  text-decoration: none;
+  outline: none;
+  min-height: 36px;
+  min-width: 36px;
+  justify-content: center;
+}
+
+.login-btn:hover,
+.user-menu-item:hover {
+  background: #f3f4f6;
+  color: #1976d2;
 }
 
 .top-right {
@@ -871,20 +895,22 @@ const submitSearch = () => {
 
 .user-menu-item {
   width: 100%;
-  padding: 10px 16px;
-  background: none;
+  padding: 6px 12px;
+  background: #2563eb;
   border: none;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
-  font-size: 0.95rem;
-  color: #374151;
+  font-size: 0.8rem;
+  color: #fff;
+  border-radius: 6px;
   transition: background 0.2s;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
 }
 
 .user-menu-item:hover {
-  background: #f3f4f6;
+  background: #1d4ed8;
 }
 </style>
