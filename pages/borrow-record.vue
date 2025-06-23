@@ -5,10 +5,10 @@
         <h1 class="history-title">借書清單</h1>
 
         <!-- 登入檢查 -->
-        <div v-if="loginError" class="login-required">
+        <div v-if="!isLoggedIn" class="login-required">
           <div class="login-required-icon">🔒</div>
           <h2>需要登入會員</h2>
-          <p>您需要登入會員才能使用借書清單功能，或您的登入已逾時。</p>
+          <p>您需要登入會員才能使用借書清單功能</p>
           <button @click="goToLogin" class="login-required-btn">
             前往登入
           </button>
@@ -192,6 +192,9 @@ const loading = ref(false)
 const error = ref(null)
 const loginError = ref(false)
 
+// 登入狀態檢查
+const isLoggedIn = ref(false)
+
 // 自訂提示視窗
 const customAlert = ref({
   show: false,
@@ -226,12 +229,12 @@ const getDefaultCoverUrl = (book) => {
   if (book.imgUrl) {
     return book.imgUrl
   }
-  
+
   // 如果有 ISBN，嘗試從 OpenLibrary 獲取封面
   if (book.isbn) {
     return `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`
   }
-  
+
   // 否則使用預設封面
   return 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png'
 }
@@ -257,7 +260,7 @@ const loadBorrowList = async () => {
   try {
     console.log('開始載入借書清單...')
     const savedList = localStorage.getItem('borrowList')
-    
+
     if (savedList) {
       const parsedList = JSON.parse(savedList)
       // 為每本書添加加入時間（如果沒有）
@@ -268,7 +271,7 @@ const loadBorrowList = async () => {
     } else {
       borrowList.value = []
     }
-    
+
     console.log('載入的借書清單：', borrowList.value)
   } catch (err) {
     console.error('載入借書清單失敗', err)
@@ -282,12 +285,12 @@ const loadBorrowList = async () => {
 const removeFromList = async (bookId) => {
   try {
     console.log('嘗試移除書籍，ID：', bookId)
-    
+
     // 從 localStorage 中移除
     const updatedList = borrowList.value.filter(book => book.id !== bookId)
     borrowList.value = updatedList
     localStorage.setItem('borrowList', JSON.stringify(updatedList))
-    
+
     removeFromSelection(bookId)
     showAlert('成功', '移除成功！')
   } catch (err) {
@@ -307,7 +310,7 @@ const removeSelected = async () => {
     borrowList.value = updatedList
     localStorage.setItem('borrowList', JSON.stringify(updatedList))
     selectedBooks.value = []
-    
+
     showAlert('成功', `成功移除 ${selectedBooks.value.length} 本書籍`)
   } catch (err) {
     console.error('批量移除書籍失敗：', err)
@@ -385,7 +388,7 @@ const batchBorrow = async () => {
   try {
     const response = await borrowApi.borrowBooks(borrowRequest)
     showAlert('成功', '借閱成功！')
-    
+
     // 從 borrowList 和 localStorage 中移除已借閱的書籍
     const borrowedIds = new Set(selectedBooks.value);
     borrowList.value = borrowList.value.filter(b => !borrowedIds.has(b.id));
@@ -411,6 +414,7 @@ const fetchBorrowList = async () => {
     console.error('載入借書清單失敗', err)
     // 假設 API 對於未登入或 token 失效會回傳 401 或 403
     if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+      isLoggedIn.value = false
       loginError.value = true
     } else {
       error.value = '載入借書清單失敗'
@@ -481,7 +485,13 @@ watch([() => sortConfig.value.field, () => sortConfig.value.ascending], () => {
 
 // ===== 生命週期 =====
 onMounted(async () => {
-  await fetchBorrowList()
+  // 檢查登入狀態
+  checkLoginStatus()
+
+  // 只有登入後才載入借書清單
+  if (isLoggedIn.value) {
+    await fetchBorrowList()
+  }
 })
 
 // ===== 登入狀態檢查 =====
@@ -498,9 +508,9 @@ const checkLoginStatus = () => {
 
   if (storedUser) {
     try {
-      user.value = JSON.parse(storedUser)
+      const user = JSON.parse(storedUser)
       isLoggedIn.value = true
-      console.log('✅ 用戶已登入：', user.value)
+      console.log('✅ 用戶已登入：', user)
     } catch (e) {
       console.error('❌ 解析用戶資訊失敗：', e)
       isLoggedIn.value = false
@@ -766,7 +776,8 @@ const goToLogin = () => {
 .batch-btn-borrow {
   background: #28a745;
   color: #fff;
-  margin-left: auto; /* 將按鈕推到最右邊 */
+  margin-left: auto;
+  /* 將按鈕推到最右邊 */
 }
 
 .batch-btn:disabled {
@@ -795,8 +806,13 @@ const goToLogin = () => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* 錯誤狀態 */
@@ -1264,4 +1280,4 @@ const goToLogin = () => {
     font-size: 0.8rem;
   }
 }
-</style> 
+</style>

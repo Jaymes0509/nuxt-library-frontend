@@ -3,7 +3,19 @@
     <div class="intro">
       <div class="history-bg">
         <h1 class="history-title">借閱續借</h1>
-        <div class="history-main">
+
+        <!-- 登入檢查 -->
+        <div v-if="!isLoggedIn" class="login-required">
+          <div class="login-required-icon">🔒</div>
+          <h2>需要登入會員</h2>
+          <p>您需要登入會員才能使用借閱續借功能</p>
+          <button @click="goToLogin" class="login-required-btn">
+            前往登入
+          </button>
+        </div>
+
+        <!-- 借閱續借內容（只有登入後才顯示） -->
+        <div v-else class="history-main">
           <!-- 控制面板 -->
           <div class="history-control-panel">
             <div class="history-control-panel-left">
@@ -28,18 +40,30 @@
               </div>
             </div>
             <div class="history-control-panel-right">
-              <button
-                @click="viewMode = 'table'"
-                :class="['history-view-btn', viewMode === 'table' ? 'history-view-btn-active' : '']"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="history-view-icon"><path d="M3 12h.01"></path><path d="M3 18h.01"></path><path d="M3 6h.01"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M8 6h13"></path></svg>
+              <button @click="viewMode = 'table'"
+                :class="['history-view-btn', viewMode === 'table' ? 'history-view-btn-active' : '']">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  class="history-view-icon">
+                  <path d="M3 12h.01"></path>
+                  <path d="M3 18h.01"></path>
+                  <path d="M3 6h.01"></path>
+                  <path d="M8 12h13"></path>
+                  <path d="M8 18h13"></path>
+                  <path d="M8 6h13"></path>
+                </svg>
                 表格
               </button>
-              <button
-                @click="viewMode = 'grid'"
-                :class="['history-view-btn', viewMode === 'grid' ? 'history-view-btn-active' : '']"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="history-view-icon"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+              <button @click="viewMode = 'grid'"
+                :class="['history-view-btn', viewMode === 'grid' ? 'history-view-btn-active' : '']">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  class="history-view-icon">
+                  <rect width="7" height="7" x="3" y="3" rx="1" />
+                  <rect width="7" height="7" x="14" y="3" rx="1" />
+                  <rect width="7" height="7" x="14" y="14" rx="1" />
+                  <rect width="7" height="7" x="3" y="14" rx="1" />
+                </svg>
                 網格
               </button>
             </div>
@@ -57,15 +81,11 @@
                 <div>功能</div>
               </div>
               <div class="history-grid-body">
-                <div
-                  v-for="(book, index) in paginatedBooks"
-                  :key="index"
-                  class="history-grid-row"
-                >
+                <div v-for="(book, index) in paginatedBooks" :key="index" class="history-grid-row">
                   <div>{{ book.title }}</div>
                   <div>{{ book.author }}</div>
                   <div>{{ book.borrowDate }}</div>
-                  <div :class="{ 
+                  <div :class="{
                     'text-red-600 font-medium': isOverdue(book.dueDate) && !book.isReturned,
                     'text-green-600 font-medium': book.isReturned
                   }">
@@ -73,23 +93,15 @@
                   </div>
                   <div>{{ book.renewCount }}/2</div>
                   <div class="history-grid-actions">
-                    <button 
-                      @click="renewBook(book)" 
-                      class="history-detail-btn"
-                      :class="{ 
-                        'history-detail-btn-disabled': !canRenew(book.dueDate) || book.renewCount >= 2 || book.isReturned,
-                        'history-detail-btn-overdue': isOverdue(book.dueDate) && !book.isReturned,
-                        'history-detail-btn-returned': book.isReturned
-                      }"
-                      :disabled="!canRenew(book.dueDate) || book.renewCount >= 2 || book.isReturned || isOverdue(book.dueDate)"
-                    >
+                    <button @click="renewBook(book)" class="history-detail-btn" :class="{
+                      'history-detail-btn-disabled': !canRenew(book.dueDate) || book.renewCount >= 2 || book.isReturned,
+                      'history-detail-btn-overdue': isOverdue(book.dueDate) && !book.isReturned,
+                      'history-detail-btn-returned': book.isReturned
+                    }"
+                      :disabled="!canRenew(book.dueDate) || book.renewCount >= 2 || book.isReturned || isOverdue(book.dueDate)">
                       {{ getButtonText(book) }}
                     </button>
-                    <button
-                      @click="returnBook(book)"
-                      class="history-return-btn"
-                      :disabled="book.isReturned"
-                    >
+                    <button @click="returnBook(book)" class="history-return-btn" :disabled="book.isReturned">
                       還書
                     </button>
                   </div>
@@ -106,7 +118,7 @@
                   <p class="history-grid-author">{{ book.author }}</p>
                   <div class="history-grid-dates">
                     <p>借閱日：{{ book.borrowDate }}</p>
-                    <p :class="{ 
+                    <p :class="{
                       'text-red-600 font-medium': isOverdue(book.dueDate) && !book.isReturned,
                       'text-green-600 font-medium': book.isReturned
                     }">
@@ -115,23 +127,15 @@
                     <p>續借次數：{{ book.renewCount }}/2</p>
                   </div>
                   <div class="history-grid-actions">
-                    <button 
-                      class="history-detail-btn"
-                      :class="{ 
-                        'history-detail-btn-disabled': !canRenew(book.dueDate) || book.renewCount >= 2 || book.isReturned,
-                        'history-detail-btn-overdue': isOverdue(book.dueDate) && !book.isReturned,
-                        'history-detail-btn-returned': book.isReturned
-                      }"
-                      @click="renewBook(book)"
-                      :disabled="!canRenew(book.dueDate) || book.renewCount >= 2 || book.isReturned || isOverdue(book.dueDate)"
-                    >
+                    <button class="history-detail-btn" :class="{
+                      'history-detail-btn-disabled': !canRenew(book.dueDate) || book.renewCount >= 2 || book.isReturned,
+                      'history-detail-btn-overdue': isOverdue(book.dueDate) && !book.isReturned,
+                      'history-detail-btn-returned': book.isReturned
+                    }" @click="renewBook(book)"
+                      :disabled="!canRenew(book.dueDate) || book.renewCount >= 2 || book.isReturned || isOverdue(book.dueDate)">
                       {{ getButtonText(book) }}
                     </button>
-                    <button
-                      @click="returnBook(book)"
-                      class="history-return-btn"
-                      :disabled="book.isReturned"
-                    >
+                    <button @click="returnBook(book)" class="history-return-btn" :disabled="book.isReturned">
                       還書
                     </button>
                   </div>
@@ -143,48 +147,36 @@
           <!-- 分頁控制 -->
           <div class="history-pagination">
             <div class="history-pagination-controls">
-              <button 
-                class="history-pagination-btn"
-                :disabled="currentPage === 1"
-                @click="currentPage--"
-              >
+              <button class="history-pagination-btn" :disabled="currentPage === 1" @click="currentPage--">
                 <span class="sr-only">上一頁</span>
               </button>
               <span>共{{ totalPages }}頁</span>
-              <input
-                type="number"
-                :value="currentPage"
-                class="history-pagination-input"
-                min="1"
-                :max="totalPages"
-                @change="e => goToPage(parseInt(e.target.value))"
-              />
+              <input type="number" :value="currentPage" class="history-pagination-input" min="1" :max="totalPages"
+                @change="e => goToPage(parseInt(e.target.value))" />
               <span>/{{ totalPages }}頁</span>
-              <button 
-                class="history-pagination-btn"
-                :disabled="currentPage >= totalPages"
-                @click="currentPage++" 
-              >
+              <button class="history-pagination-btn" :disabled="currentPage >= totalPages" @click="currentPage++">
                 <span class="sr-only">下一頁</span>
               </button>
             </div>
             <div class="history-pagination-info">
-              顯示第 {{ (currentPage - 1) * itemsPerPage + 1 }} 到 {{ Math.min(currentPage * itemsPerPage, sortedBooks.length) }} 筆，共 {{ sortedBooks.length }} 筆
+              顯示第 {{ (currentPage - 1) * itemsPerPage + 1 }} 到 {{ Math.min(currentPage * itemsPerPage,
+                sortedBooks.length) }} 筆，共 {{ sortedBooks.length }} 筆
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <CustomAlert :show="customAlert.show" :title="customAlert.title" :message="customAlert.message"
-    @close="closeAlert" />
+  <CustomAlert :show="customAlert.show" :title="customAlert.title" :message="customAlert.message" @close="closeAlert" />
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { borrowApi, borrowUtils } from '~/utils/borrowApi'
 import CustomAlert from '~/components/CustomAlert.vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const viewMode = ref('table')
 const pageSizes = [10, 20, 30, 50, 100]
 const itemsPerPage = ref(10)
@@ -193,6 +185,9 @@ const sortConfig = ref({ field: 'title', ascending: true })
 const borrowedBooks = ref([])
 const loading = ref(false)
 const renewing = ref(null)
+
+// 登入狀態檢查
+const isLoggedIn = ref(false)
 
 const customAlert = ref({
   show: false,
@@ -208,6 +203,45 @@ const showAlert = (title, message) => {
 
 const closeAlert = () => {
   customAlert.value.show = false
+}
+
+// 檢查登入狀態
+const checkLoginStatus = () => {
+  // 檢查 localStorage 中的用戶資訊
+  const storedUser = localStorage.getItem('user')
+  const jwtToken = localStorage.getItem('jwt_token')
+  const authToken = localStorage.getItem('authToken')
+
+  console.log('=== 登入狀態檢查 ===')
+  console.log('storedUser:', storedUser)
+  console.log('jwtToken:', jwtToken)
+  console.log('authToken:', authToken)
+
+  if (storedUser) {
+    try {
+      const user = JSON.parse(storedUser)
+      isLoggedIn.value = true
+      console.log('✅ 用戶已登入：', user)
+    } catch (e) {
+      console.error('❌ 解析用戶資訊失敗：', e)
+      isLoggedIn.value = false
+    }
+  } else if (jwtToken || authToken) {
+    // 如果有 token 但沒有用戶資訊，也視為已登入
+    isLoggedIn.value = true
+    console.log('✅ 檢測到登入 token')
+  } else {
+    isLoggedIn.value = false
+    console.log('❌ 用戶未登入')
+  }
+
+  console.log('最終登入狀態：', isLoggedIn.value)
+  console.log('==================')
+}
+
+// 跳轉到登入頁面
+const goToLogin = () => {
+  router.push('/login')
 }
 
 // 取得借閱歷史
@@ -284,7 +318,7 @@ async function returnBook(book) {
     showAlert('提示', '此書已歸還');
     return;
   }
-  
+
   try {
     const response = await borrowApi.returnBook(book.id);
     if (response.success) {
@@ -345,7 +379,13 @@ watch(itemsPerPage, () => {
 })
 
 onMounted(() => {
-  fetchBorrowHistory()
+  // 檢查登入狀態
+  checkLoginStatus()
+
+  // 只有登入後才載入借閱歷史
+  if (isLoggedIn.value) {
+    fetchBorrowHistory()
+  }
 })
 
 // 封面預設
@@ -525,12 +565,12 @@ function getDefaultCoverUrl(index) {
   padding: 12px 0;
 }
 
-.history-grid-header > div {
+.history-grid-header>div {
   padding: 12px 16px;
   text-align: center;
 }
 
-.history-grid-header > div:first-child {
+.history-grid-header>div:first-child {
   text-align: left;
 }
 
@@ -551,7 +591,7 @@ function getDefaultCoverUrl(index) {
   border-bottom: none;
 }
 
-.history-grid-row > div {
+.history-grid-row>div {
   padding: 12px 16px;
   text-align: center;
   display: flex;
@@ -559,7 +599,7 @@ function getDefaultCoverUrl(index) {
   justify-content: center;
 }
 
-.history-grid-row > div:first-child {
+.history-grid-row>div:first-child {
   text-align: left;
   justify-content: flex-start;
 }
@@ -636,7 +676,7 @@ function getDefaultCoverUrl(index) {
 
 .history-detail-btn:hover:not(:disabled) {
   background-color: #2b6cb0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .history-return-btn {
@@ -653,7 +693,7 @@ function getDefaultCoverUrl(index) {
 
 .history-return-btn:hover:not(:disabled) {
   background-color: #c82333;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .history-return-btn:disabled {
@@ -759,5 +799,61 @@ function getDefaultCoverUrl(index) {
   font-size: 0.95rem;
   color: #4b5563;
   text-align: center;
+}
+
+/* 登入提示樣式 */
+.login-required {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+  color: #6b7280;
+  background: transparent;
+  border-radius: 12px;
+  margin: 20px;
+}
+
+.login-required-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+}
+
+.login-required h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.login-required p {
+  font-size: 1rem;
+  color: #6b7280;
+  margin-bottom: 24px;
+  max-width: 400px;
+}
+
+.login-required-btn {
+  padding: 12px 32px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.login-required-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+}
+
+.login-required-btn:active {
+  transform: translateY(0);
 }
 </style>
