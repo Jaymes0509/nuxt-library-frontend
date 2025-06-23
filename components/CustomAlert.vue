@@ -78,7 +78,7 @@ const close = () => {
 
 .custom-alert-title {
     font-size: 1.25rem;
-    font-weight: 600;
+    font-weight: 700;
     color: #111827;
     margin: 0;
 }
@@ -104,7 +104,7 @@ const close = () => {
 }
 
 .custom-alert-message {
-    font-size: 1rem;
+    font-size: 1.5rem;
     color: #374151;
     margin: 0;
     white-space: pre-wrap;
