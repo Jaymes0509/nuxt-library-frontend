@@ -101,7 +101,7 @@
                                 <h3 class="reservation-notice-title">預約須知</h3>
                                 <ul class="reservation-notice-list">
                                     <li><strong>違規情況：</strong></li>
-                                    <li class="violation-item">• 預約成立後7天內未完成借閱將自動取消預約</li>
+                                    <li class="violation-item"> 預約成立後7天內未完成借閱將自動取消預約</li>
                                     <li>您目前已預約 {{ userReservedCount }} 本書，本次將預約 {{ books.length }} 本書籍</li>
                                 </ul>
                             </div>
@@ -122,6 +122,8 @@
             </div>
         </div>
     </div>
+    <CustomAlert :show="customAlert.show" :title="customAlert.title" :message="customAlert.message"
+        :items="customAlert.items" @close="closeAlert" />
 </template>
 
 <script setup lang="ts">
@@ -129,6 +131,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ref, computed, onMounted } from 'vue'
 import { useHead } from '#imports'
 import { reservationAPI } from '~/utils/api'
+import CustomAlert from '~/components/CustomAlert.vue'
 
 // 設置頁面標題
 useHead({
@@ -165,8 +168,8 @@ const books = computed<Book[]>(() => {
 
 const form = ref({
     time: '',
-    location: '',
-    method: '',
+    location: '一樓服務台',
+    method: '親自取書',
 })
 
 const errors = ref({
@@ -180,6 +183,25 @@ const isShaking = ref({
     location: false,
     method: false
 })
+
+// 自訂提示視窗
+const customAlert = ref({
+    show: false,
+    title: '',
+    message: '',
+    items: [] as string[],
+})
+
+const showAlert = (title: string, message: string, items: string[] = []) => {
+    customAlert.value.title = title
+    customAlert.value.message = message
+    customAlert.value.items = items
+    customAlert.value.show = true
+}
+
+const closeAlert = () => {
+    customAlert.value.show = false
+}
 
 function shakeField(field: keyof typeof isShaking.value) {
     isShaking.value[field] = true
@@ -225,19 +247,7 @@ function validateForm() {
         }
     }
 
-    if (!form.value.location) {
-        console.log('地點欄位為空')
-        errors.value.location = '請選擇取書地點'
-        shakeField('location')
-        isValid = false
-    }
-    if (!form.value.method) {
-        console.log('方式欄位為空')
-        errors.value.method = '請選擇取書方式'
-        shakeField('method')
-        isValid = false
-    }
-
+    // 取書地點和方式有預設值，不需要驗證
     console.log('表單驗證結果：', isValid)
     console.log('錯誤訊息：', errors.value)
     return isValid
@@ -292,15 +302,19 @@ async function handleReserve() {
 
     if (!isAvailable) {
         console.log('書籍不可用')
-        alert('此書籍目前不可預約')
+        showAlert('預約失敗', '此書籍目前不可預約')
         return
     }
 
     // 檢查是否有重複預約
-    const reservedBookIds = reservationList.value.map(item => item.book_id || item.id)
-    const duplicateBooks = books.value.filter(book => reservedBookIds.includes(book.id))
+    const reservedBookIds = (reservationList.value as any[]).map(item => item.book_id || item.id)
+    const duplicateBooks = books.value.filter(book => reservedBookIds.includes((book as any).book_id))
     if (duplicateBooks.length > 0) {
-        alert(`您已預約過：${duplicateBooks.map(b => b.title).join('、')}，不可重複預約！`)
+        showAlert(
+            '重複預約',
+            '您已預約過以下書籍，無法重複預約！',
+            duplicateBooks.map(b => b.title)
+        )
         return
     }
 
@@ -309,9 +323,11 @@ async function handleReserve() {
         const reservationData = {
             userId: 1, // 使用數字 ID
             books: books.value.map(book => ({
-                bookId: book.id, // 使用資料庫主鍵 id 作為 bookId
-                reserve_time: form.value.time // 只帶 reserve_time，不帶 reservation_date
-            }))
+                bookId: (book as any).book_id, // 直接使用 book_id
+                reserveTime: form.value.time
+            })),
+            pickupLocation: form.value.location,
+            pickupMethod: form.value.method
         }
 
         console.log('發送批量預約請求：', reservationData)
@@ -320,10 +336,30 @@ async function handleReserve() {
         const response = await reservationAPI.batchReservation(reservationData)
         console.log('API 原始回傳：', response.data)
 
-        // 從回應中提取預約 ID
-        const reservationIds = response.data.results
-            .filter((result: any) => result.status === 'success')
-            .map((result: any) => result.reservationId)
+        let reservationIds: string[] = []
+
+        // 如果預約有結果，則處理後續移除操作
+        if (response.data?.success && response.data.results) {
+            const successfulResults = response.data.results.filter((result: any) => result.status === 'success');
+            const successfulBookIds = successfulResults.map((result: any) => result.bookId);
+
+            // 根據成功預約的 book_id 找出對應的 logId
+            const logIdsToDelete = books.value
+                .filter(book => successfulBookIds.includes((book as any).book_id))
+                .map(book => (book as any).logId)
+                .filter(logId => logId); // 確保 logId 存在
+
+            if (logIdsToDelete.length > 0) {
+                console.log('預約成功，將從預約清單中移除 Log IDs:', logIdsToDelete);
+                // 平行發送刪除請求
+                await Promise.allSettled(
+                    logIdsToDelete.map(logId => reservationAPI.deleteReservationLog(logId))
+                );
+            }
+
+            // 提取預約 ID
+            reservationIds = successfulResults.map((result: any) => result.reservationId)
+        }
 
         console.log('提取的預約 ID：', reservationIds)
 
@@ -343,21 +379,14 @@ async function handleReserve() {
                 time: form.value.time,
                 location: form.value.location,
                 method: form.value.method,
-                results: JSON.stringify(response.data.results),
-                success: response.data.success
+                results: JSON.stringify(response.data.results || []),
+                success: response.data.success || false
             }
         })
     } catch (error: any) {
         console.error('預約失敗：', error)
-        if (error.response?.data?.message) {
-            alert(`預約失敗：${error.response.data.message}`)
-        } else if (error.response?.data?.error) {
-            alert(`預約失敗：${error.response.data.error}`)
-        } else if (error.message) {
-            alert(`預約失敗：${error.message}`)
-        } else {
-            alert('預約失敗，請稍後再試')
-        }
+        const message = error.response?.data?.message || error.response?.data?.error || error.message || '預約失敗，請稍後再試';
+        showAlert('預約失敗', message);
     }
 }
 

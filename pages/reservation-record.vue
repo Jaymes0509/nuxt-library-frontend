@@ -140,7 +140,10 @@
                   <h3 class="history-grid-title reservation-record-book-title">{{ book.title }}</h3>
                   <p class="history-grid-author">作者：{{ book.author }}</p>
                   <p class="history-grid-date">加入時間：{{ formatDateTime(book.addedDate) }}</p>
-                  <button class="history-detail-btn" @click="viewBookDetail(book)">詳情</button>
+                  <div class="history-grid-actions">
+                    <button class="history-detail-btn" @click="viewBookDetail(book)">詳情</button>
+                    <button @click="removeFromList(book.id)" class="history-remove-btn">移除</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -263,9 +266,11 @@ const handleApiError = (error, defaultMessage) => {
 // ===== 資料轉換 =====
 const convertReservationLogToBook = (item) => ({
   id: item.logId,
-          title: item.title,
-          author: item.author,
-          isbn: item.isbn,
+  book_id: item.bookId,
+  logId: item.logId,
+  title: item.title,
+  author: item.author,
+  isbn: item.isbn,
   addedDate: item.createdAt,
   status: item.status,
   action: item.action
@@ -375,8 +380,8 @@ const removeSelected = async () => {
 
     const errorCount = selectedCount - successCount
 
-      await loadReservationList()
-      selectedBooks.value = []
+    await loadReservationList()
+    selectedBooks.value = []
 
     showBatchResult(successCount, errorCount, selectedCount)
   } catch (err) {
@@ -523,7 +528,7 @@ watch([() => sortConfig.value.field, () => sortConfig.value.ascending], () => {
 onMounted(() => {
   checkLoginStatus()
   if (isLoggedIn.value) {
-  loadReservationList()
+    loadReservationList()
   }
 })
 

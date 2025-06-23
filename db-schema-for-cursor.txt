@@ -1,4 +1,3 @@
-
 📚 資料庫：library（MySQL）
 🔄 匯出時間：2025-06-19（更新版）
 
@@ -29,6 +28,8 @@
 - user_id: 外鍵 → members.user_id
 - book_id: 外鍵 → books.book_id
 - reserve_time, created_at, expiry_date, updated_at: DATETIME
+- pickup_location: VARCHAR(255)
+- pickup_method: VARCHAR(255)
 - reserve_status: TINYINT (1=有效)
 - status: VARCHAR
 - batch_id: VARCHAR(100)

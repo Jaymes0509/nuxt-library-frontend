@@ -177,16 +177,16 @@ const form = computed(() => {
   if (isBatchMode.value && reservationBooks.value.length > 0) {
     return {
       time: reservationBooks.value[0].reserve_time || reservationBooks.value[0].time || '',
-      location: reservationBooks.value[0].location || '',
-      method: reservationBooks.value[0].method || ''
+      location: reservationBooks.value[0].location || '一樓服務台',
+      method: reservationBooks.value[0].method || '親自取書'
     }
   }
 
   // 單本書籍預約
   return {
     time: String(route.query.reserve_time || route.query.time || ''),
-    location: String(route.query.location || ''),
-    method: String(route.query.method || '')
+    location: String(route.query.location || '一樓服務台'),
+    method: String(route.query.method || '親自取書')
   }
 })
 
@@ -229,8 +229,8 @@ onMounted(() => {
     return
   }
 
-  // 檢查是否有預約資訊
-  if (!form.value.time || !form.value.location || !form.value.method) {
+  // 檢查是否有預約時間（地點和方式有預設值）
+  if (!form.value.time) {
     router.push('/book-reservation')
     return
   }
