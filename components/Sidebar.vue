@@ -32,7 +32,7 @@
 </template>
 
 <script setup>
-import { useAuth } from '~/components/useAuth'
+import { useAuth } from '~/composables/useAuth'
 import { computed, reactive, ref } from 'vue'
 
 const { user } = useAuth()
@@ -96,11 +96,9 @@ const menuItems = computed(() => {
             label: '申請服務',
             children: [
                 { label: '借閱證申請', href: '/card-application' },
-                { label: '自習座位預約', href: 'seat-reservation2' },
-                { label: '團體討論室預約', href: '#' },
+                { label: '自習座位預約', href: 'seat-reservation' },
                 { label: '場地租借', href: '#' },
-                { label: '團體參訪預約', href: '#' },
-                { label: '書籍薦購', href: '#' },
+                { label: '書籍薦購', href: '#' }
             ]
         },
         {

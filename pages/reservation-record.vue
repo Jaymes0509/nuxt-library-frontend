@@ -265,7 +265,7 @@ const convertReservationLogToBook = (item) => ({
   id: item.logId,
   title: item.title,
   author: item.author,
-  isbn: item.bookId,
+  isbn: item.isbn,
   addedDate: item.createdAt,
   status: item.status,
   action: item.action
@@ -420,11 +420,7 @@ const viewBookDetail = (book) => {
   router.push({
     path: '/bookinfo',
     query: {
-      isbn: book.isbn,
-      returnQuery: '',
-      returnPage: '1',
-      from: 'reservation-list',
-      returnType: 'list'
+      isbn: book.isbn
     }
   })
 }
@@ -1277,5 +1273,46 @@ const goToLogin = () => {
 
 .login-required-btn:active {
   transform: translateY(0);
+}
+
+@media screen and (max-width: 767px) {
+  .mobile-extra .user-info {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    gap: 0.5rem !important;
+    text-align: center !important;
+  }
+
+  .mobile-extra .user-avatar-img {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+  }
+
+  .mobile-extra .user-name,
+  .mobile-extra .user-menu-arrow {
+    font-size: 1rem !important;
+    white-space: nowrap !important;
+  }
+
+  .mobile-extra .user-menu-arrow {
+    margin-left: 0.2rem !important;
+  }
+}
+
+.menu-toggle {
+  display: none !important;
+}
+
+@media screen and (max-width: 767px) {
+  .menu-toggle {
+    display: flex !important;
+    /* 其他樣式... */
+  }
 }
 </style>

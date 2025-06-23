@@ -126,6 +126,7 @@ let links = [
   justify-content: space-between;
   padding: 0.2rem 1rem;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .logo-link {
@@ -276,5 +277,114 @@ let links = [
 
 .search span {
   margin-left: 0.5rem;
+}
+
+.member-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+  /* 防止被壓縮消失 */
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.member-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.logout-btn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.logout-btn:hover {
+  background: #1d4ed8;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.user-avatar-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+@media (max-width: 1024px) {
+  .top-bar {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+  }
+
+  .member-bar {
+    margin-top: 0.5rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .top-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.5rem 0.5rem;
+  }
+
+  .logo-link {
+    justify-content: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .logo {
+    margin-left: 0;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .top-links {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .top-links ul {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+
+  .search {
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+
+  .member-bar {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+    width: 100%;
+  }
 }
 </style>

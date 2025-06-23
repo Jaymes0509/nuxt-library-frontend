@@ -53,9 +53,9 @@
             <!-- 出版年 -->
             <div class="condition">
               <label>出版年</label>
-              <input v-model="yearFrom" type="number" placeholder="西元年" style="width:100px;" />
+              <input v-model.number="yearFrom" type="number" placeholder="西元年" style="width:100px;" />
               <span>至</span>
-              <input v-model="yearTo" type="number" placeholder="西元年" style="width:100px;" />
+              <input v-model.number="yearTo" type="number" placeholder="西元年" style="width:100px;" />
             </div>
             <hr>
             <!-- 分類法 -->
@@ -418,7 +418,7 @@ const performAdvancedSearch = async () => {
       operator: 'AND',
       value: {
         from: yearFrom.value || null,
-        to: yearFrom.value || null
+        to: yearTo.value || null
       }
     });
   }
