@@ -2,14 +2,12 @@
 
 export default defineNuxtConfig({
 
-  devtools: { enabled: true },
+  devtools: { enabled: false },
 
   ssr: false,
 
   modules: [
-    '@nuxtjs/tailwindcss',
-
-    '@nuxtjs/google-fonts'
+    '@nuxtjs/google-fonts',
   ],
 
   css: ['@/assets/css/main.css',
@@ -52,6 +50,7 @@ export default defineNuxtConfig({
   devServer: {
     port: 3000,
     host: 'localhost'
+
   }
 
 })
