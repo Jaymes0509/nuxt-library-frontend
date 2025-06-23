@@ -213,7 +213,7 @@ function formatDateTime(dateTimeStr: string) {
 
 // 跳轉到預約清單頁面
 function goToReservationList() {
-  router.push('/reservation-record')
+  router.push('/reserve/reservation-record')
 }
 
 // 返回首頁
@@ -225,13 +225,13 @@ function goToHome() {
 onMounted(() => {
   // 檢查是否有書籍資料
   if (reservationBooks.value.length === 0) {
-    router.push('/book-reservation')
+    router.push('/reserve/book-reservation')
     return
   }
 
   // 檢查是否有預約時間（地點和方式有預設值）
   if (!form.value.time) {
-    router.push('/book-reservation')
+    router.push('/reserve/book-reservation')
     return
   }
 })

@@ -69,7 +69,7 @@
               </button>
               <button @click="batchReserve" class="batch-btn batch-btn-reserve"
                 :disabled="selectedCount === 0 || selectedCount > 10">
-                批量預約 ({{ selectedCount }})
+                預約 ({{ selectedCount }})
               </button>
             </div>
           </div>
@@ -457,7 +457,7 @@ const batchReserve = () => {
   )
 
   router.push({
-    path: '/book-reservation',
+    path: '/reserve/book-reservation',
     query: {
       batch: 'true',
       books: JSON.stringify(selectedBookData)
