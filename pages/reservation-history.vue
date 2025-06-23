@@ -14,13 +14,13 @@
                         <div class="history-control-panel-left">
                             <div class="history-row">
                                 <span class="history-label">每頁顯示：</span>
-                                <select v-model="itemsPerPage" class="history-select">
+                                <select v-model="itemsPerPage" class="history-select pretty-select-page">
                                     <option v-for="size in pageSizes" :key="size" :value="size">{{ size }} 筆</option>
                                 </select>
                             </div>
                             <div class="history-row">
                                 <span class="history-label">排序：</span>
-                                <select v-model="sortConfig.field" class="history-select">
+                                <select v-model="sortConfig.field" class="history-select pretty-select">
                                     <option value="title">書名</option>
                                     <option value="author">作者</option>
                                     <option value="pickupTime">取書時間</option>
@@ -38,6 +38,26 @@
                             <button @click="viewMode = 'grid'"
                                 :class="['history-view-btn', viewMode === 'grid' ? 'history-view-btn-active' : '']">
                                 網格
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 批量操作面板 -->
+                    <div v-if="reservationBooks.length > 0" class="batch-control-panel">
+                        <div class="batch-control-left">
+                            <label class="batch-checkbox-label">
+                                <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll"
+                                    class="batch-checkbox" />
+                                <span>全選</span>
+                            </label>
+                            <span class="batch-info">
+                                已選擇 {{ selectedBooks.length }} 筆記錄
+                            </span>
+                        </div>
+                        <div class="batch-control-right">
+                            <button @click="handleBatchCancel" class="batch-btn batch-btn-remove"
+                                :disabled="selectedBooks.length === 0">
+                                批量取消 ({{ selectedBooks.length }})
                             </button>
                         </div>
                     </div>
@@ -67,28 +87,49 @@
                         :class="['history-table-scroll', itemsPerPage > 10 ? 'history-table-scrollable' : 'history-table-fill']">
                         <div v-if="viewMode === 'table'" class="history-grid-table">
                             <div class="history-grid-header">
+                                <div class="history-grid-checkbox">
+                                    <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll"
+                                        class="batch-checkbox" />
+                                </div>
                                 <div>書名</div>
                                 <div>作者</div>
                                 <div>取書地點</div>
+                                <div>取書方式</div>
                                 <div>取書時間</div>
                                 <div>操作</div>
                             </div>
                             <div class="history-grid-body">
                                 <div v-for="(reservation, index) in paginatedBooks" :key="index"
-                                    class="history-grid-row">
+                                    :class="['history-grid-row', { 'is-cancelled': reservation.status === 'cancelled' }]">
+                                    <div class="history-grid-checkbox">
+                                        <input type="checkbox"
+                                            :checked="selectedBooks.includes(reservation.reservationId)"
+                                            @change="toggleSelectBook(reservation.reservationId)" class="batch-checkbox"
+                                            :disabled="reservation.status === 'cancelled'" />
+                                    </div>
                                     <div class="history-grid-title-cell">{{ reservation.title }}</div>
                                     <div>{{ reservation.author }}</div>
                                     <div>{{ reservation.pickupLocation }}</div>
+                                    <div>{{ reservation.pickupMethod }}</div>
                                     <div>{{ reservation.pickupTime }}</div>
-                                    <div>
+                                    <div class="history-grid-actions">
                                         <button @click="viewBookDetail(reservation)"
                                             class="history-detail-btn">詳情</button>
+                                        <button @click="handleCancel(reservation.reservationId)"
+                                            class="history-cancel-btn"
+                                            :disabled="reservation.status === 'cancelled'">取消預約</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div v-else class="history-grid">
-                            <div v-for="(reservation, index) in paginatedBooks" :key="index" class="history-grid-card">
+                            <div v-for="(reservation, index) in paginatedBooks" :key="index"
+                                :class="['history-grid-card', { 'is-cancelled': reservation.status === 'cancelled' }]">
+                                <div class="history-grid-card-header">
+                                    <input type="checkbox" :checked="selectedBooks.includes(reservation.reservationId)"
+                                        @change="toggleSelectBook(reservation.reservationId)" class="batch-checkbox"
+                                        :disabled="reservation.status === 'cancelled'" />
+                                </div>
                                 <div class="history-grid-img-wrap">
                                     <img :src="getDefaultCoverUrl(index)" :alt="reservation.title"
                                         class="history-grid-img" />
@@ -99,10 +140,17 @@
                                     <p class="history-grid-author">作者：{{ reservation.author }}</p>
                                     <div class="history-grid-dates">
                                         <p>取書地點：{{ reservation.pickupLocation }}</p>
+                                        <p>取書方式：{{ reservation.pickupMethod }}</p>
                                         <p>取書時間：{{ reservation.pickupTime }}</p>
                                         <p>預約日期：{{ reservation.reservationDate }}</p>
                                     </div>
-                                    <button class="history-detail-btn" @click="viewBookDetail(reservation)">詳情</button>
+                                    <div class="history-grid-actions">
+                                        <button class="history-detail-btn"
+                                            @click="viewBookDetail(reservation)">詳情</button>
+                                        <button @click="handleCancel(reservation.reservationId)"
+                                            class="history-cancel-btn"
+                                            :disabled="reservation.status === 'cancelled'">取消預約</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -132,7 +180,7 @@
             </div>
         </div>
         <CustomAlert :show="customAlert.show" :title="customAlert.title" :message="customAlert.message"
-            @close="closeAlert" />
+            :type="customAlert.type" @close="closeAlert" @confirm="confirmAction" />
     </div>
 </template>
 
@@ -158,18 +206,59 @@ const viewMode = ref('table')
 const customAlert = ref({
     show: false,
     title: '',
-    message: ''
+    message: '',
+    type: 'alert', // 'alert' or 'confirm'
 })
+const pendingAction = ref(null);
 
 const showAlert = (title, message) => {
     customAlert.value.title = title
     customAlert.value.message = message
+    customAlert.value.type = 'alert'
     customAlert.value.show = true
 }
 
 const closeAlert = () => {
     customAlert.value.show = false
 }
+
+// 處理取消預約
+function handleCancel(reservationId) {
+    pendingAction.value = () => proceedWithCancellation(reservationId);
+    customAlert.value = {
+        show: true,
+        title: '確認取消',
+        message: '您確定要取消這筆預約嗎？此操作無法復原。',
+        type: 'confirm',
+    };
+}
+
+// 確認後執行取消
+async function proceedWithCancellation(reservationId) {
+    try {
+        const response = await reservationAPI.updateReservationStatus(reservationId, 'cancelled');
+        if (response.status === 200 || response.status === 204) {
+            showAlert('取消成功', '您的預約已成功取消。');
+            // 重新載入預約歷史
+            await fetchReservations();
+        } else {
+            throw new Error('取消預約時發生錯誤');
+        }
+    } catch (err) {
+        console.error('取消預約失敗：', err);
+        const message = err.response?.data?.message || '取消預約失敗，請稍後再試。';
+        showAlert('取消失敗', message);
+    }
+}
+
+// 當確認事件觸發時調用
+const confirmAction = async () => {
+    closeAlert();
+    if (typeof pendingAction.value === 'function') {
+        await pendingAction.value();
+        pendingAction.value = null; // Reset
+    }
+};
 
 // 登入狀態檢查
 const isLoggedIn = ref(false)
@@ -193,6 +282,7 @@ function getDefaultCoverUrl(index) {
 
 // 預約記錄資料
 const reservationBooks = ref([])
+const selectedBooks = ref([])
 const loading = ref(false)
 const error = ref(null)
 
@@ -283,10 +373,11 @@ async function fetchReservations() {
                     publisher: reservation.book_publisher || reservation.publisher || '未知出版社',
                     classification: reservation.classification || '',
                     categoryName: reservation.category_name || '',
-                    pickupLocation: reservation.pickup_location || '未指定地點',
-                    pickupTime: reservation.pickup_time || '',
-                    reservationDate: reservation.created_at || '',
-                    expiryDate: reservation.updated_at || '',
+                    pickupLocation: reservation.pickup_location || '一樓服務台', // 預設取書地點
+                    pickupMethod: reservation.pickup_method || '親自取書', // 新增
+                    pickupTime: formatDateTime(reservation.reserve_time || reservation.pickup_time || ''),
+                    reservationDate: formatDateTime(reservation.created_at || reservation.reservation_date || ''),
+                    expiryDate: formatDateTime(reservation.expiry_date || reservation.updated_at || ''),
                     status: reservation.status || 'pending',
                     userId: reservation.user_id,
                     // 保存完整的原始資料，以便詳情頁使用
@@ -415,6 +506,63 @@ watch([() => sortConfig.value.field, () => sortConfig.value.ascending], () => {
     // 當排序設定改變時，重置到第一頁
     currentPage.value = 1
 })
+
+// 新增：處理批量取消
+async function handleBatchCancel() {
+    const activeSelection = selectedBooks.value.filter(id => {
+        const book = reservationBooks.value.find(b => b.reservationId === id);
+        return book && book.status !== 'cancelled';
+    });
+
+    if (activeSelection.length === 0) {
+        showAlert('提示', '請先選擇有效的預約記錄進行取消。');
+        return;
+    }
+
+    pendingAction.value = () => proceedWithBatchCancellation(activeSelection);
+    customAlert.value = {
+        show: true,
+        title: '確認批量取消',
+        message: `您確定要取消選取的 ${activeSelection.length} 筆有效預約嗎？`,
+        type: 'confirm',
+    };
+}
+
+async function proceedWithBatchCancellation(idsToCancel) {
+    try {
+        await reservationAPI.batchCancelReservations(idsToCancel);
+        showAlert('操作完成', '批量取消操作已完成。');
+        await fetchReservations();
+        selectedBooks.value = [];
+    } catch (err) {
+        console.error('批量取消失敗：', err);
+        showAlert('錯誤', '批量取消時發生錯誤，請稍後再試。');
+    }
+}
+
+// ===== 選取操作 =====
+const toggleSelectBook = (reservationId) => {
+    const index = selectedBooks.value.indexOf(reservationId);
+    if (index === -1) {
+        selectedBooks.value.push(reservationId);
+    } else {
+        selectedBooks.value.splice(index, 1);
+    }
+};
+
+const toggleSelectAll = () => {
+    if (isAllSelected.value) {
+        selectedBooks.value = [];
+    } else {
+        selectedBooks.value = paginatedBooks.value.map(book => book.reservationId);
+    }
+};
+
+// ===== 計算屬性 =====
+const isAllSelected = computed(() => {
+    if (paginatedBooks.value.length === 0) return false;
+    return paginatedBooks.value.every(book => selectedBooks.value.includes(book.reservationId));
+});
 
 // 初始化載入資料
 onMounted(async () => {
@@ -604,7 +752,7 @@ onMounted(async () => {
 
 .history-grid-header {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr 120px;
+    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 200px;
     gap: 16px;
     padding: 16px 20px;
     background: rgba(243, 244, 246, 0.6);
@@ -615,6 +763,12 @@ onMounted(async () => {
     font-size: 0.95rem;
 }
 
+.history-grid-header>div:nth-child(n+2),
+.history-grid-row>div:nth-child(n+2) {
+    text-align: center;
+    justify-content: center;
+}
+
 .history-grid-body {
     max-height: 500px;
     overflow-y: auto;
@@ -622,7 +776,7 @@ onMounted(async () => {
 
 .history-grid-row {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr 120px;
+    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 200px;
     gap: 16px;
     padding: 16px 20px;
     border-bottom: 1px solid rgba(229, 231, 235, 0.2);
@@ -880,14 +1034,18 @@ onMounted(async () => {
 
     .history-grid-header,
     .history-grid-row {
-        grid-template-columns: 1.5fr 1fr 80px;
+        grid-template-columns: 1fr 170px;
         font-size: 0.9rem;
     }
 
+    .history-grid-header>div:nth-child(2),
     .history-grid-header>div:nth-child(3),
     .history-grid-header>div:nth-child(4),
+    .history-grid-header>div:nth-child(5),
+    .history-grid-row>div:nth-child(2),
     .history-grid-row>div:nth-child(3),
-    .history-grid-row>div:nth-child(4) {
+    .history-grid-row>div:nth-child(4),
+    .history-grid-row>div:nth-child(5) {
         display: none;
     }
 
@@ -895,4 +1053,150 @@ onMounted(async () => {
         grid-template-columns: 1fr;
     }
 }
+
+/* === 控制面板美化（與 reservation-record.vue 完全一致）=== */
+.history-row .pretty-select,
+.history-row .pretty-select-page {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background: #fff url('data:image/svg+xml;utf8,<svg fill="%23256be9" height="20" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7.293 7.293a1 003 0 011.414 0L10 8.586l1.293-1.293a1 1 0 111.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414z"/></svg>') no-repeat right 0.75rem center/1.2em auto;
+    border: 1.5px solid #2563eb;
+    border-radius: 8px;
+    padding: 8px 36px 8px 16px;
+    font-size: 1.05rem;
+    color: #222;
+    min-width: 110px;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.07);
+    transition: border 0.2s, box-shadow 0.2s;
+    text-align: center;
+    cursor: pointer;
+}
+
+.history-row .pretty-select:focus,
+.history-row .pretty-select-page:focus {
+    border-color: #1976d2;
+    outline: none;
+    box-shadow: 0 0 0 2px #2563eb33;
+}
+
+.history-row .pretty-select option,
+.history-row .pretty-select-page option {
+    background: #fff;
+    color: #222;
+    text-align: left;
+}
+
+.history-sort-btn {
+    border: 1.5px solid #2563eb;
+    border-radius: 8px;
+    background: #fff;
+    color: #2563eb;
+    font-size: 1.05rem;
+    font-weight: 500;
+    padding: 8px 20px;
+    min-width: 90px;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.07);
+    transition: background 0.2s, color 0.2s, border 0.2s;
+    cursor: pointer;
+}
+
+.history-sort-btn:hover,
+.history-sort-btn:focus {
+    background: #2563eb;
+    color: #fff;
+    border-color: #1976d2;
+}
+
+.history-view-btn {
+    border: 1.5px solid #2563eb;
+    border-radius: 8px;
+    background: #fff;
+    color: #2563eb;
+    font-size: 1.05rem;
+    font-weight: 500;
+    padding: 8px 20px;
+    min-width: 90px;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.07);
+    transition: background 0.2s, color 0.2s, border 0.2s;
+    cursor: pointer;
+    margin-right: 4px;
+}
+
+.history-view-btn:last-child {
+    margin-right: 0;
+}
+
+.history-view-btn-active,
+.history-view-btn:hover,
+.history-view-btn:focus {
+    background: #2563eb;
+    color: #fff;
+    border-color: #1976d2;
+}
+
+.history-grid-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+}
+
+.history-cancel-btn {
+    padding: 6px 12px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.history-cancel-btn:hover {
+    background: #dc2626;
+}
+
+.history-grid-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.batch-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #2563eb;
+}
+
+.history-grid-card-header {
+    position: relative;
+    padding: 12px;
+    background: rgba(243, 244, 246, 0.6);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(229, 231, 235, 0.4);
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 12px;
+}
+
+.is-cancelled {
+    color: #9ca3af;
+    background-color: #f9fafb;
+    text-decoration: line-through;
+}
+
+.is-cancelled .history-grid-title-cell,
+.is-cancelled .history-grid-title {
+    color: #9ca3af;
+}
+
+.history-cancel-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
 </style>

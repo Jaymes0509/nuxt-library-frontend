@@ -14,13 +14,13 @@
             <div class="history-control-panel-left">
               <div class="history-row">
                 <span class="history-label">每頁顯示：</span>
-                <select v-model="itemsPerPage" class="history-select">
+                <select v-model="itemsPerPage" class="history-select pretty-select-page">
                   <option v-for="size in pageSizes" :key="size" :value="size">{{ size }} 筆</option>
                 </select>
               </div>
               <div class="history-row">
                 <span class="history-label">排序：</span>
-                <select v-model="sortConfig.field" class="history-select">
+                <select v-model="sortConfig.field" class="history-select pretty-select">
                   <option value="title">書名</option>
                   <option value="author">作者</option>
                   <option value="addedDate">加入時間</option>
@@ -133,7 +133,10 @@
                   <h3 class="history-grid-title reservation-record-book-title">{{ book.title }}</h3>
                   <p class="history-grid-author">作者：{{ book.author }}</p>
                   <p class="history-grid-date">加入時間：{{ formatDateTime(book.addedDate) }}</p>
-                  <button class="history-detail-btn" @click="viewBookDetail(book)">詳情</button>
+                  <div class="history-grid-actions">
+                    <button class="history-detail-btn" @click="viewBookDetail(book)">詳情</button>
+                    <button @click="removeFromList(book.id)" class="history-remove-btn">移除</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -256,6 +259,8 @@ const handleApiError = (error, defaultMessage) => {
 // ===== 資料轉換 =====
 const convertReservationLogToBook = (item) => ({
   id: item.logId,
+  book_id: item.bookId,
+  logId: item.logId,
   title: item.title,
   author: item.author,
   isbn: item.isbn,
@@ -292,6 +297,13 @@ const loadReservationList = async () => {
 }
 
 const addToReservationList = async (book) => {
+  // 檢查是否已經預約過同一本書
+  const reservedBookIds = reservationList.value.map(item => item.id || item.book_id)
+  if (reservedBookIds.includes(book.id)) {
+    showAlert('重複預約', `您已經預約過「${book.title}」，不可重複加入預約清單！`)
+    return false
+  }
+
   try {
     console.log('開始加入預約清單，書籍：', book)
 
@@ -668,32 +680,38 @@ const checkLoginStatus = () => {
 }
 
 .history-sort-btn {
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  padding: 8px 16px;
+  border: 1.5px solid #2563eb;
+  border-radius: 8px;
   background: #fff;
-  color: #18181b;
-  font-size: 1rem;
+  color: #2563eb;
+  font-size: 1.05rem;
+  font-weight: 500;
+  padding: 8px 20px;
+  min-width: 90px;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.07);
+  transition: background 0.2s, color 0.2s, border 0.2s;
   cursor: pointer;
-  transition: all 0.3s ease;
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 100px;
+}
+
+.history-sort-btn:hover,
+.history-sort-btn:focus {
+  background: #2563eb;
+  color: #fff;
+  border-color: #1976d2;
 }
 
 .history-view-btn {
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1.5px solid #2563eb;
+  border-radius: 8px;
   background: #fff;
-  color: #18181b;
-  font-size: 1rem;
-  padding: 8px 16px;
+  color: #2563eb;
+  font-size: 1.05rem;
+  font-weight: 500;
+  padding: 8px 20px;
+  min-width: 90px;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.07);
+  transition: background 0.2s, color 0.2s, border 0.2s;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
   margin-right: 4px;
 }
 
@@ -701,9 +719,12 @@ const checkLoginStatus = () => {
   margin-right: 0;
 }
 
-.history-view-btn-active {
+.history-view-btn-active,
+.history-view-btn:hover,
+.history-view-btn:focus {
   background: #2563eb;
   color: #fff;
+  border-color: #1976d2;
 }
 
 /* 批量操作面板樣式 */
@@ -1247,5 +1268,38 @@ const checkLoginStatus = () => {
     display: flex !important;
     /* 其他樣式... */
   }
+}
+
+/* 美化所有控制面板 select、按鈕 */
+.history-row .pretty-select,
+.history-row .pretty-select-page {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: #fff url('data:image/svg+xml;utf8,<svg fill="%23256be9" height="20" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7.293 7.293a1 003 0 011.414 0L10 8.586l1.293-1.293a1 1 0 111.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414z"/></svg>') no-repeat right 0.75rem center/1.2em auto;
+  border: 1.5px solid #2563eb;
+  border-radius: 8px;
+  padding: 8px 36px 8px 16px;
+  font-size: 1.05rem;
+  color: #222;
+  min-width: 110px;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.07);
+  transition: border 0.2s, box-shadow 0.2s;
+  text-align: center;
+  cursor: pointer;
+}
+
+.history-row .pretty-select:focus,
+.history-row .pretty-select-page:focus {
+  border-color: #1976d2;
+  outline: none;
+  box-shadow: 0 0 0 2px #2563eb33;
+}
+
+.history-row .pretty-select option,
+.history-row .pretty-select-page option {
+  background: #fff;
+  color: #222;
+  text-align: left;
 }
 </style>
