@@ -5,14 +5,7 @@
                 <h1 class="history-title">預約記錄</h1>
 
                 <!-- 登入檢查 -->
-                <div v-if="!isLoggedIn" class="login-required">
-                    <div class="login-required-icon">🔒</div>
-                    <h2>需要登入會員</h2>
-                    <p>您需要登入會員才能查看預約記錄</p>
-                    <button @click="goToLogin" class="login-required-btn">
-                        前往登入
-                    </button>
-                </div>
+                <LoginRequiredPrompt v-if="!isLoggedIn" message="您需要登入才能查詢預約紀錄" />
 
                 <!-- 預約記錄內容（只有登入後才顯示） -->
                 <div v-else class="history-main">
@@ -327,10 +320,6 @@ const checkLoginStatus = () => {
     console.log('==================')
 }
 
-// 跳轉到登入頁面
-const goToLogin = () => {
-    router.push('/login')
-}
 
 // 格式化日期時間
 function formatDateTime(dateTimeStr) {
@@ -1065,62 +1054,6 @@ onMounted(async () => {
     }
 }
 
-/* 登入提示樣式 */
-.login-required {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 80px 20px;
-    text-align: center;
-    color: #6b7280;
-    background: transparent;
-    border-radius: 12px;
-    margin: 20px;
-}
-
-.login-required-icon {
-    font-size: 4rem;
-    margin-bottom: 16px;
-}
-
-.login-required h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 12px;
-}
-
-.login-required p {
-    font-size: 1rem;
-    color: #6b7280;
-    margin-bottom: 24px;
-    max-width: 400px;
-}
-
-.login-required-btn {
-    padding: 12px 32px;
-    background: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-}
-
-.login-required-btn:hover {
-    background: #1d4ed8;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
-}
-
-.login-required-btn:active {
-    transform: translateY(0);
-}
-
 /* === 控制面板美化（與 reservation-record.vue 完全一致）=== */
 .history-row .pretty-select,
 .history-row .pretty-select-page {
@@ -1265,4 +1198,5 @@ onMounted(async () => {
     background: #9ca3af;
     cursor: not-allowed;
 }
+
 </style>
