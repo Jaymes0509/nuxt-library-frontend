@@ -5,14 +5,7 @@
         <h1 class="history-title">借書清單</h1>
 
         <!-- 登入檢查 -->
-        <div v-if="!isLoggedIn" class="login-required">
-          <div class="login-required-icon">🔒</div>
-          <h2>需要登入會員</h2>
-          <p>您需要登入會員才能使用借書清單功能</p>
-          <button @click="goToLogin" class="login-required-btn">
-            前往登入
-          </button>
-        </div>
+        <LoginRequiredPrompt v-if="!isLoggedIn" />
 
         <!-- 借書清單內容（只有登入後才顯示） -->
         <div v-else class="history-main">
@@ -527,11 +520,6 @@ const checkLoginStatus = () => {
   console.log('最終登入狀態：', isLoggedIn.value)
   console.log('==================')
 }
-
-// 跳轉到登入頁面
-const goToLogin = () => {
-  router.push('/login')
-}
 </script>
 
 <style scoped>
@@ -884,37 +872,6 @@ const goToLogin = () => {
 }
 
 .history-empty-btn:hover {
-  background: #1565c0;
-}
-
-/* 登入檢查 */
-.login-required {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px;
-  text-align: center;
-  gap: 16px;
-}
-
-.login-required-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-}
-
-.login-required-btn {
-  padding: 12px 24px;
-  background: #1976d2;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-
-.login-required-btn:hover {
   background: #1565c0;
 }
 
