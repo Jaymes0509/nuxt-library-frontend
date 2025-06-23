@@ -9,11 +9,11 @@
 
     <!-- 總覽排行榜（三卡片） -->
     <div v-if="step === 'summary'" class="summary-cards">
-      <div v-for="type in ['reserve', 'borrow', 'rating']" :key="type" class="card grouped-card">
+      <div v-for="type in ['reservation', 'borrow', 'rating']" :key="type" class="card grouped-card">
         <div class="card-header-wrapper">
           <button class="card-header" @click="step = type">
             {{
-              type === 'reserve' ? '預約次數' :
+              type === 'reservation' ? '預約次數' :
                 type === 'borrow' ? '借閱次數' :
                   '評分高低'
             }}
@@ -21,7 +21,7 @@
         </div>
         <h2 class="card-title">
           {{
-            type === 'reserve' ? '預約次數排行榜(總和)' :
+            type === 'reservation' ? '預約次數排行榜(總和)' :
               type === 'borrow' ? '借閱次數排行榜(總和)' :
                 '評分高低排行榜(總和)'
           }}
@@ -46,7 +46,7 @@
                   </div>
                 </template>
                 <template v-else>
-                  {{ type === 'reserve' ? '預約次數：' : '借閱次數：' }}
+                  {{ type === 'reservation' ? '預約次數：' : '借閱次數：' }}
                   <span class="stat-count">{{ book.statCount || '' }}</span>
                 </template>
               </div>
@@ -61,7 +61,7 @@
       <h2 class="subtitle center">
         {{
           step === 'borrow' ? '📘 借閱排行榜詳細' :
-            step === 'reserve' ? '📗 預約排行榜詳細' :
+            step === 'reservation' ? '📗 預約排行榜詳細' :
               '📙 評分排行榜詳細'
         }}
       </h2>
@@ -117,7 +117,7 @@
                 <div>評論數：<span>{{ book.statCount ?? 0 }}</span></div>
               </template>
               <template v-else>
-                {{ step === 'borrow' ? '借閱次數：' : '預約次數：' }}
+                {{ step === 'borrow' ? '借閱次數：' : step === 'reservation' ? '預約次數：' : '' }}
                 <span class="stat-count">{{ book.statCount || 0 }}</span>
               </template>
             </div>
@@ -194,9 +194,9 @@
   border: 2px solid #ddd;
   padding: 1.5rem;
   border-radius: 0.75rem;
-  flex: 1 1 30%;
-  min-width: 280px;
-  max-width: 360px;
+  flex: 1 1 20%;
+  min-width: 240px;
+  max-width: 320px;
   box-sizing: border-box;
 }
 
@@ -416,6 +416,7 @@ const selectedPeriod = ref('all')
 const selectedCategory = ref('')
 const selectedYear = ref(new Date().getFullYear())
 const selectedMonth = ref(new Date().getMonth() + 1)
+const searchKeyword = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 
@@ -429,35 +430,66 @@ const months = Array.from({ length: 12 }, (_, i) => i + 1)
 
 async function fetchRankings() {
   try {
-    const res = await api.get('/api/rankings/all')
-    console.log('✅ 後端回傳資料', res.data)
+    if (step.value === 'summary') {
+      const res = await api.get('/api/rankings/all')
 
-    rankedReserveBooks.value = res.data.reservationRanking || []
-    rankedBorrowBooks.value = res.data.borrowRanking || []
-    rankedRatingBooks.value = res.data.ratingRanking || []
+      rankedReserveBooks.value = res.data.reservationRanking || []
+      rankedBorrowBooks.value = res.data.borrowRanking || []
+      rankedRatingBooks.value = res.data.ratingRanking || []
+      rankedBooks.value = [] // summary 畫面不直接用 rankedBooks
+      return
+    }
 
-    if (step.value === 'reserve' || step.value === 'summary') {
+    const params = {}
+    if (selectedCategory.value) {
+      params.category = selectedCategory.value
+    }
+    if (selectedPeriod.value === 'year' && selectedYear.value) {
+      params.year = selectedYear.value
+    }
+    if (selectedPeriod.value === 'month' && selectedYear.value && selectedMonth.value) {
+      params.year = selectedYear.value
+      params.month = selectedMonth.value
+    }
+    if (searchKeyword.value.trim()) {
+      params.keyword = searchKeyword.value.trim()
+    }
+    params.type = step.value
+
+    console.log('📦 傳給後端的搜尋參數：', JSON.stringify(params))
+
+    const res = await api.get('/api/rankings/detail', { params })
+
+    if (step.value === 'reservation') {
+      rankedReserveBooks.value = res.data || []
       rankedBooks.value = rankedReserveBooks.value
     } else if (step.value === 'borrow') {
+      rankedBorrowBooks.value = res.data || []
       rankedBooks.value = rankedBorrowBooks.value
     } else if (step.value === 'rating') {
+      rankedRatingBooks.value = res.data || []
       rankedBooks.value = rankedRatingBooks.value
+    } else {
+      rankedBooks.value = []
     }
   } catch (error) {
-    console.error('❌ 讀取排行榜失敗', error)
+    console.error('❌ 載入排行榜失敗', error)
   }
 }
 
+
 function topBooks(type, isSummary = false) {
   let list = isSummary
-    ? type === 'reserve' ? rankedReserveBooks.value
+    ? type === 'reservation' ? rankedReserveBooks.value
       : type === 'borrow' ? rankedBorrowBooks.value
         : rankedRatingBooks.value
     : rankedBooks.value
-
-  if (selectedCategory.value) {
+  if (!isSummary && selectedCategory.value) {
     list = list.filter(book => book.categoryName === selectedCategory.value)
   }
+
+  // 全部轉成數字（確保排序正確）
+  list.forEach(book => book.statCount = Number(book.statCount))
 
   return list
     .filter(book => isSummary || step.value === type)
@@ -477,26 +509,37 @@ function topBooks(type, isSummary = false) {
     .slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value)
 }
 
+
 function goBackToSummary() {
   selectedCategory.value = ''
   selectedPeriod.value = 'all'
+  selectedYear.value = new Date().getFullYear()
+  selectedMonth.value = new Date().getMonth() + 1
+  searchKeyword.value = ''
+  rankedBooks.value = []
   currentPage.value = 1
   step.value = 'summary'
 }
+
 
 const totalPages = computed(() => {
   return Math.ceil(rankedBooks.value.length / pageSize.value) || 1
 })
 
-watch([selectedPeriod, selectedCategory], () => {
+watch([selectedPeriod, selectedCategory, selectedYear, selectedMonth, searchKeyword], () => {
+  console.log('🎯 篩選條件變更，重新查詢')
   currentPage.value = 1
+  fetchRankings()
 })
+
 
 watch(step, () => {
   fetchRankings()
 })
 
-onMounted(() => {
-  fetchRankings()
+onMounted(async () => {
+  await fetchRankings()
 })
+
+
 </script>
