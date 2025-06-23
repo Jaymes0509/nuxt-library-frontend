@@ -484,7 +484,7 @@ const submitSearch = () => {
   font-size: 16px;
   flex: 1;
   background: transparent;
-  font-size: 1.25rem;
+  font-size: 1rem;
   width: 100%;
 }
 
