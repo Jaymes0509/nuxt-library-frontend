@@ -110,6 +110,27 @@ export const reservationAPI = {
   // 批量刪除預約日誌
   batchDeleteReservationLogs: (logIds) => {
     return api.delete('/api/reservation-logs/batch', { data: { logIds } })
+  },
+
+  // 批量取消預約
+  batchCancelReservations(reservationIds) {
+    return api.put('/api/bookreservations/batch-cancel', { reservationIds });
+  },
+
+  // 取消預約 (by reservation_id) - 更新為 PUT 方法
+  cancelReservation(reservationId) {
+    return api.put(`/api/bookreservations/${reservationId}/cancel`, {});
+  },
+
+  // 獲取預約記錄 (reservations) - 更新為包含已取消的記錄
+  getReservations: (userId) => {
+    const params = {
+      includeCancelled: false
+    };
+    if (userId) {
+      params.userId = userId;
+    }
+    return api.get('/api/bookreservations/history', { params });
   }
 }
 
