@@ -2,8 +2,20 @@
   <div class="scroll-wrapper">
     <div class="intro">
       <div class="history-bg">
-        <h1 class="history-title">我的預約清單</h1>
-        <div class="history-main">
+        <h1 class="history-title">預約清單</h1>
+
+        <!-- 登入檢查 -->
+        <div v-if="!isLoggedIn" class="login-required">
+          <div class="login-required-icon">🔒</div>
+          <h2>需要登入會員</h2>
+          <p>您需要登入會員才能使用預約清單功能</p>
+          <button @click="goToLogin" class="login-required-btn">
+            前往登入
+          </button>
+        </div>
+
+        <!-- 預約清單內容（只有登入後才顯示） -->
+        <div v-else class="history-main">
           <!-- 控制面板 -->
           <div class="history-control-panel">
             <div class="history-control-panel-left">
@@ -47,12 +59,16 @@
               <span class="batch-info">
                 已選擇 {{ selectedCount }} 本書籍
               </span>
+              <span v-if="selectedCount > 10" class="batch-warning">
+                (一次最多只能預約10本書)
+              </span>
             </div>
             <div class="batch-control-right">
               <button @click="removeSelected" class="batch-btn batch-btn-remove" :disabled="selectedCount === 0">
                 移除選取
               </button>
-              <button @click="batchReserve" class="batch-btn batch-btn-reserve" :disabled="selectedCount === 0">
+              <button @click="batchReserve" class="batch-btn batch-btn-reserve"
+                :disabled="selectedCount === 0 || selectedCount > 10">
                 批量預約 ({{ selectedCount }})
               </button>
             </div>
@@ -91,7 +107,6 @@
                 </div>
                 <div>書名</div>
                 <div>作者</div>
-                <div>ISBN</div>
                 <div>加入時間</div>
                 <div>操作</div>
               </div>
@@ -103,7 +118,6 @@
                   </div>
                   <div class="history-grid-title-cell">{{ book.title }}</div>
                   <div>{{ book.author }}</div>
-                  <div>{{ book.isbn }}</div>
                   <div>{{ formatDateTime(book.addedDate) }}</div>
                   <div class="history-grid-actions">
                     <button @click="viewBookDetail(book)" class="history-detail-btn">詳情</button>
@@ -125,7 +139,6 @@
                 <div class="history-grid-info">
                   <h3 class="history-grid-title reservation-record-book-title">{{ book.title }}</h3>
                   <p class="history-grid-author">作者：{{ book.author }}</p>
-                  <p class="history-grid-isbn">ISBN：{{ book.isbn }}</p>
                   <p class="history-grid-date">加入時間：{{ formatDateTime(book.addedDate) }}</p>
                   <button class="history-detail-btn" @click="viewBookDetail(book)">詳情</button>
                 </div>
@@ -155,6 +168,8 @@
         </div>
       </div>
     </div>
+    <CustomAlert :show="customAlert.show" :title="customAlert.title" :message="customAlert.message"
+      @close="closeAlert" />
   </div>
 </template>
 
@@ -163,17 +178,39 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useHead } from '#imports'
 import { reservationAPI } from '~/utils/api'
+import CustomAlert from '~/components/CustomAlert.vue'
 
-// 設置頁面標題
-useHead({
-  title: '預約清單'
+// ===== 頁面設定 =====
+useHead({ title: '預約清單' })
+
+// ===== 響應式資料 =====
+const router = useRouter()
+const viewMode = ref('table')
+const reservationList = ref([])
+const selectedBooks = ref([])
+const loading = ref(false)
+const error = ref(null)
+
+// 自訂提示視窗
+const customAlert = ref({
+  show: false,
+  title: '',
+  message: ''
 })
 
-// 獲取 router 實例
-const router = useRouter()
+const showAlert = (title, message) => {
+  customAlert.value.title = title
+  customAlert.value.message = message
+  customAlert.value.show = true
+}
 
-// 視圖模式
-const viewMode = ref('table')
+const closeAlert = () => {
+  customAlert.value.show = false
+}
+
+// 登入狀態檢查
+const isLoggedIn = ref(false)
+const user = ref(null)
 
 // 分頁設定
 const pageSizes = [10, 20, 30, 50, 100]
@@ -186,19 +223,11 @@ const sortConfig = ref({
   ascending: true
 })
 
-// 響應式資料
-const reservationList = ref([])
-const selectedBooks = ref([])
-const loading = ref(false)
-const error = ref(null)
+// ===== 工具函數 =====
+const getDefaultCoverUrl = (index) =>
+  `https://via.placeholder.com/300x400/4ECDC4/FFFFFF?text=${encodeURIComponent('書籍封面')}`
 
-// 預設封面圖片
-function getDefaultCoverUrl(index) {
-  return `https://via.placeholder.com/300x400/4ECDC4/FFFFFF?text=${encodeURIComponent('書籍封面')}`
-}
-
-// 格式化日期時間
-function formatDateTime(dateTimeStr) {
+const formatDateTime = (dateTimeStr) => {
   if (!dateTimeStr) return ''
   const date = new Date(dateTimeStr)
   return date.toLocaleString('zh-TW', {
@@ -211,32 +240,49 @@ function formatDateTime(dateTimeStr) {
   })
 }
 
-// 從後端 API 載入預約清單
-async function loadReservationList() {
+// ===== API 錯誤處理 =====
+const handleApiError = (error, defaultMessage) => {
+  console.error(defaultMessage, error)
+  console.log('錯誤詳情:', {
+    status: error.response?.status,
+    statusText: error.response?.statusText,
+    data: error.response?.data
+  })
+
+  if (error.response?.status === 404) {
+    return '記錄不存在，可能已被刪除'
+  } else if (error.response?.status === 400) {
+    return '請求參數錯誤'
+  } else if (error.response?.data?.message) {
+    return error.response.data.message
+  }
+
+  return defaultMessage
+}
+
+// ===== 資料轉換 =====
+const convertReservationLogToBook = (item) => ({
+  id: item.logId,
+  title: item.title,
+  author: item.author,
+  isbn: item.isbn,
+  addedDate: item.createdAt,
+  status: item.status,
+  action: item.action
+})
+
+// ===== 核心 API 操作 =====
+const loadReservationList = async () => {
   loading.value = true
   error.value = null
 
   try {
     console.log('開始載入預約清單...')
-    const response = await reservationAPI.getReservationList('current')
+    const response = await reservationAPI.getReservationLogs(1)
     console.log('API 回應：', response.data)
 
     if (response.data && Array.isArray(response.data)) {
-      // 轉換後端資料格式為前端所需格式
-      reservationList.value = response.data.map(item => {
-        const converted = {
-          id: item.reservation_id || item.reservationId || item.id,
-          title: item.title,
-          author: item.author,
-          isbn: item.isbn,
-          publisher: item.publisher || '',
-          addedDate: item.created_at || item.createdAt || new Date().toISOString(),
-          status: item.status || 'active'
-        }
-        console.log('轉換後的項目：', converted)
-        return converted
-      })
-
+      reservationList.value = response.data.map(convertReservationLogToBook)
       console.log('載入的預約清單：', reservationList.value)
       console.log('清單長度：', reservationList.value.length)
     } else {
@@ -244,103 +290,115 @@ async function loadReservationList() {
       reservationList.value = []
     }
   } catch (err) {
-    console.error('載入預約清單失敗：', err)
-    error.value = '無法載入預約清單，請稍後再試'
+    const errorMessage = handleApiError(err, '載入預約清單失敗')
+    error.value = errorMessage
     reservationList.value = []
   } finally {
     loading.value = false
   }
 }
 
-// 加入預約清單
-async function addToReservationList(book) {
+const addToReservationList = async (book) => {
   try {
     console.log('開始加入預約清單，書籍：', book)
 
     const response = await reservationAPI.addReservation({
-      bookId: parseInt(book.isbn) || 1, // 使用 ISBN 作為 bookId
-      userId: 1, // 使用數字 ID
+      bookId: parseInt(book.isbn) || 1,
+      userId: 1,
       status: 'PENDING',
-      reservationDate: new Date().toISOString().slice(0, 19).replace('T', ' ') // 格式化為後端期望的格式
+      reservationDate: new Date().toISOString().slice(0, 19).replace('T', ' ')
     })
 
     console.log('加入預約 API 回應：', response.data)
 
-    if (response.data && response.data.success) {
+    if (response.data?.success) {
       console.log('預約加入成功，重新載入清單...')
-      // 重新載入清單以獲取最新資料
       await loadReservationList()
-      alert('已成功加入預約清單！')
+      showAlert('成功', '已成功加入預約清單！')
       return true
     } else {
-      console.log('預約加入失敗：', response.data)
       throw new Error('加入失敗')
     }
   } catch (err) {
-    console.error('加入預約清單失敗：', err)
-    if (err.response?.status === 409) {
-      alert('此書籍已在預約清單中')
-    } else if (err.response?.data?.message) {
-      alert(`加入失敗：${err.response.data.message}`)
-    } else {
-      alert('加入預約清單失敗，請稍後再試')
-    }
+    const errorMessage = handleApiError(err, '加入預約清單失敗')
+    showAlert('錯誤', errorMessage)
     return false
   }
 }
 
-// 從預約清單移除
-async function removeFromList(bookId) {
+const removeFromList = async (bookId) => {
   try {
-    const response = await reservationAPI.deleteReservation(bookId)
+    console.log('嘗試移除預約，ID：', bookId)
+    const response = await reservationAPI.deleteReservationLog(bookId)
+    console.log('刪除 API 回應：', response)
 
-    if (response.data) {
-      // 從本地清單中移除
-      const index = reservationList.value.findIndex(item => item.id === bookId)
-      if (index !== -1) {
-        reservationList.value.splice(index, 1)
-      }
-
-      // 同時從選取清單中移除
-      const selectedIndex = selectedBooks.value.indexOf(bookId)
-      if (selectedIndex !== -1) {
-        selectedBooks.value.splice(selectedIndex, 1)
-      }
+    if (response.status === 200 || (response.status >= 200 && response.status < 300)) {
+      console.log('刪除成功，重新載入清單')
+      await loadReservationList()
+      removeFromSelection(bookId)
+      showAlert('成功', '移除成功！')
     } else {
-      throw new Error('移除失敗')
+      throw new Error(`移除失敗，HTTP狀態碼：${response.status}`)
     }
   } catch (err) {
-    console.error('移除書籍失敗：', err)
-    alert('移除書籍失敗，請稍後再試')
+    const errorMessage = handleApiError(err, '移除書籍失敗')
+    showAlert('移除失敗', errorMessage)
   }
 }
 
-// 移除選取的書籍
-async function removeSelected() {
+const removeSelected = async () => {
   if (selectedBooks.value.length === 0) {
-    alert('請先選擇要移除的書籍')
+    showAlert('提示', '請先選擇要移除的書籍')
     return
   }
 
-  try {
-    const response = await reservationAPI.batchDeleteReservation(selectedBooks.value)
+  const selectedCount = selectedBooks.value.length
+  console.log('要移除的書籍 IDs：', selectedBooks.value)
 
-    if (response.data) {
-      // 重新載入清單以獲取最新資料
-      await loadReservationList()
-      selectedBooks.value = []
-      alert(`成功移除 ${selectedBooks.value.length} 本書籍`)
-    } else {
-      throw new Error('批量移除失敗')
-    }
+  try {
+    const selectedIds = [...selectedBooks.value]
+    const results = await Promise.allSettled(
+      selectedIds.map(id => reservationAPI.deleteReservationLog(id))
+    )
+
+    const successCount = results.filter(result =>
+      result.status === 'fulfilled' &&
+      (result.value.status === 200 || result.value.status === 204)
+    ).length
+
+    const errorCount = selectedCount - successCount
+
+    await loadReservationList()
+    selectedBooks.value = []
+
+    showBatchResult(successCount, errorCount, selectedCount)
   } catch (err) {
     console.error('批量移除書籍失敗：', err)
-    alert('批量移除失敗，請稍後再試')
+    showAlert('錯誤', '批量移除失敗，請稍後再試')
   }
 }
 
-// 切換選取單本書籍
-function toggleSelectBook(bookId) {
+// ===== 輔助函數 =====
+const removeFromSelection = (bookId) => {
+  const selectedIndex = selectedBooks.value.indexOf(bookId)
+  if (selectedIndex !== -1) {
+    selectedBooks.value.splice(selectedIndex, 1)
+    console.log('從選取清單移除成功')
+  }
+}
+
+const showBatchResult = (successCount, errorCount, totalCount) => {
+  if (errorCount === 0) {
+    showAlert('成功', `成功移除 ${successCount} 本書籍`)
+  } else if (successCount === 0) {
+    showAlert('失敗', `移除失敗，所有 ${errorCount} 本書籍都無法刪除`)
+  } else {
+    showAlert('部分成功', `成功移除 ${successCount} 本書籍，${errorCount} 本書籍刪除失敗`)
+  }
+}
+
+// ===== 選取操作 =====
+const toggleSelectBook = (bookId) => {
   const index = selectedBooks.value.indexOf(bookId)
   if (index === -1) {
     selectedBooks.value.push(bookId)
@@ -349,8 +407,7 @@ function toggleSelectBook(bookId) {
   }
 }
 
-// 切換全選
-function toggleSelectAll() {
+const toggleSelectAll = () => {
   if (isAllSelected.value) {
     selectedBooks.value = []
   } else {
@@ -358,10 +415,28 @@ function toggleSelectAll() {
   }
 }
 
-// 批量預約
-function batchReserve() {
+// ===== 導航函數 =====
+const viewBookDetail = (book) => {
+  router.push({
+    path: '/bookinfo',
+    query: {
+      isbn: book.isbn
+    }
+  })
+}
+
+const goToSearch = () => {
+  router.push('/catalogue-search')
+}
+
+const batchReserve = () => {
   if (selectedBooks.value.length === 0) {
-    alert('請先選擇要預約的書籍')
+    showAlert('提示', '請先選擇要預約的書籍')
+    return
+  }
+
+  if (selectedBooks.value.length > 10) {
+    showAlert('提示', '一次最多只能預約10本書籍，請重新選擇')
     return
   }
 
@@ -369,7 +444,6 @@ function batchReserve() {
     selectedBooks.value.includes(book.id)
   )
 
-  // 將選取的書籍資料傳遞到預約頁面
   router.push({
     path: '/book-reservation',
     query: {
@@ -379,26 +453,19 @@ function batchReserve() {
   })
 }
 
-// 查看書籍詳情
-function viewBookDetail(book) {
-  router.push({
-    path: '/bookinfo',
-    query: {
-      isbn: book.isbn,
-      returnQuery: '',
-      returnPage: '1',
-      from: 'reservation-list',
-      returnType: 'list'
-    }
-  })
+// ===== 排序和分頁 =====
+const toggleSortOrder = () => {
+  sortConfig.value.ascending = !sortConfig.value.ascending
 }
 
-// 前往搜尋頁面
-function goToSearch() {
-  router.push('/catalogue-search')
+const goToPage = (page) => {
+  const pageNum = parseInt(page)
+  if (pageNum && !isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages.value) {
+    currentPage.value = pageNum
+  }
 }
 
-// 計算屬性
+// ===== 計算屬性 =====
 const isAllSelected = computed(() => {
   return paginatedBooks.value.length > 0 &&
     paginatedBooks.value.every(book => selectedBooks.value.includes(book.id))
@@ -406,7 +473,6 @@ const isAllSelected = computed(() => {
 
 const selectedCount = computed(() => selectedBooks.value.length)
 
-// 排序後的資料
 const sortedBooks = computed(() => {
   const books = [...reservationList.value]
   const field = sortConfig.value.field
@@ -415,7 +481,6 @@ const sortedBooks = computed(() => {
   return books.sort((a, b) => {
     let valueA, valueB
 
-    // 根據不同欄位類型進行排序
     if (field === 'addedDate') {
       valueA = new Date(a[field] || 0).getTime()
       valueB = new Date(b[field] || 0).getTime()
@@ -424,56 +489,80 @@ const sortedBooks = computed(() => {
       valueB = (b[field] || '').toString().toLowerCase()
     }
 
-    // 進行排序比較
     if (valueA < valueB) return ascending ? -1 : 1
     if (valueA > valueB) return ascending ? 1 : -1
     return 0
   })
 })
 
-// 計算總頁數
 const totalPages = computed(() => Math.ceil(sortedBooks.value.length / itemsPerPage.value))
 
-// 計算當前頁面應該顯示的資料
 const paginatedBooks = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value
   const end = start + itemsPerPage.value
   return sortedBooks.value.slice(start, end)
 })
 
-// 排序功能
-function toggleSortOrder() {
-  sortConfig.value.ascending = !sortConfig.value.ascending
-}
-
-// 頁面跳轉
-function goToPage(page) {
-  const pageNum = parseInt(page)
-  if (pageNum && !isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages.value) {
-    currentPage.value = pageNum
-  }
-}
-
-// 監聽每頁顯示筆數變動，自動跳回第一頁
+// ===== 監聽器 =====
 watch(itemsPerPage, () => {
   currentPage.value = 1
 })
 
-// 監聽排序設定變化
 watch([() => sortConfig.value.field, () => sortConfig.value.ascending], () => {
-  // 當排序設定改變時，重置到第一頁
   currentPage.value = 1
 })
 
-// 初始化載入資料
+// ===== 生命週期 =====
 onMounted(() => {
-  loadReservationList()
+  checkLoginStatus()
+  if (isLoggedIn.value) {
+    loadReservationList()
+  }
 })
 
-// 暴露方法給其他組件使用
+// ===== 暴露方法 =====
 defineExpose({
   addToReservationList
 })
+
+// ===== 登入狀態檢查 =====
+const checkLoginStatus = () => {
+  // 檢查 localStorage 中的用戶資訊
+  const storedUser = localStorage.getItem('user')
+  const jwtToken = localStorage.getItem('jwt_token')
+  const authToken = localStorage.getItem('authToken')
+
+  console.log('=== 登入狀態檢查 ===')
+  console.log('storedUser:', storedUser)
+  console.log('jwtToken:', jwtToken)
+  console.log('authToken:', authToken)
+
+  if (storedUser) {
+    try {
+      user.value = JSON.parse(storedUser)
+      isLoggedIn.value = true
+      console.log('✅ 用戶已登入：', user.value)
+    } catch (e) {
+      console.error('❌ 解析用戶資訊失敗：', e)
+      isLoggedIn.value = false
+    }
+  } else if (jwtToken || authToken) {
+    // 如果有 token 但沒有用戶資訊，也視為已登入
+    isLoggedIn.value = true
+    console.log('✅ 檢測到登入 token')
+  } else {
+    isLoggedIn.value = false
+    console.log('❌ 用戶未登入')
+  }
+
+  console.log('最終登入狀態：', isLoggedIn.value)
+  console.log('==================')
+}
+
+// 跳轉到登入頁面
+const goToLogin = () => {
+  router.push('/login')
+}
 </script>
 
 <style scoped>
@@ -674,6 +763,12 @@ defineExpose({
   color: #4b5563;
 }
 
+.batch-warning {
+  font-size: 0.9rem;
+  color: #dc2626;
+  font-weight: 500;
+}
+
 .batch-btn {
   padding: 8px 16px;
   border-radius: 6px;
@@ -732,9 +827,10 @@ defineExpose({
   width: 100%;
 }
 
-.history-grid-header {
+.history-grid-header,
+.history-grid-row {
   display: grid;
-  grid-template-columns: 50px 2fr 1fr 1fr 1fr 120px;
+  grid-template-columns: 50px 2fr 1fr 1fr 1fr;
   gap: 16px;
   padding: 16px 20px;
   background: rgba(243, 244, 246, 0.6);
@@ -745,6 +841,24 @@ defineExpose({
   font-size: 0.95rem;
 }
 
+.history-grid-header>div:nth-child(3),
+.history-grid-header>div:nth-child(4),
+.history-grid-header>div:nth-child(5),
+.history-grid-row>div:nth-child(3),
+.history-grid-row>div:nth-child(4),
+.history-grid-row>div:nth-child(5) {
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+.history-grid-header>div,
+.history-grid-row>div {
+  /* border: 1px solid #222; */
+  box-sizing: border-box;
+}
+
 .history-grid-body {
   max-height: 500px;
   overflow-y: auto;
@@ -752,7 +866,7 @@ defineExpose({
 
 .history-grid-row {
   display: grid;
-  grid-template-columns: 50px 2fr 1fr 1fr 1fr 120px;
+  grid-template-columns: 50px 2fr 1fr 1fr 1fr;
   gap: 16px;
   padding: 16px 20px;
   border-bottom: 1px solid rgba(229, 231, 235, 0.2);
@@ -783,7 +897,10 @@ defineExpose({
 
 .history-grid-actions {
   display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
+  justify-content: center;
+  align-items: center;
 }
 
 .history-detail-btn {
@@ -902,7 +1019,6 @@ defineExpose({
 }
 
 .history-grid-author,
-.history-grid-isbn,
 .history-grid-date {
   font-size: 0.9rem;
   color: #4b5563;
@@ -1100,6 +1216,103 @@ defineExpose({
 
   .history-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* 登入提示樣式 */
+.login-required {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+  color: #6b7280;
+  background: transparent;
+  border-radius: 12px;
+  margin: 20px;
+}
+
+.login-required-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+}
+
+.login-required h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.login-required p {
+  font-size: 1rem;
+  color: #6b7280;
+  margin-bottom: 24px;
+  max-width: 400px;
+}
+
+.login-required-btn {
+  padding: 12px 32px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.login-required-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+}
+
+.login-required-btn:active {
+  transform: translateY(0);
+}
+
+@media screen and (max-width: 767px) {
+  .mobile-extra .user-info {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    gap: 0.5rem !important;
+    text-align: center !important;
+  }
+
+  .mobile-extra .user-avatar-img {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+  }
+
+  .mobile-extra .user-name,
+  .mobile-extra .user-menu-arrow {
+    font-size: 1rem !important;
+    white-space: nowrap !important;
+  }
+
+  .mobile-extra .user-menu-arrow {
+    margin-left: 0.2rem !important;
+  }
+}
+
+.menu-toggle {
+  display: none !important;
+}
+
+@media screen and (max-width: 767px) {
+  .menu-toggle {
+    display: flex !important;
+    /* 其他樣式... */
   }
 }
 </style>

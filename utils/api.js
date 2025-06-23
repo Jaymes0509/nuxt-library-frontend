@@ -48,14 +48,35 @@ api.interceptors.response.use(
 
 // 預約相關 API
 export const reservationAPI = {
-  // 獲取預約清單
-  getReservationList: (userId) => api.get('/api/bookreservations', { params: { userId } }),
+  // 獲取預約清單 - 修改為可選參數
+  getReservationList: (userId) => {
+    if (userId) {
+      return api.get('/api/bookreservations', { params: { userId } })
+    } else {
+      return api.get('/api/bookreservations')
+    }
+  },
+  
+  // 獲取當前用戶的預約清單
+  getCurrentUserReservations: () => api.get('/api/bookreservations/current'),
+  
+  // 獲取預約歷史記錄
+  getReservations: (userId) => {
+    if (userId) {
+      return api.get('/api/bookreservations/history', { params: { userId } })
+    } else {
+      return api.get('/api/bookreservations/history')
+    }
+  },
   
   // 新增單本預約
   addReservation: (data) => api.post('/api/bookreservations', data),
   
   // 批量預約
-  batchReservation: (data) => api.post('/api/bookreservations/batch', data),
+  batchReservation: (data) => {
+    console.log(JSON.stringify(data, null, 2))
+    return api.post('/api/bookreservations/batch', data)
+  },
   
   // 刪除預約
   deleteReservation: (id) => api.delete(`/api/bookreservations/${id}`),
@@ -64,7 +85,32 @@ export const reservationAPI = {
   batchDeleteReservation: (ids) => api.delete('/api/bookreservations/batch', { data: { reservationIds: ids } }),
   
   // 更新預約狀態
-  updateReservationStatus: (id, status) => api.put(`/api/bookreservations/${id}/status`, { status })
+  updateReservationStatus: (id, status) => api.put(`/api/bookreservations/${id}/status`, { status }),
+
+  // 新增預約日誌
+  addReservationLog: (data) => {
+    return api.post('/api/reservation-logs', data)
+  },
+
+  // 確認預約
+  confirmReservation: (data) => {
+    return api.post('/api/reservations/confirm', data)
+  },
+
+  // 取得使用者的預約日誌
+  getReservationLogs: (userId) => {
+    return api.get('/api/reservation-logs', { params: { userId } })
+  },
+
+  // 刪除預約日誌
+  deleteReservationLog: (logId) => {
+    return api.delete(`/api/reservation-logs/${logId}`)
+  },
+
+  // 批量刪除預約日誌
+  batchDeleteReservationLogs: (logIds) => {
+    return api.delete('/api/reservation-logs/batch', { data: { logIds } })
+  }
 }
 
 // 書籍相關 API

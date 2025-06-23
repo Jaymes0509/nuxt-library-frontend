@@ -32,7 +32,7 @@
 </template>
 
 <script setup>
-import { useAuth } from '~/components/useAuth'
+import { useAuth } from '~/composables/useAuth'
 import { computed, reactive, ref } from 'vue'
 
 const { user } = useAuth()
@@ -79,8 +79,8 @@ const menuItems = computed(() => {
         {
             label: '館藏預約',
             children: [
-                { label: '違規紀錄', href: '/violation-manager' },
-                { label: '預約查詢', href: '/reservation-record' }
+                { label: '預約清單', href: '/reservation-record' },
+                { label: '預約紀錄', href: '/reservation-history' }
             ]
         },
         {
@@ -94,11 +94,9 @@ const menuItems = computed(() => {
             label: '申請服務',
             children: [
                 { label: '借閱證申請', href: '/card-application' },
-                { label: '自習座位預約', href: '#' },
-                { label: '團體討論室預約', href: '#' },
+                { label: '自習座位預約', href: 'seat-reservation' },
                 { label: '場地租借', href: '#' },
-                { label: '團體參訪預約', href: '#' },
-                { label: '書籍薦購', href: '#' },
+                { label: '書籍薦購', href: '#' }
             ]
         },
         {
@@ -116,7 +114,8 @@ const menuItems = computed(() => {
             children: [
                 { label: '管理者專區', href: '/manager' },
                 { label: '書籍管理', href: '/manager/books' },
-                { label: '帳號管理', href: '/manager/accounts' }
+                { label: '帳號管理', href: '/manager/accounts' },
+                { label: '違規紀錄', href: '/manager/violations' }
             ]
         })
     }

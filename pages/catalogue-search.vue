@@ -53,9 +53,9 @@
             <!-- 出版年 -->
             <div class="condition">
               <label>出版年</label>
-              <input v-model="yearFrom" type="number" placeholder="西元年" style="width:100px;" />
+              <input v-model.number="yearFrom" type="number" placeholder="西元年" style="width:100px;" />
               <span>至</span>
-              <input v-model="yearTo" type="number" placeholder="西元年" style="width:100px;" />
+              <input v-model.number="yearTo" type="number" placeholder="西元年" style="width:100px;" />
             </div>
             <hr>
             <!-- 分類法 -->
@@ -108,8 +108,8 @@
               <option value="author_asc">作者↑</option>
               <option value="publisher_desc">出版社↓</option>
               <option value="publisher_asc">出版社↑</option>
-              <option value="year_desc">出版年↓</option>
-              <option value="year_asc">出版年↑</option>
+              <option value="publishdate_desc">出版年↓</option>
+              <option value="publishdate_asc">出版年↑</option>
             </select>
           </div>
         </div>
@@ -125,16 +125,7 @@
           <p><strong>作者:</strong> {{ book.author }}</p>
           <p><strong>出版社:</strong> {{ book.publisher }}</p>
           <p><strong>出版年:</strong> {{ book.publishdate }}</p>
-          <p><strong>版本項:</strong> {{ book.version }}</p>
           <p><strong>ISBN:</strong> {{ book.isbn }}</p>
-          <p><strong>分類號:</strong> {{ book.classification }}</p>
-          <p><strong>語言:</strong> {{ book.language }}</p>
-          <p>
-            <strong>在架狀態:</strong>
-            <span :class="book.is_available === 1 ? 'availability' : 'unavailable'">
-              {{ book.is_available === 1 ? '是' : '否' }}
-            </span>
-          </p>
         </div>
         <div class="result-actions">
           <button class="btn bookinfo-btn" @click="navigateToBookDetail(book)">
@@ -222,7 +213,7 @@ const languageOptions = ref([
 onMounted(async () => {
   const route = useRoute();
 
-  // ✅ 進階搜尋返回
+  //  進階搜尋返回
   if (route.query.returnType === 'advanced' && route.query.returnAdvanced) {
     try {
       const restored = JSON.parse(route.query.returnAdvanced);
@@ -237,17 +228,17 @@ onMounted(async () => {
     } catch (e) {
       console.error("還原進階搜尋失敗", e);
     }
-    return; // ⚠️ early return 避免簡易搜尋干擾
+    return; //  early return 避免簡易搜尋干擾
   }
 
-  // ✅ 簡易搜尋返回
+  //  簡易搜尋返回
   if (route.query.q && route.query.returnType === 'simple') {
     simpleSearchQuery.value = route.query.q;
     currentPage.value = parseInt(route.query.returnPage) || 1;
     await performSimpleSearch();
   }
 
-  // ✅ 若網址有 bookId，嘗試載入書籍資料
+  //  若網址有 bookId，嘗試載入書籍資料
   const bookId = route.query.bookId;
   if (bookId) {
     try {
@@ -286,15 +277,12 @@ const handleReturnFromBookInfo = () => {
 // 修改 fetchBooks 函數
 const fetchBooks = async (params) => {
   try {
-    const [field, direction] = sortConfig.value.field.split('_');
-    console.log('搜尋參數：', params);
-
     const response = await axios.get('http://localhost:8080/api/books/simple-search', {
       params: {
         ...params,
         page: currentPage.value - 1,
-        size: itemsPerPage.value,
-        sort: `${field},${direction}`
+        size: itemsPerPage.value
+        // sortField 和 sortDir 已經在 params 裡
       }
     });
 
@@ -307,29 +295,10 @@ const fetchBooks = async (params) => {
       // 為每本書獲取封面
       for (const book of content) {
         if (book.imgUrl) {
-          // 優先使用資料庫的 imgUrl
-          book.imgUrl = book.imgUrl;
-        } else if (book.isbn) {
-          try {
-            const googleBooksResponse = await axios.get(`https://www.googleapis.com/books/v1/volumes?q=isbn:${book.isbn}`);
-            if (googleBooksResponse.data.items && googleBooksResponse.data.items.length > 0) {
-              const volumeInfo = googleBooksResponse.data.items[0].volumeInfo;
-              if (volumeInfo.imageLinks && volumeInfo.imageLinks.thumbnail) {
-                book.imgUrl = volumeInfo.imageLinks.thumbnail;
-              } else {
-                book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
-              }
-            } else {
-              book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
-            }
-          } catch (error) {
-            console.error('獲取 Google Books 封面失敗：', error);
-            book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
-          }
+          book.imgUrl = book.imgUrl.trim();
         } else {
           book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
         }
-
         book.is_available = book.is_available === true ? 1 : 0;
       }
 
@@ -364,23 +333,8 @@ const fetchBooks = async (params) => {
 // 修改 computed properties
 const totalPages = computed(() => searchResults.value.totalPages || 0);
 
-const sortedResults = computed(() => {
-  const content = searchResults.value.content || [];
-  if (!Array.isArray(content)) return [];
-
-  console.log('排序前的資料：', content);
-  const [field, order] = sortConfig.value.field.split('_');
-  const sorted = [...content].sort((a, b) => {
-    const modifier = order === 'asc' ? 1 : -1;
-    if (a[field] < b[field]) return -1 * modifier;
-    if (a[field] > b[field]) return 1 * modifier;
-    return 0;
-  });
-  console.log('排序後的資料：', sorted);
-  return sorted;
-});
-
-const currentPageResults = computed(() => sortedResults.value);
+// 直接用後端回傳順序
+const currentPageResults = computed(() => searchResults.value.content || []);
 
 // Methods
 const toggleAdvancedSearch = () => {
@@ -425,10 +379,16 @@ const performSimpleSearch = async () => {
     return;
   }
 
+  // 取得排序欄位與方向
+  const [field, direction] = sortConfig.value.field.split('_');
+
   await fetchBooks({
-    field: 'title', // 直接使用 'title' 作為預設搜尋欄位
-    keyword: query
+    field: 'fulltext',
+    keyword: query,
+    sortField: field,
+    sortDir: direction
   });
+  scrollToContainerTop();
 };
 
 // 修改進階搜尋函數
@@ -498,25 +458,7 @@ const performAdvancedSearch = async () => {
     const content = Array.isArray(response.data.content) ? response.data.content : [];
     for (const book of content) {
       if (book.imgUrl) {
-        // 優先使用資料庫的 imgUrl
-        book.imgUrl = book.imgUrl;
-      } else if (book.isbn) {
-        try {
-          const googleBooksResponse = await axios.get(`https://www.googleapis.com/books/v1/volumes?q=isbn:${book.isbn}`);
-          if (googleBooksResponse.data.items && googleBooksResponse.data.items.length > 0) {
-            const volumeInfo = googleBooksResponse.data.items[0].volumeInfo;
-            if (volumeInfo.imageLinks && volumeInfo.imageLinks.thumbnail) {
-              book.imgUrl = volumeInfo.imageLinks.thumbnail;
-            } else {
-              book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
-            }
-          } else {
-            book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
-          }
-        } catch (error) {
-          console.error('獲取 Google Books 封面失敗：', error);
-          book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
-        }
+        book.imgUrl = book.imgUrl.trim();
       } else {
         book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
       }
@@ -528,6 +470,7 @@ const performAdvancedSearch = async () => {
       content
     };
     searched.value = true;
+    scrollToContainerTop();
   } catch (error) {
     console.error('進階查詢錯誤：', error);
     alert('搜尋失敗，請稍後再試');
@@ -539,6 +482,7 @@ const performAdvancedSearch = async () => {
       number: 0
     };
     searched.value = true;
+    scrollToContainerTop();
   }
 };
 
@@ -552,6 +496,7 @@ const goToPage = (page) => {
     } else {
       currentPage.value = pageNum;
     }
+    scrollToContainerTop();
   }
 };
 
@@ -573,6 +518,7 @@ watch(currentPage, () => {
     } else {
       performSimpleSearch();
     }
+    scrollToContainerTop();
   }
 }, { immediate: true });
 
@@ -600,8 +546,8 @@ const navigateToBookDetail = async (book) => {
       publishdate: book.publishdate,
       classification: book.classification,
       language: book.language,
-      summary: book.summary || '',                    // ✅ 改為 summary
-      imgUrl: book.imgUrl ||                         // ✅ 改為 imgUrl
+      summary: book.summary || '',                    // 改為 summary
+      imgUrl: book.imgUrl ||                         // 改為 imgUrl
         'https://cdn-icons-png.flaticon.com/512/2232/2232688.png',
       is_available: book.is_available.toString(),
       categorysystem: book.categorysystem || '',
@@ -628,6 +574,13 @@ const navigateToBookDetail = async (book) => {
 const handleImageError = (event) => {
   event.target.src = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
 }
+
+function scrollToContainerTop() {
+  const container = document.querySelector('.container');
+  if (container) {
+    container.scrollTop = 0;
+  }
+}
 </script>
 
 <style scoped>
@@ -641,12 +594,22 @@ body {
 
 .container {
   width: 100%;
-  /* 確保容器能適應螢幕 */
   max-width: 1200px;
-  /* 設定最大寬度，防止過寬 */
   margin: 0 auto;
   background-color: transparent;
   padding: 20px;
+  height: 100vh;
+  overflow-y: auto;
+  /* 隱藏滾動條（跨瀏覽器） */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE 10+ */
+}
+
+.container::-webkit-scrollbar {
+  display: none;
+  /* Chrome/Safari/Edge */
 }
 
 .simple-search,
@@ -797,8 +760,8 @@ body {
 }
 
 .result-info p {
-  margin: 0;
-  font-size: 16px;
+  margin: 8px;
+  font-size: 18px;
 }
 
 .result-info p strong {

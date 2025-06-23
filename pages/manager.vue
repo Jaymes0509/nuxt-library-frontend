@@ -1,5 +1,5 @@
 <script setup>
-import { useAuth } from '~/components/useAuth'
+import { useAuth } from '~/composables/useAuth'
 const { user } = useAuth()
 const router = useRouter()
 
@@ -20,8 +20,13 @@ const router = useRouter()
                         帳號資訊
                     </button>
                 </NuxtLink>
-                <NuxtPage />
+                <NuxtLink to="/manager/violations">
+                    <button class="px-6 py-3 bg-primary text-white rounded-lg shadow hover:bg-primary/80 transition">
+                        違規紀錄
+                    </button>
+                </NuxtLink>
             </div>
+            <NuxtPage />
         </div>
     </div>
     <div v-else>

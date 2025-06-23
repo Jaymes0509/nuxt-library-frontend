@@ -102,7 +102,7 @@
 
                             <select v-model="form.addressCounty" required>
                                 <option disabled value="">請選擇縣市</option>
-                                <option v-for="county in counties" :key="county">{{ county }}</option>
+                                <option v-for="county in counties" :key="county" :value="county">{{ county }}</option>
                             </select>
 
                             <select v-model="form.addressTown" required>
@@ -139,7 +139,7 @@
                     </div>
 
                     <div class="form-group">
-                        <button type="button" @click="step = 1" class="back-button">← 回上一頁</button>
+                        <ButtonsBackButton :step="step" @update:step="step = $event" />
                         <button type="submit">送出申請</button>
                     </div>
                 </form>
@@ -151,13 +151,13 @@
                     <div v-if="loading" class="loading-spinner"></div>
                     <p v-if="loading">即將返回首頁...</p>
 
-                    <button v-if="!loading" @click="delayedGoHome">回首頁</button>
+                    <ButtonsGoHome v-if="!loading" />
                 </div>
 
                 <div v-if="step === 4" class="already-applied-step">
                     <h2>⚠️ 您已申請過借閱證</h2>
                     <p>系統判定您已辦理借閱證，請勿重複申請。如有疑問請洽客服。</p>
-                    <button @click="delayedGoHome">回首頁</button>
+                    <ButtonsGoHome />
                 </div>
 
             </div>
@@ -267,7 +267,7 @@ const counties = ref([])
 
 onMounted(async () => {
     try {
-        const data = await $fetch('/api/zipcodes/counties')
+        const data = await $fetch('http://localhost:8080/api/zipcodes/counties')
         counties.value = data || []
         console.log('縣市資料：', counties.value)
     } catch (error) {
@@ -281,7 +281,7 @@ watch(() => form.addressCounty, async (newCounty) => {
     if (!newCounty) return
 
     try {
-        const data = await $fetch('/api/zipcodes/towns', {
+        const data = await $fetch('http://localhost:8080/api/zipcodes/towns', {
             query: { county: newCounty }
         })
         towns.value = data || []
@@ -296,7 +296,7 @@ watch(() => form.addressTown, async (newTown) => {
     if (!form.addressCounty || !newTown) return
 
     try {
-        const data = await $fetch('/api/zipcodes/zip', {
+        const data = await $fetch('http://localhost:8080/api/zipcodes/zip', {
             query: {
                 county: form.addressCounty,
                 town: newTown
@@ -648,15 +648,6 @@ button[type='submit'] {
 
 button[type='submit']:hover {
     background-color: #0056b3;
-}
-
-.back-button {
-    margin: 1rem;
-    padding: 8px 14px;
-    background-color: lightgray;
-    border: 1px solid #999;
-    border-radius: 6px;
-    cursor: pointer;
 }
 
 .success-step {

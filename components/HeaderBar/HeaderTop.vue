@@ -17,9 +17,7 @@
 
       <!-- 漢堡選單按鈕 -->
       <button class="menu-toggle" @click="toggleMenu" aria-label="選單">
-        <span></span>
-        <span></span>
-        <span></span>
+        <img src="/images/TSUNG-YAN.jpg" alt="選單" class="menu-toggle-img" />
       </button>
 
       <!-- 遮罩，選單展開時顯示，點擊可關閉選單 -->
@@ -42,6 +40,36 @@
             <span v-if="index !== links.length - 1" class="separator">＊</span>
           </li>
         </ul>
+        <div v-if="isMobile" class="mobile-extra">
+          <div>
+            <button @click="toggleDropdown" class="lang-btn" title="語言">🌐 語言</button>
+            <ul v-if="showDropdown" class="lang-menu">
+              <li v-for="lang in languages" :key="lang.code" :title="lang.label">
+                <a href="#" class="dropdown-item" @click.prevent="selectLang(lang.code)">
+                  {{ lang.label }}
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div class="search">
+            <input type="text" v-model="query" placeholder="站內搜尋" class="search-input" @keyup.enter="submitSearch" />
+            <button class="search-icon" @click="submitSearch">🔍</button>
+          </div>
+          <div class="login-status">
+            <div v-if="isLoggedIn" class="user-info" @click="toggleUserMenu" :aria-expanded="showUserMenu">
+              <img src="/images/zheng.jpg" alt="會員頭像" class="user-avatar-img" />
+              <span class="user-name">{{ userInfo.name || '會員' }}</span>
+              <span class="user-menu-arrow">{{ showUserMenu ? '▲' : '▼' }}</span>
+              <div v-if="showUserMenu" class="user-menu" @click.stop>
+                <div class="user-menu-header">
+                  <span class="user-role">{{ userInfo.role === 'admin' ? '管理員' : '一般會員' }}</span>
+                </div>
+                <button @click="logout" class="user-menu-item">🚪 登出</button>
+              </div>
+            </div>
+            <NuxtLink v-else to="/login" class="login-btn">🔑 登入</NuxtLink>
+          </div>
+        </div>
       </div>
 
       <!-- <div class="icons">
@@ -51,7 +79,7 @@
         <img src="/fb.png" alt="Facebook" />
       </div> -->
       <!-- 語言切換選單 -->
-      <div class="top-right">
+      <div v-if="!isMobile" class="top-right">
         <div>
           <button @click="toggleDropdown" class="lang-btn" title="語言">🌐 語言</button>
           <ul v-if="showDropdown" class="lang-menu">
@@ -69,6 +97,26 @@
             🔍
           </button>
         </div>
+
+        <!-- 登入狀態顯示器 -->
+        <div class="login-status">
+          <div v-if="isLoggedIn" class="user-info" @click="toggleUserMenu" :aria-expanded="showUserMenu">
+            <img src="/images/zheng.jpg" alt="會員頭像" class="user-avatar-img" />
+            <span class="user-name">{{ userInfo.name || '會員' }}</span>
+            <span class="user-menu-arrow">{{ showUserMenu ? '▲' : '▼' }}</span>
+            <div v-if="showUserMenu" class="user-menu" @click.stop>
+              <div class="user-menu-header">
+                <span class="user-role">{{ userInfo.role === 'admin' ? '管理員' : '一般會員' }}</span>
+              </div>
+              <button @click="logout" class="user-menu-item">
+                🚪 登出
+              </button>
+            </div>
+          </div>
+          <NuxtLink v-else to="/login" class="login-btn">
+            🔑 登入
+          </NuxtLink>
+        </div>
       </div>
 
       <!-- <div class="search">
@@ -83,14 +131,104 @@
   </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const showDropdown = ref(false)
 const isMenuOpen = ref(false)
+const showUserMenu = ref(false)
+
+// 登入狀態相關
+const isLoggedIn = ref(false)
+const userInfo = ref({})
+
+// 自動登出
+const idleTimer = ref(null)
+const IDLE_TIMEOUT = 60 * 60 * 1000 // 1 小時
+
+const resetIdleTimer = () => {
+  if (idleTimer.value) clearTimeout(idleTimer.value)
+
+  if (isLoggedIn.value) {
+    idleTimer.value = setTimeout(() => {
+      alert('您已閒置超過 1 小時，系統已自動將您登出。')
+      logout()
+    }, IDLE_TIMEOUT)
+  }
+}
+
+const activityEvents = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart']
 
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
+  // 關閉用戶選單
+  showUserMenu.value = false
+}
+
+const toggleUserMenu = () => {
+  showUserMenu.value = !showUserMenu.value
+  console.log('showUserMenu:', showUserMenu.value)
+  showDropdown.value = false
+}
+
+// 點擊外部區域關閉選單
+const closeMenus = (event) => {
+  const target = event.target
+  const isUserInfo = target.closest('.user-info')
+  const isLangMenu = target.closest('.lang-btn, .lang-menu')
+
+  if (!isUserInfo) {
+    showUserMenu.value = false
+  }
+
+  if (!isLangMenu) {
+    showDropdown.value = false
+  }
+}
+
+// 檢查登入狀態
+const checkLoginStatus = () => {
+  const storedUser = localStorage.getItem('user')
+  const jwtToken = localStorage.getItem('jwt_token')
+  const authToken = localStorage.getItem('authToken')
+
+  if (storedUser) {
+    try {
+      userInfo.value = JSON.parse(storedUser)
+      isLoggedIn.value = true
+      console.log('✅ 用戶已登入：', userInfo.value)
+    } catch (e) {
+      console.error('❌ 解析用戶資訊失敗：', e)
+      isLoggedIn.value = false
+      userInfo.value = {}
+    }
+  } else if (jwtToken || authToken) {
+    // 如果有 token 但沒有用戶資訊，也視為已登入
+    isLoggedIn.value = true
+    userInfo.value = { name: '會員', role: 'user' }
+    console.log('✅ 檢測到登入 token')
+  } else {
+    isLoggedIn.value = false
+    userInfo.value = {}
+    console.log('❌ 用戶未登入')
+  }
+}
+
+// 登出功能
+const logout = () => {
+  localStorage.removeItem('user')
+  localStorage.removeItem('jwt_token')
+  localStorage.removeItem('authToken')
+  isLoggedIn.value = false
+  userInfo.value = {}
+  showUserMenu.value = false
+  console.log('✅ 用戶已登出')
+
+  // 清除計時器
+  if (idleTimer.value) clearTimeout(idleTimer.value)
+
+  // 重新導向到首頁
+  router.push('/')
 }
 
 const languages = [
@@ -130,10 +268,57 @@ const toggleAccessibility = () => {
   }
 }
 
+const isMobile = ref(false)
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
+
 onMounted(() => {
   if (localStorage.getItem('accessibleMode') === 'true') {
     document.documentElement.classList.add('accessible-mode')
     isAccessible.value = true
+  }
+
+  // 檢查登入狀態
+  checkLoginStatus()
+
+  // 監聽 localStorage 變化
+  window.addEventListener('storage', checkLoginStatus)
+
+  // 監聽點擊事件，關閉選單
+  document.addEventListener('click', closeMenus)
+
+  // 自動登出設定
+  activityEvents.forEach(event => {
+    window.addEventListener(event, resetIdleTimer, true)
+  })
+  resetIdleTimer()
+
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('storage', checkLoginStatus)
+  document.removeEventListener('click', closeMenus)
+
+  // 自動登出清理
+  if (idleTimer.value) clearTimeout(idleTimer.value)
+  activityEvents.forEach(event => {
+    window.removeEventListener(event, resetIdleTimer, true)
+  })
+
+  window.removeEventListener('resize', checkMobile)
+})
+
+// 監聽登入狀態變化以啟動/停止計時器
+watch(isLoggedIn, (loggedIn) => {
+  if (loggedIn) {
+    resetIdleTimer()
+  } else {
+    if (idleTimer.value) {
+      clearTimeout(idleTimer.value)
+    }
   }
 })
 
@@ -337,7 +522,7 @@ const submitSearch = () => {
   font-size: 16px;
   flex: 1;
   background: transparent;
-  font-size: 1.25rem;
+  font-size: 1rem;
   width: 100%;
 }
 
@@ -351,11 +536,11 @@ const submitSearch = () => {
 }
 
 .top-right {
+  margin-left: auto;
+  justify-content: flex-end;
   display: flex;
   align-items: center;
   gap: 1rem;
-  flex-wrap: nowrap;
-  /* 防止換行 */
 }
 
 /* 響應式設計 */
@@ -405,15 +590,38 @@ const submitSearch = () => {
 
 @media screen and (max-width: 767px) {
   .menu-toggle {
+    display: none !important;
+  }
+
+  .menu-toggle {
     display: flex !important;
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 10000;
+    background: transparent;
+    border: none;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .menu-toggle-img {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 8px;
+    display: block;
   }
 
   .top-links {
     position: fixed;
     top: 0;
     right: -100%;
-    width: 30%;
-    max-width: 100px;
+    width: 220px;
+    max-width: 90vw;
     height: 100vh;
     background: white;
     flex-direction: column;
@@ -443,17 +651,42 @@ const submitSearch = () => {
   }
 
   .top-right {
-    flex-direction: column;
-    width: 100%;
-    gap: 1.2rem;
-    margin-top: 1rem;
-    align-items: center;
-    text-align: center;
+    display: none !important;
   }
 
   .search {
-    width: 50%;
-    margin-left: 0;
+    width: 100%;
+    margin: 0.5rem 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .search-input {
+    width: 80%;
+    min-width: 0;
+    font-size: 1rem;
+  }
+
+  .search-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin-left: 0.5rem;
+    font-size: 1.1rem;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    background: #f3f4f6;
+    transition: background 0.2s;
+  }
+
+  .search-icon:hover {
+    background: #e0e7ef;
   }
 
   .logo {
@@ -489,90 +722,169 @@ const submitSearch = () => {
   .separator {
     display: none !important;
   }
+
+  /* 手機版登入狀態樣式 */
+  .user-info {
+    padding: 6px 10px;
+  }
+
+  .user-name {
+    font-size: 0.8rem;
+  }
+
+  .login-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+
+  .mobile-extra {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-top: 1rem;
+    gap: 2rem;
+  }
+
+  .mobile-extra>div {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2rem;
+  }
+
+  .mobile-extra .search {
+    width: 90%;
+    margin: 0.5rem auto;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+  }
+
+  .mobile-extra .login-status {
+    width: 100%;
+    margin: 0.5rem 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2rem;
+  }
 }
 
-@media screen and (max-width: 480px) {
+@media screen and (min-width: 768px) and (max-width: 1240px) {
   .logo {
-    margin-left: 3rem;
+    margin-left: 1rem !important;
   }
 
-  .logo img {
-    height: 50px;
-  }
-
-  .title h1 {
-    font-size: 1.2rem;
-  }
-
-  .title p {
-    font-size: 0.7rem;
-  }
-
-  .cat img {
-    width: 50px;
+  .top-links {
+    margin-left: 0 !important;
+    flex-shrink: 1 !important;
+    min-width: 0 !important;
   }
 
   .top-bar {
-    padding: 0.2rem 0.5rem;
+    flex-wrap: nowrap !important;
   }
 
   .top-right {
-    gap: 0.5rem;
-    /* 在小螢幕上減少間距 */
-  }
-
-  .search {
-    width: 120px;
-    /* 在小螢幕上進一步縮小搜尋框 */
-  }
-
-  .lang-btn,
-  .login-btn {
-    padding: 4px 8px;
-    /* 調整按鈕內邊距 */
-    font-size: 1rem;
-    /* 稍微縮小字體 */
+    margin-left: auto !important;
+    justify-content: flex-end !important;
+    width: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
   }
 }
 
-.menu-toggle {
-  display: none !important;
-  background: red !important;
-  border: 2px solid black !important;
-  width: 48px !important;
-  height: 48px !important;
-  z-index: 9999 !important;
+@media screen and (min-width: 768px) {
+  .mobile-extra {
+    display: none !important;
+  }
 }
 
-.menu-toggle span {
-  background: #fff !important;
-  height: 6px !important;
-  margin: 6px 0 !important;
-  border-radius: 3px !important;
-}
-
-.menu-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.2);
-  z-index: 98;
+.menu-toggle-img,
+.user-avatar-img {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
   display: block;
 }
 
-/* 一定要放在最後 */
-@media screen and (max-width: 767px) {
-  .menu-toggle {
-    display: flex !important;
-  }
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px 4px 4px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
 
-  .search-icon {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.1rem;
-  }
+.user-avatar-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-info {
+  position: relative;
+}
+
+.user-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 140px;
+  z-index: 1000;
+  overflow: hidden;
+  padding: 0;
+}
+
+.user-menu-header {
+  padding: 10px 16px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.95rem;
+  color: #374151;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.user-role {
+  font-size: 0.95rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.user-menu-item {
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #374151;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-menu-item:hover {
+  background: #f3f4f6;
 }
 </style>

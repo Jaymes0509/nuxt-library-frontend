@@ -3,7 +3,19 @@
         <div class="intro">
             <div class="history-bg">
                 <h1 class="history-title">預約記錄</h1>
-                <div class="history-main">
+
+                <!-- 登入檢查 -->
+                <div v-if="!isLoggedIn" class="login-required">
+                    <div class="login-required-icon">🔒</div>
+                    <h2>需要登入會員</h2>
+                    <p>您需要登入會員才能查看預約記錄</p>
+                    <button @click="goToLogin" class="login-required-btn">
+                        前往登入
+                    </button>
+                </div>
+
+                <!-- 預約記錄內容（只有登入後才顯示） -->
+                <div v-else class="history-main">
                     <!-- 控制面板 -->
                     <div class="history-control-panel">
                         <div class="history-control-panel-left">
@@ -126,6 +138,8 @@
                 </div>
             </div>
         </div>
+        <CustomAlert :show="customAlert.show" :title="customAlert.title" :message="customAlert.message"
+            @close="closeAlert" />
     </div>
 </template>
 
@@ -133,7 +147,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useHead } from '#imports'
-import axios from 'axios'
+import { reservationAPI } from '~/utils/api'
+import CustomAlert from '~/components/CustomAlert.vue'
 
 // 設置頁面標題
 useHead({
@@ -145,6 +160,27 @@ const router = useRouter()
 
 // 視圖模式
 const viewMode = ref('table')
+
+// 自訂提示視窗
+const customAlert = ref({
+    show: false,
+    title: '',
+    message: ''
+})
+
+const showAlert = (title, message) => {
+    customAlert.value.title = title
+    customAlert.value.message = message
+    customAlert.value.show = true
+}
+
+const closeAlert = () => {
+    customAlert.value.show = false
+}
+
+// 登入狀態檢查
+const isLoggedIn = ref(false)
+const user = ref(null)
 
 // 分頁設定
 const pageSizes = [10, 20, 30, 50, 100]
@@ -166,6 +202,45 @@ function getDefaultCoverUrl(index) {
 const reservationBooks = ref([])
 const loading = ref(false)
 const error = ref(null)
+
+// 檢查登入狀態
+const checkLoginStatus = () => {
+    // 檢查 localStorage 中的用戶資訊
+    const storedUser = localStorage.getItem('user')
+    const jwtToken = localStorage.getItem('jwt_token')
+    const authToken = localStorage.getItem('authToken')
+
+    console.log('=== 登入狀態檢查 ===')
+    console.log('storedUser:', storedUser)
+    console.log('jwtToken:', jwtToken)
+    console.log('authToken:', authToken)
+
+    if (storedUser) {
+        try {
+            user.value = JSON.parse(storedUser)
+            isLoggedIn.value = true
+            console.log('✅ 用戶已登入：', user.value)
+        } catch (e) {
+            console.error('❌ 解析用戶資訊失敗：', e)
+            isLoggedIn.value = false
+        }
+    } else if (jwtToken || authToken) {
+        // 如果有 token 但沒有用戶資訊，也視為已登入
+        isLoggedIn.value = true
+        console.log('✅ 檢測到登入 token')
+    } else {
+        isLoggedIn.value = false
+        console.log('❌ 用戶未登入')
+    }
+
+    console.log('最終登入狀態：', isLoggedIn.value)
+    console.log('==================')
+}
+
+// 跳轉到登入頁面
+const goToLogin = () => {
+    router.push('/login')
+}
 
 // 格式化日期時間
 function formatDateTime(dateTimeStr) {
@@ -189,33 +264,49 @@ async function fetchReservations() {
     error.value = null
 
     try {
-        const response = await axios.get('/api/reservations')
+        console.log('開始載入預約歷史記錄...')
 
-        console.log('API 回傳資料：', response.data);
+        let response
+        try {
+            // 使用正確的 API 查詢 reservations 表 (預約歷史)
+            response = await reservationAPI.getReservations(1)
+        } catch (firstError) {
+            console.log('使用 userId=1 失敗，嘗試不傳參數:', firstError)
+            try {
+                // 備用方案：不傳參數
+                response = await reservationAPI.getReservations()
+            } catch (secondError) {
+                console.log('所有方案都失敗:', secondError)
+                throw secondError
+            }
+        }
+
+        console.log('API 回傳資料：', response.data)
 
         if (response.data && Array.isArray(response.data)) {
             reservationBooks.value = response.data.map((reservation, index) => {
-                // 直接使用扁平化的資料結構
+                // 處理 reservations 表的資料結構
                 const processedReservation = {
-                    reservationId: reservation.reservation_id || `res_${index}`,
-                    title: reservation.title || '未知書名',
-                    author: reservation.author || '未知作者',
-                    isbn: reservation.isbn || '未知ISBN',
-                    publisher: reservation.publisher || '未知出版社',
+                    reservationId: reservation.reservation_id || reservation.id || `res_${index}`,
+                    title: reservation.book_title || reservation.title || '未知書名',
+                    author: reservation.book_author || reservation.author || '未知作者',
+                    isbn: reservation.book_isbn || reservation.isbn || '未知ISBN',
+                    publisher: reservation.book_publisher || reservation.publisher || '未知出版社',
                     classification: reservation.classification || '',
                     categoryName: reservation.category_name || '',
                     pickupLocation: reservation.pickup_location || '未指定地點',
                     pickupTime: reservation.pickup_time || '',
-                    reservationDate: reservation.reservation_date || '',
-                    expiryDate: reservation.expiry_date || '',
+                    reservationDate: reservation.created_at || '',
+                    expiryDate: reservation.updated_at || '',
                     status: reservation.status || 'pending',
+                    userId: reservation.user_id,
                     // 保存完整的原始資料，以便詳情頁使用
                     bookInfo: {
                         bookId: reservation.book_id,
-                        title: reservation.title,
-                        author: reservation.author,
-                        isbn: reservation.isbn,
-                        publisher: reservation.publisher,
+                        title: reservation.book_title || reservation.title,
+                        author: reservation.book_author || reservation.author,
+                        isbn: reservation.book_isbn || reservation.isbn,
+                        publisher: reservation.book_publisher || reservation.publisher,
                         classification: reservation.classification,
                         category: {
                             cName: reservation.category_name
@@ -232,23 +323,19 @@ async function fetchReservations() {
             })
 
             console.log('總筆數：', reservationBooks.value.length)
-            console.log('資料範例：', {
-                title: reservationBooks.value[0]?.title,
-                author: reservationBooks.value[0]?.author,
-                pickupLocation: reservationBooks.value[0]?.pickupLocation,
-                pickupTime: reservationBooks.value[0]?.pickupTime,
-                status: reservationBooks.value[0]?.status
-            })
-
-            console.log('前端處理後的 reservationBooks：', reservationBooks.value);
+            console.log('前端處理後的 reservationBooks：', reservationBooks.value)
         } else {
-            console.warn('API 返回格式不符合預期：', response.data)
+            console.log('API 回應不是陣列或為空')
             reservationBooks.value = []
-            error.value = '資料格式錯誤'
         }
     } catch (err) {
         console.error('獲取預約記錄失敗：', err)
-        error.value = '無法載入預約記錄，請稍後再試。錯誤詳情：' + (err.response?.data?.statusMessage || err.message)
+        console.log('錯誤詳情:', {
+            status: err.response?.status,
+            statusText: err.response?.statusText,
+            data: err.response?.data
+        })
+        error.value = '無法載入預約記錄，請稍後再試'
         reservationBooks.value = []
     } finally {
         loading.value = false
@@ -277,7 +364,7 @@ function viewBookDetail(reservation) {
     } else {
         console.warn('缺少書籍資訊或 ISBN，無法跳轉')
         // 可以顯示錯誤訊息或使用預設值
-        alert('無法獲取書籍詳情，請稍後再試')
+        showAlert('提示', '無法獲取書籍詳情，請稍後再試')
     }
 }
 
@@ -342,10 +429,13 @@ watch([() => sortConfig.value.field, () => sortConfig.value.ascending], () => {
 
 // 初始化載入資料
 onMounted(async () => {
-    try {
-        await fetchReservations()
-    } catch (err) {
-        console.error('初始化載入失敗：', err)
+    checkLoginStatus()
+    if (isLoggedIn.value) {
+        try {
+            await fetchReservations()
+        } catch (err) {
+            console.error('初始化載入失敗：', err)
+        }
     }
 })
 </script>
@@ -815,5 +905,61 @@ onMounted(async () => {
     .history-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* 登入提示樣式 */
+.login-required {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    text-align: center;
+    color: #6b7280;
+    background: transparent;
+    border-radius: 12px;
+    margin: 20px;
+}
+
+.login-required-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+}
+
+.login-required h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 12px;
+}
+
+.login-required p {
+    font-size: 1rem;
+    color: #6b7280;
+    margin-bottom: 24px;
+    max-width: 400px;
+}
+
+.login-required-btn {
+    padding: 12px 32px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.login-required-btn:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+}
+
+.login-required-btn:active {
+    transform: translateY(0);
 }
 </style>
