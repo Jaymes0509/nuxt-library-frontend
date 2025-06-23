@@ -183,6 +183,21 @@ export const borrowApi = {
     } catch (error) {
       throw new Error(error.response?.data?.message || '檢查借閱限制失敗')
     }
+  },
+
+  /**
+   * 批量借書
+   * @param {Object} borrowData - 批量借書資料
+   * @param {Array<Object>} borrowData.books - 書籍列表，每個物件包含 bookId, duration, location, method
+   * @returns {Promise<any>}
+   */
+  borrowBooks: async (borrowData) => {
+    try {
+      const response = await api.post('/api/borrows/batch-borrow', borrowData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || '批量借書失敗');
+    }
   }
 }
 

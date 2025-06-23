@@ -16,7 +16,8 @@
                     <SeatDatePicker v-model="selectedDate" />
                     <br>
                     <SeatTimeSlot v-model="selectedSlot" :selected-date="selectedDate" />
-                    <ButtonsNextButton :disabled="!selectedDate || !selectedSlot?.start" @next="step++" />
+                    <ButtonsNextButton :disabled="!selectedDate || !selectedSlot?.start" @next="handleNextStep" />
+
                 </div>
 
                 <div v-if="step === 2">
@@ -27,6 +28,11 @@
                 <SeatReservationSummary v-if="step === 3" :selectedDate="selectedDate"
                     :selectedSlot="`${selectedSlot.start} - ${selectedSlot.end}`" :selectedSeat="selectedSeat" />
 
+                <div v-if="step === 3" class="cancel-button-wrapper" style="margin-top: 20px; text-align: center;">
+                    <button @click="cancelReservation" class="cancel-btn">
+                        ❌ 取消預約
+                    </button>
+                </div>
             </div>
         </div>
     </template>
@@ -43,6 +49,33 @@ const step = ref(1)
 // 假設你已取得登入的 userId
 const userId = ref(123) // 替換成你實際取得的值
 
+const handleNextStep = async () => {
+    const slotLabel = `${selectedSlot.value.start} - ${selectedSlot.value.end}`
+
+    const { data, error } = await useFetch('http://localhost:8080/api/seats/reservations/check', {
+        method: 'GET',
+        query: {
+            userId: userId.value,
+            date: selectedDate.value,
+            timeSlot: slotLabel
+        }
+    })
+
+    if (error.value) {
+        alert('❌ 檢查預約時發生錯誤')
+        return
+    }
+
+    if (data.value === true) {
+        alert('⚠️ 您已預約同一時段的座位')
+        return
+    }
+
+    step.value = 2 // 只有沒預約過才進入座位選擇頁
+}
+
+
+
 // 點擊座位後觸發預約
 const handleConfirmSeat = async (seatLabel) => {
     selectedSeat.value = seatLabel
@@ -58,21 +91,62 @@ const handleConfirmSeat = async (seatLabel) => {
     })
 
     if (res.error.value) {
+        const msg = res.error.value?.data || '❌ 發生錯誤';
         if (res.status.value === 409) {
-            alert('⚠️ 該座位已被預約')
+            if (msg.includes('同一時段')) {
+                alert('⚠️ 您已預約同一時段的座位')
+            } else {
+                alert('⚠️ 該座位已被預約')
+            }
         } else {
             alert('❌ 發生錯誤，請稍後再試')
             console.error(res.error.value)
         }
     } else {
-        alert(`✅ 成功預約座位：${seatLabel}`)
         step.value = 3
     }
 }
 
+const cancelReservation = async () => {
+    const res = await useFetch('http://localhost:8080/api/seats/reservations/cancel', {
+        method: 'PUT',
+        query: {
+            userId: userId.value,
+            seatLabel: selectedSeat.value,
+            date: selectedDate.value,
+            timeSlot: selectedSlot.value.enum
+        },
+    });
+
+    if (res.error.value) {
+        alert('❌ 取消預約失敗：' + res.error.value.message);
+    } else {
+        alert('✅ 預約已取消');
+        step.value = 1;
+        selectedSeat.value = null;
+        selectedSlot.value = '';
+        selectedDate.value = '';
+    }
+};
+
+
 </script>
 
 <style scoped>
+.cancel-btn {
+    background-color: #e74c3c;
+    color: white;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.cancel-btn:hover {
+    background-color: #c0392b;
+}
+
 .loading-spinner {
     border: 6px solid #f3f3f3;
     border-top: 6px solid #003366;
