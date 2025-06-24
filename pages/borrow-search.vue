@@ -1,175 +1,174 @@
 <template>
-  <div class="container">
-    <h1>借書查詢</h1>
-
-    <!-- 登入檢查 -->
-    <div v-if="!isLoggedIn" class="login-required">
-      <div class="login-required-icon">🔒</div>
-      <h2>需要登入會員</h2>
-      <p>您需要登入會員才能使用借書查詢功能</p>
-      <button @click="goToLogin" class="login-required-btn">
-        前往登入
-      </button>
-    </div>
-
-    <!-- 借書查詢內容（只有登入後才顯示） -->
-    <div v-else>
-      <!-- Simple Search -->
-      <div v-if="!isAdvancedSearch" class="simple-search">
-        <div class="search-bar">
-          <input v-model="simpleSearchQuery" @keyup.enter="performSimpleSearch" type="text" placeholder="輸入關鍵字..." />
-          <button class="btn btn-primary" @click="performSimpleSearch">搜尋</button>
-          <button class="btn btn-secondary" @click="toggleAdvancedSearch">進階搜尋</button>
+  <div class="scroll-wrapper">
+    <div class="intro">
+      <div class="history-bg">
+        <h1 class="history-title">借書查詢</h1>
+        <!-- 登入檢查 -->
+        <div v-if="!isLoggedIn" class="login-required">
+          <div class="login-required-icon">🔒</div>
+          <h2>需要登入會員</h2>
+          <p>您需要登入會員才能使用借書查詢功能</p>
+          <button @click="goToLogin" class="login-required-btn">
+            前往登入
+          </button>
         </div>
-      </div>
-
-      <!-- Advanced Search -->
-      <div v-else class="advanced-search">
-        <div class="search-layout">
-          <!-- 左側：進階搜尋條件 -->
-          <div class="search-conditions">
+        <!-- 借書查詢內容（只有登入後才顯示） -->
+        <div v-else>
+          <!-- Simple Search -->
+          <div v-if="!isAdvancedSearch" class="simple-search">
             <div class="search-bar">
-              <h2>進階搜尋</h2>
-              <button class="btn btn-secondary" @click="toggleAdvancedSearch">返回單一搜尋</button>
-            </div>
-            <div v-for="(condition, index) in advancedSearchConditions" :key="index" class="condition">
-              <select v-if="index > 0" v-model="condition.operator">
-                <option value="AND">AND</option>
-                <option value="OR">OR</option>
-                <option value="NOT">NOT</option>
-              </select>
-              <select v-model="condition.field">
-                <option value="title">書名</option>
-                <option value="author">作者</option>
-                <option value="isbn">ISBN</option>
-                <option value="publisher">出版社</option>
-                <option value="classification">分類號</option>
-                <option value="version">版本項</option>
-              </select>
-              <input v-model="condition.value" type="text" placeholder="輸入搜尋內容" />
-              <button v-if="index > 0" class="btn btn-danger" @click="removeCondition(index)">
-                移除
-              </button>
-            </div>
-            <div class="search-bar">
-              <button class="btn btn-primary" :class="{ 'btn-disabled': advancedSearchConditions.length >= 6 }"
-                @click="addCondition">
-                新增條件
-              </button>
-              <button class="btn btn-primary" @click="performAdvancedSearch">搜尋</button>
+              <input v-model="simpleSearchQuery" @keyup.enter="performSimpleSearch" type="text" placeholder="輸入關鍵字..." />
+              <button class="btn btn-primary" @click="performSimpleSearch">搜尋</button>
+              <button class="btn btn-secondary" @click="toggleAdvancedSearch">進階搜尋</button>
             </div>
           </div>
-
-          <!-- 右側：過濾條件 -->
-          <div class="advanced-filters">
-            <div class="filter-section">
-              <!-- 出版年 -->
-              <div class="condition">
-                <label>出版年</label>
-                <input v-model="yearFrom" type="number" placeholder="西元年" style="width:100px;" />
-                <span>至</span>
-                <input v-model="yearTo" type="number" placeholder="西元年" style="width:100px;" />
+          <!-- Advanced Search -->
+          <div v-else class="advanced-search">
+            <div class="search-layout">
+              <!-- 左側：進階搜尋條件 -->
+              <div class="search-conditions">
+                <div class="search-bar">
+                  <h2>進階搜尋</h2>
+                  <button class="btn btn-secondary" @click="toggleAdvancedSearch">返回單一搜尋</button>
+                </div>
+                <div v-for="(condition, index) in advancedSearchConditions" :key="index" class="condition">
+                  <select v-if="index > 0" v-model="condition.operator">
+                    <option value="AND">AND</option>
+                    <option value="OR">OR</option>
+                    <option value="NOT">NOT</option>
+                  </select>
+                  <select v-model="condition.field">
+                    <option value="title">書名</option>
+                    <option value="author">作者</option>
+                    <option value="isbn">ISBN</option>
+                    <option value="publisher">出版社</option>
+                    <option value="classification">分類號</option>
+                    <option value="version">版本項</option>
+                  </select>
+                  <input v-model="condition.value" type="text" placeholder="輸入搜尋內容" />
+                  <button v-if="index > 0" class="btn btn-danger" @click="removeCondition(index)">
+                    移除
+                  </button>
+                </div>
+                <div class="search-bar">
+                  <button class="btn btn-primary" :class="{ 'btn-disabled': advancedSearchConditions.length >= 6 }"
+                    @click="addCondition">
+                    新增條件
+                  </button>
+                  <button class="btn btn-primary" @click="performAdvancedSearch">搜尋</button>
+                </div>
               </div>
-              <hr>
-              <!-- 分類法 -->
-              <div class="condition">
-                <label>分類法</label>
-                <select v-model="selectedCategorySystem">
-                  <option value="">全部</option>
-                  <option v-for="opt in classificationSystemOptions" :key="opt.value" :value="opt.value">
-                    {{ opt.label }}
-                  </option>
-                </select>
+              <!-- 右側：過濾條件 -->
+              <div class="advanced-filters">
+                <div class="filter-section">
+                  <!-- 出版年 -->
+                  <div class="condition">
+                    <label>出版年</label>
+                    <input v-model="yearFrom" type="number" placeholder="西元年" style="width:100px;" />
+                    <span>至</span>
+                    <input v-model="yearTo" type="number" placeholder="西元年" style="width:100px;" />
+                  </div>
+                  <hr>
+                  <!-- 分類法 -->
+                  <div class="condition">
+                    <label>分類法</label>
+                    <select v-model="selectedCategorySystem">
+                      <option value="">全部</option>
+                      <option v-for="opt in classificationSystemOptions" :key="opt.value" :value="opt.value">
+                        {{ opt.label }}
+                      </option>
+                    </select>
+                  </div>
+                  <hr>
+                  <!-- 語言 -->
+                  <div class="condition">
+                    <label>語言</label>
+                    <select v-model="selectedLanguages">
+                      <option value="">全部</option>
+                      <option v-for="lang in languageOptions" :key="lang.value" :value="lang.value">
+                        {{ lang.label }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
               </div>
-              <hr>
-              <!-- 語言 -->
-              <div class="condition">
-                <label>語言</label>
-                <select v-model="selectedLanguages">
-                  <option value="">全部</option>
-                  <option v-for="lang in languageOptions" :key="lang.value" :value="lang.value">
-                    {{ lang.label }}
-                  </option>
-                </select>
+            </div>
+          </div>
+          <!-- Search Results -->
+          <div v-if="currentPageResults.length" class="results">
+            <h2>搜尋結果</h2>
+            <div class="result-control-panel">
+              <div class="result-control-panel-left">
+                <div class="result-row">
+                  <span class="result-label">每頁顯示：</span>
+                  <select v-model="itemsPerPage" class="result-select">
+                    <option v-for="size in pageSizes" :key="size" :value="size">{{ size }} 筆</option>
+                  </select>
+                </div>
+                <div class="result-row">
+                  <span class="result-label">排序：</span>
+                  <select v-model="sortConfig.field" class="result-select">
+                    <option value="title_desc">書名↓</option>
+                    <option value="title_asc">書名↑</option>
+                    <option value="author_desc">作者↓</option>
+                    <option value="author_asc">作者↑</option>
+                    <option value="publisher_desc">出版社↓</option>
+                    <option value="publisher_asc">出版社↑</option>
+                    <option value="publishdate_desc">出版年↓</option>
+                    <option value="publishdate_asc">出版年↑</option>
+                  </select>
+                </div>
+              </div>
+              <div class="result-control-panel-right">
+                <button class="btn btn-secondary" @click="goToBorrowList">
+                  查看借書清單
+                </button>
+              </div>
+            </div>
+            <div v-for="book in currentPageResults" :key="book.isbn" class="result-item">
+              <div class="result-image">
+                <img :src="book.imgUrl || `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`" :alt="book.title"
+                  @error="handleImageError" class="book-cover"
+                  onerror="this.onerror=null;this.src='https://cdn-icons-png.flaticon.com/512/2232/2232688.png';" />
+              </div>
+              <div class="result-info">
+                <p><strong>書名:</strong> {{ book.title }}</p>
+                <p><strong>作者:</strong> {{ book.author }}</p>
+                <p><strong>出版社:</strong> {{ book.publisher }}</p>
+                <p><strong>出版年:</strong> {{ book.publishdate }}</p>
+                <p><strong>ISBN:</strong> {{ book.isbn }}</p>
+              </div>
+              <div class="result-actions">
+                <button class="btn bookinfo-btn" @click="navigateToBookDetail(book)">
+                  更多資訊
+                </button>
+              </div>
+            </div>
+            <!-- Pagination -->
+            <div class="result-pagination">
+              <div class="result-pagination-controls">
+                <button class="pagination-btn" :disabled="currentPage === 1" @click="currentPage--">
+                  <span class="sr-only">上一頁</span>
+                </button>
+                <span>共{{ totalPages }}頁</span>
+                <input type="number" :value="currentPage" class="pagination-input" min="1" :max="totalPages"
+                  @change="e => goToPage(parseInt(e.target.value))" />
+                <span>/{{ totalPages }}頁</span>
+                <button class="pagination-btn" :disabled="currentPage >= totalPages" @click="currentPage++">
+                  <span class="sr-only">下一頁</span>
+                </button>
+              </div>
+              <div class="pagination-info">
+                顯示第 {{ Math.min((currentPage - 1) * itemsPerPage + 1, searchResults.totalElements) }} 到
+                {{ Math.min(currentPage * itemsPerPage, searchResults.totalElements) }} 筆，
+                共 {{ searchResults.totalElements }} 筆
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- Search Results -->
-      <div v-if="currentPageResults.length" class="results">
-        <h2>搜尋結果</h2>
-        <div class="result-control-panel">
-          <div class="result-control-panel-left">
-            <div class="result-row">
-              <span class="result-label">每頁顯示：</span>
-              <select v-model="itemsPerPage" class="result-select">
-                <option v-for="size in pageSizes" :key="size" :value="size">{{ size }} 筆</option>
-              </select>
-            </div>
-            <div class="result-row">
-              <span class="result-label">排序：</span>
-              <select v-model="sortConfig.field" class="result-select">
-                <option value="title_desc">書名↓</option>
-                <option value="title_asc">書名↑</option>
-                <option value="author_desc">作者↓</option>
-                <option value="author_asc">作者↑</option>
-                <option value="publisher_desc">出版社↓</option>
-                <option value="publisher_asc">出版社↑</option>
-                <option value="publishdate_desc">出版年↓</option>
-                <option value="publishdate_asc">出版年↑</option>
-              </select>
-            </div>
-          </div>
-          <div class="result-control-panel-right">
-            <button class="btn btn-secondary" @click="goToBorrowList">
-              查看借書清單
-            </button>
+          <div v-else-if="searched" class="no-results">
+            無搜尋結果
           </div>
         </div>
-        <div v-for="book in currentPageResults" :key="book.isbn" class="result-item">
-          <div class="result-image">
-            <img :src="book.imgUrl || `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`" :alt="book.title"
-              @error="handleImageError" class="book-cover"
-              onerror="this.onerror=null;this.src='https://cdn-icons-png.flaticon.com/512/2232/2232688.png';" />
-          </div>
-          <div class="result-info">
-            <p><strong>書名:</strong> {{ book.title }}</p>
-            <p><strong>作者:</strong> {{ book.author }}</p>
-            <p><strong>出版社:</strong> {{ book.publisher }}</p>
-            <p><strong>出版年:</strong> {{ book.publishdate }}</p>
-            <p><strong>ISBN:</strong> {{ book.isbn }}</p>
-          </div>
-          <div class="result-actions">
-            <button class="btn bookinfo-btn" @click="navigateToBookDetail(book)">
-              更多資訊
-            </button>
-          </div>
-        </div>
-        <!-- Pagination -->
-        <div class="result-pagination">
-          <div class="result-pagination-controls">
-            <button class="pagination-btn" :disabled="currentPage === 1" @click="currentPage--">
-              <span class="sr-only">上一頁</span>
-            </button>
-            <span>共{{ totalPages }}頁</span>
-            <input type="number" :value="currentPage" class="pagination-input" min="1" :max="totalPages"
-              @change="e => goToPage(parseInt(e.target.value))" />
-            <span>/{{ totalPages }}頁</span>
-            <button class="pagination-btn" :disabled="currentPage >= totalPages" @click="currentPage++">
-              <span class="sr-only">下一頁</span>
-            </button>
-          </div>
-          <div class="pagination-info">
-            顯示第 {{ Math.min((currentPage - 1) * itemsPerPage + 1, searchResults.totalElements) }} 到
-            {{ Math.min(currentPage * itemsPerPage, searchResults.totalElements) }} 筆，
-            共 {{ searchResults.totalElements }} 筆
-          </div>
-        </div>
-      </div>
-      <div v-else-if="searched" class="no-results">
-        無搜尋結果
       </div>
     </div>
   </div>
