@@ -1,161 +1,179 @@
 <template>
+
   <div class="container">
-    <h1>館藏查詢</h1>
-    <!-- Simple Search -->
-    <div v-if="!isAdvancedSearch" class="simple-search">
-      <div class="search-bar">
-        <input v-model="simpleSearchQuery" @keyup.enter="performSimpleSearch" type="text" placeholder="輸入關鍵字..." />
-        <button class="btn btn-primary" @click="performSimpleSearch">搜尋</button>
-        <button class="btn btn-secondary" @click="toggleAdvancedSearch">進階搜尋</button>
-      </div>
-    </div>
+    <h1>借書查詢</h1>
 
-    <!-- Advanced Search -->
-    <div v-else class="advanced-search">
-      <div class="search-layout">
-        <!-- 左側：進階搜尋條件 -->
-        <div class="search-conditions">
-          <div class="search-bar">
-            <h2>進階搜尋</h2>
-            <button class="btn btn-secondary" @click="toggleAdvancedSearch">返回單一搜尋</button>
-          </div>
-          <div v-for="(condition, index) in advancedSearchConditions" :key="index" class="condition">
-            <select v-if="index > 0" v-model="condition.operator">
-              <option value="AND">AND</option>
-              <option value="OR">OR</option>
-              <option value="NOT">NOT</option>
-            </select>
-            <select v-model="condition.field">
-              <option value="title">書名</option>
-              <option value="author">作者</option>
-              <option value="isbn">ISBN</option>
-              <option value="publisher">出版社</option>
-              <option value="classification">分類號</option>
-              <option value="version">版本項</option>
-            </select>
-            <input v-model="condition.value" type="text" placeholder="輸入搜尋內容" />
-            <button v-if="index > 0" class="btn btn-danger" @click="removeCondition(index)">
-              移除
-            </button>
-          </div>
-          <div class="search-bar">
-            <button class="btn btn-primary" :class="{ 'btn-disabled': advancedSearchConditions.length >= 6 }"
-              @click="addCondition">
-              新增條件
-            </button>
-            <button class="btn btn-primary" @click="performAdvancedSearch">搜尋</button>
-          </div>
+    <!-- 登入檢查 -->
+    <LoginRequiredPrompt v-if="!isLoggedIn" />
+
+    <!-- 借書查詢內容（只有登入後才顯示） -->
+    <div v-else>
+      <!-- Simple Search -->
+      <div v-if="!isAdvancedSearch" class="simple-search">
+        <div class="search-bar">
+          <input v-model="simpleSearchQuery" @keyup.enter="performSimpleSearch" type="text" placeholder="輸入關鍵字..." />
+          <button class="btn btn-primary" @click="performSimpleSearch">搜尋</button>
+          <button class="btn btn-secondary" @click="toggleAdvancedSearch">進階搜尋</button>
+
         </div>
-
-        <!-- 右側：過濾條件 -->
-        <div class="advanced-filters">
-          <div class="filter-section">
-            <!-- 出版年 -->
-            <div class="condition">
-              <label>出版年</label>
-              <input v-model.number="yearFrom" type="number" placeholder="西元年" style="width:100px;" />
-              <span>至</span>
-              <input v-model.number="yearTo" type="number" placeholder="西元年" style="width:100px;" />
-            </div>
-            <hr>
-            <!-- 分類法 -->
-            <div class="condition">
-              <label>分類法</label>
-              <select v-model="selectedCategorySystem">
-                <option value="">全部</option>
-
-                <option v-for="opt in classificationSystemOptions" :key="opt.value" :value="opt.value">
-
-                  {{ opt.label }}
-                </option>
-              </select>
-            </div>
-            <hr>
-            <!-- 語言 -->
-            <div class="condition">
-              <label>語言</label>
-              <select v-model="selectedLanguages">
-
-                <option value="">全部</option>
-
-                <option v-for="lang in languageOptions" :key="lang.value" :value="lang.value">
-                  {{ lang.label }}
-                </option>
-              </select>
+        <!-- 借書查詢內容（只有登入後才顯示） -->
+        <div v-else>
+          <!-- Simple Search -->
+          <div v-if="!isAdvancedSearch" class="simple-search">
+            <div class="search-bar">
+              <input v-model="simpleSearchQuery" @keyup.enter="performSimpleSearch" type="text" placeholder="輸入關鍵字..." />
+              <button class="btn btn-primary" @click="performSimpleSearch">搜尋</button>
+              <button class="btn btn-secondary" @click="toggleAdvancedSearch">進階搜尋</button>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Search Results -->
-    <div v-if="currentPageResults.length" class="results">
-      <h2>搜尋結果</h2>
-      <div class="result-control-panel">
-        <div class="result-control-panel-left">
-          <div class="result-row">
-            <span class="result-label">每頁顯示：</span>
-            <select v-model="itemsPerPage" class="result-select">
-              <option v-for="size in pageSizes" :key="size" :value="size">{{ size }} 筆</option>
-            </select>
+          <!-- Advanced Search -->
+          <div v-else class="advanced-search">
+            <div class="search-layout">
+              <!-- 左側：進階搜尋條件 -->
+              <div class="search-conditions">
+                <div class="search-bar">
+                  <h2>進階搜尋</h2>
+                  <button class="btn btn-secondary" @click="toggleAdvancedSearch">返回單一搜尋</button>
+                </div>
+                <div v-for="(condition, index) in advancedSearchConditions" :key="index" class="condition">
+                  <select v-if="index > 0" v-model="condition.operator">
+                    <option value="AND">AND</option>
+                    <option value="OR">OR</option>
+                    <option value="NOT">NOT</option>
+                  </select>
+                  <select v-model="condition.field">
+                    <option value="title">書名</option>
+                    <option value="author">作者</option>
+                    <option value="isbn">ISBN</option>
+                    <option value="publisher">出版社</option>
+                    <option value="classification">分類號</option>
+                    <option value="version">版本項</option>
+                  </select>
+                  <input v-model="condition.value" type="text" placeholder="輸入搜尋內容" />
+                  <button v-if="index > 0" class="btn btn-danger" @click="removeCondition(index)">
+                    移除
+                  </button>
+                </div>
+                <div class="search-bar">
+                  <button class="btn btn-primary" :class="{ 'btn-disabled': advancedSearchConditions.length >= 6 }"
+                    @click="addCondition">
+                    新增條件
+                  </button>
+                  <button class="btn btn-primary" @click="performAdvancedSearch">搜尋</button>
+                </div>
+              </div>
+              <!-- 右側：過濾條件 -->
+              <div class="advanced-filters">
+                <div class="filter-section">
+                  <!-- 出版年 -->
+                  <div class="condition">
+                    <label>出版年</label>
+                    <input v-model="yearFrom" type="number" placeholder="西元年" style="width:100px;" />
+                    <span>至</span>
+                    <input v-model="yearTo" type="number" placeholder="西元年" style="width:100px;" />
+                  </div>
+                  <hr>
+                  <!-- 分類法 -->
+                  <div class="condition">
+                    <label>分類法</label>
+                    <select v-model="selectedCategorySystem">
+                      <option value="">全部</option>
+                      <option v-for="opt in classificationSystemOptions" :key="opt.value" :value="opt.value">
+                        {{ opt.label }}
+                      </option>
+                    </select>
+                  </div>
+                  <hr>
+                  <!-- 語言 -->
+                  <div class="condition">
+                    <label>語言</label>
+                    <select v-model="selectedLanguages">
+                      <option value="">全部</option>
+                      <option v-for="lang in languageOptions" :key="lang.value" :value="lang.value">
+                        {{ lang.label }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="result-row">
-            <span class="result-label">排序：</span>
-            <select v-model="sortConfig.field" class="result-select">
-              <option value="title_desc">書名↓</option>
-              <option value="title_asc">書名↑</option>
-              <option value="author_desc">作者↓</option>
-              <option value="author_asc">作者↑</option>
-              <option value="publisher_desc">出版社↓</option>
-              <option value="publisher_asc">出版社↑</option>
-              <option value="publishdate_desc">出版年↓</option>
-              <option value="publishdate_asc">出版年↑</option>
-            </select>
+          <!-- Search Results -->
+          <div v-if="currentPageResults.length" class="results">
+            <h2>搜尋結果</h2>
+            <div class="result-control-panel">
+              <div class="result-control-panel-left">
+                <div class="result-row">
+                  <span class="result-label">每頁顯示：</span>
+                  <select v-model="itemsPerPage" class="result-select">
+                    <option v-for="size in pageSizes" :key="size" :value="size">{{ size }} 筆</option>
+                  </select>
+                </div>
+                <div class="result-row">
+                  <span class="result-label">排序：</span>
+                  <select v-model="sortConfig.field" class="result-select">
+                    <option value="title_desc">書名↓</option>
+                    <option value="title_asc">書名↑</option>
+                    <option value="author_desc">作者↓</option>
+                    <option value="author_asc">作者↑</option>
+                    <option value="publisher_desc">出版社↓</option>
+                    <option value="publisher_asc">出版社↑</option>
+                    <option value="publishdate_desc">出版年↓</option>
+                    <option value="publishdate_asc">出版年↑</option>
+                  </select>
+                </div>
+              </div>
+              <div class="result-control-panel-right">
+                <button class="btn btn-secondary" @click="goToBorrowList">
+                  查看借書清單
+                </button>
+              </div>
+            </div>
+            <div v-for="book in currentPageResults" :key="book.isbn" class="result-item">
+              <div class="result-image">
+                <img :src="book.imgUrl || `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`" :alt="book.title"
+                  @error="handleImageError" class="book-cover"
+                  onerror="this.onerror=null;this.src='https://cdn-icons-png.flaticon.com/512/2232/2232688.png';" />
+              </div>
+              <div class="result-info">
+                <p><strong>書名:</strong> {{ book.title }}</p>
+                <p><strong>作者:</strong> {{ book.author }}</p>
+                <p><strong>出版社:</strong> {{ book.publisher }}</p>
+                <p><strong>出版年:</strong> {{ book.publishdate }}</p>
+                <p><strong>ISBN:</strong> {{ book.isbn }}</p>
+              </div>
+              <div class="result-actions">
+                <button class="btn bookinfo-btn" @click="navigateToBookDetail(book)">
+                  更多資訊
+                </button>
+              </div>
+            </div>
+            <!-- Pagination -->
+            <div class="result-pagination">
+              <div class="result-pagination-controls">
+                <button class="pagination-btn" :disabled="currentPage === 1" @click="currentPage--">
+                  <span class="sr-only">上一頁</span>
+                </button>
+                <span>共{{ totalPages }}頁</span>
+                <input type="number" :value="currentPage" class="pagination-input" min="1" :max="totalPages"
+                  @change="e => goToPage(parseInt(e.target.value))" />
+                <span>/{{ totalPages }}頁</span>
+                <button class="pagination-btn" :disabled="currentPage >= totalPages" @click="currentPage++">
+                  <span class="sr-only">下一頁</span>
+                </button>
+              </div>
+              <div class="pagination-info">
+                顯示第 {{ Math.min((currentPage - 1) * itemsPerPage + 1, searchResults.totalElements) }} 到
+                {{ Math.min(currentPage * itemsPerPage, searchResults.totalElements) }} 筆，
+                共 {{ searchResults.totalElements }} 筆
+              </div>
+            </div>
+          </div>
+          <div v-else-if="searched" class="no-results">
+            無搜尋結果
           </div>
         </div>
       </div>
-      <div v-for="book in currentPageResults" :key="book.isbn" class="result-item">
-        <div class="result-image">
-          <img :src="book.imgUrl || `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`" :alt="book.title"
-            @error="handleImageError" class="book-cover"
-            onerror="this.onerror=null;this.src='https://cdn-icons-png.flaticon.com/512/2232/2232688.png';" />
-        </div>
-        <div class="result-info">
-          <p><strong>書名:</strong> {{ book.title }}</p>
-          <p><strong>作者:</strong> {{ book.author }}</p>
-          <p><strong>出版社:</strong> {{ book.publisher }}</p>
-          <p><strong>出版年:</strong> {{ book.publishdate }}</p>
-          <p><strong>ISBN:</strong> {{ book.isbn }}</p>
-        </div>
-        <div class="result-actions">
-          <button class="btn bookinfo-btn" @click="navigateToBookDetail(book)">
-            更多資訊
-          </button>
-        </div>
-      </div>
-      <!-- Pagination -->
-      <div class="result-pagination">
-        <div class="result-pagination-controls">
-          <button class="pagination-btn" :disabled="currentPage === 1" @click="currentPage--">
-            <span class="sr-only">上一頁</span>
-          </button>
-          <span>共{{ totalPages }}頁</span>
-          <input type="number" :value="currentPage" class="pagination-input" min="1" :max="totalPages"
-            @change="e => goToPage(parseInt(e.target.value))" />
-          <span>/{{ totalPages }}頁</span>
-          <button class="pagination-btn" :disabled="currentPage >= totalPages" @click="currentPage++">
-            <span class="sr-only">下一頁</span>
-          </button>
-        </div>
-        <div class="pagination-info">
-          顯示第 {{ Math.min((currentPage - 1) * itemsPerPage + 1, searchResults.totalElements) }} 到
-          {{ Math.min(currentPage * itemsPerPage, searchResults.totalElements) }} 筆，
-          共 {{ searchResults.totalElements }} 筆
-        </div>
-      </div>
-    </div>
-    <div v-else-if="searched" class="no-results">
-      無搜尋結果
     </div>
   </div>
 </template>
@@ -189,6 +207,9 @@ const sortConfig = ref({
   field: 'title_asc'
 });
 
+// 登入狀態檢查
+const isLoggedIn = ref(false)
+
 // 添加缺少的 ref 變數
 const yearFrom = ref('');
 const yearTo = ref('');
@@ -210,7 +231,44 @@ const languageOptions = ref([
   { value: '德文', label: '德文' }
 ]);
 
+// 檢查登入狀態
+const checkLoginStatus = () => {
+  // 檢查 localStorage 中的用戶資訊
+  const storedUser = localStorage.getItem('user')
+  const jwtToken = localStorage.getItem('jwt_token')
+  const authToken = localStorage.getItem('authToken')
+
+  console.log('=== 登入狀態檢查 ===')
+  console.log('storedUser:', storedUser)
+  console.log('jwtToken:', jwtToken)
+  console.log('authToken:', authToken)
+
+  if (storedUser) {
+    try {
+      const user = JSON.parse(storedUser)
+      isLoggedIn.value = true
+      console.log('✅ 用戶已登入：', user)
+    } catch (e) {
+      console.error('❌ 解析用戶資訊失敗：', e)
+      isLoggedIn.value = false
+    }
+  } else if (jwtToken || authToken) {
+    // 如果有 token 但沒有用戶資訊，也視為已登入
+    isLoggedIn.value = true
+    console.log('✅ 檢測到登入 token')
+  } else {
+    isLoggedIn.value = false
+    console.log('❌ 用戶未登入')
+  }
+
+  console.log('最終登入狀態：', isLoggedIn.value)
+  console.log('==================')
+}
+
 onMounted(async () => {
+  // 檢查登入狀態
+  checkLoginStatus()
+
   const route = useRoute();
 
   //  進階搜尋返回
@@ -250,27 +308,51 @@ onMounted(async () => {
   }
 });
 
-// 或者更完整的狀態恢復版本
-const handleReturnFromBookInfo = () => {
-  const route = useRoute()
+// 修改後的導航到書籍詳情頁方法
+const navigateToBookDetail = async (book) => {
+  router.push({
+    path: '/borrow-bookinfo',
+    query: {
+      id: book.id || book.bookId,
+      title: book.title,
+      author: book.author,
+      isbn: book.isbn,
+      publisher: book.publisher,
+      publishdate: book.publishdate,
+      classification: book.classification,
+      language: book.language,
+      summary: book.summary || '',
+      imgUrl: book.imgUrl || 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png',
+      is_available: book.is_available.toString(),
+      categorysystem: book.categorysystem || '',
+      total_copies: String(book.total_copies || 1),
+      available_copies: String(book.available_copies || (book.is_available === 1 ? 1 : 0)),
 
-  // 檢查 URL 參數以決定是否需要恢復搜尋狀態
-  if (route.query.q) {
-    if (route.query.returnType === 'advanced') {
-      isAdvancedSearch.value = true
-      // 可以在這裡添加更詳細的進階搜尋狀態恢復邏輯
-    } else {
-      simpleSearchQuery.value = route.query.q
-      performSimpleSearch()
+      // 搜尋狀態
+      returnQuery: isAdvancedSearch.value ? 'advanced' : simpleSearchQuery.value,
+      returnPage: currentPage.value.toString(),
+      returnType: isAdvancedSearch.value ? 'advanced' : 'simple',
+      returnAdvanced: isAdvancedSearch.value
+        ? JSON.stringify({
+          conditions: advancedSearchConditions.value,
+          yearFrom: yearFrom.value,
+          yearTo: yearTo.value,
+          selectedCategorySystem: selectedCategorySystem.value,
+          selectedLanguages: selectedLanguages.value
+        })
+        : undefined
     }
+  });
+};
 
-    // 恢復頁碼
-    if (route.query.page) {
-      currentPage.value = parseInt(route.query.page)
-    }
+const handleImageError = (event) => {
+  event.target.src = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
+}
 
-    // 清理 URL 參數（可選）
-    router.replace({ query: {} })
+function scrollToContainerTop() {
+  const container = document.querySelector('.container');
+  if (container) {
+    container.scrollTop = 0;
   }
 }
 
@@ -292,14 +374,36 @@ const fetchBooks = async (params) => {
 
       const content = Array.isArray(response.data.content) ? response.data.content : [];
 
-      // 為每本書獲取封面
+      // 為每本書獲取封面並處理可用性
       for (const book of content) {
         if (book.imgUrl) {
           book.imgUrl = book.imgUrl.trim();
         } else {
           book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
         }
-        book.is_available = book.is_available === true ? 1 : 0;
+
+        // 正確處理可用性欄位
+        if (book.is_available !== undefined) {
+          // 如果是布林值，轉換為數字
+          if (typeof book.is_available === 'boolean') {
+            book.is_available = book.is_available ? 1 : 0;
+          } else if (typeof book.is_available === 'number') {
+            book.is_available = book.is_available > 0 ? 1 : 0;
+          } else {
+            book.is_available = 0;
+          }
+        } else {
+          book.is_available = 0;
+        }
+
+        // 確保有可借閱數量欄位
+        if (book.available_copies === undefined) {
+          book.available_copies = book.is_available;
+        }
+
+        if (book.total_copies === undefined) {
+          book.total_copies = 1;
+        }
       }
 
       searchResults.value = {
@@ -418,7 +522,7 @@ const performAdvancedSearch = async () => {
       operator: 'AND',
       value: {
         from: yearFrom.value || null,
-        to: yearTo.value || null
+        to: yearFrom.value || null
       }
     });
   }
@@ -462,7 +566,29 @@ const performAdvancedSearch = async () => {
       } else {
         book.imgUrl = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
       }
-      book.is_available = book.is_available === true || book.is_available === 1 ? 1 : 0;
+
+      // 正確處理可用性欄位
+      if (book.is_available !== undefined) {
+        // 如果是布林值，轉換為數字
+        if (typeof book.is_available === 'boolean') {
+          book.is_available = book.is_available ? 1 : 0;
+        } else if (typeof book.is_available === 'number') {
+          book.is_available = book.is_available > 0 ? 1 : 0;
+        } else {
+          book.is_available = 0;
+        }
+      } else {
+        book.is_available = 0;
+      }
+
+      // 確保有可借閱數量欄位
+      if (book.available_copies === undefined) {
+        book.available_copies = book.is_available;
+      }
+
+      if (book.total_copies === undefined) {
+        book.total_copies = 1;
+      }
     }
 
     searchResults.value = {
@@ -500,6 +626,11 @@ const goToPage = (page) => {
   }
 };
 
+// 導航到借書清單
+const goToBorrowList = () => {
+  router.push('/borrow-record');
+};
+
 watch(itemsPerPage, () => {
   currentPage.value = 1;
   if (searched.value) {
@@ -509,20 +640,8 @@ watch(itemsPerPage, () => {
       performSimpleSearch();
     }
   }
-}, { immediate: true });
+}, { deep: true });
 
-watch(currentPage, () => {
-  if (searched.value) {
-    if (isAdvancedSearch.value) {
-      performAdvancedSearch();
-    } else {
-      performSimpleSearch();
-    }
-    scrollToContainerTop();
-  }
-}, { immediate: true });
-
-// 添加排序監聽
 watch(sortConfig, () => {
   if (searched.value) {
     if (isAdvancedSearch.value) {
@@ -532,55 +651,6 @@ watch(sortConfig, () => {
     }
   }
 }, { deep: true });
-
-// 修改後的導航到書籍詳情頁方法
-const navigateToBookDetail = async (book) => {
-  router.push({
-    path: '/bookinfo',
-    query: {
-      id: book.id || book.bookId,
-      title: book.title,
-      author: book.author,
-      isbn: book.isbn,
-      publisher: book.publisher,
-      publishdate: book.publishdate,
-      classification: book.classification,
-      language: book.language,
-      summary: book.summary || '',                    // 改為 summary
-      imgUrl: book.imgUrl ||                         // 改為 imgUrl
-        'https://cdn-icons-png.flaticon.com/512/2232/2232688.png',
-      is_available: book.is_available.toString(),
-      categorysystem: book.categorysystem || '',
-      total_copies: String(book.total_copies || 1),
-      available_copies: String(book.available_copies || (book.is_available === 1 ? 1 : 0)),
-
-      // 搜尋狀態
-      returnQuery: isAdvancedSearch.value ? 'advanced' : simpleSearchQuery.value,
-      returnPage: currentPage.value.toString(),
-      returnType: isAdvancedSearch.value ? 'advanced' : 'simple',
-      returnAdvanced: isAdvancedSearch.value
-        ? JSON.stringify({
-          conditions: advancedSearchConditions.value,
-          yearFrom: yearFrom.value,
-          yearTo: yearTo.value,
-          selectedCategorySystem: selectedCategorySystem.value,
-          selectedLanguages: selectedLanguages.value
-        })
-        : undefined
-    }
-  });
-};
-
-const handleImageError = (event) => {
-  event.target.src = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png';
-}
-
-function scrollToContainerTop() {
-  const container = document.querySelector('.container');
-  if (container) {
-    container.scrollTop = 0;
-  }
-}
 </script>
 
 <style scoped>
@@ -682,24 +752,6 @@ body {
   cursor: not-allowed;
 }
 
-.favorite {
-  background-color: #ccc;
-  color: #333;
-}
-
-.favorite:hover {
-  background-color: #b3b3b3;
-}
-
-.not-favorite {
-  background-color: #dc3545;
-  color: white;
-}
-
-.not-favorite:hover {
-  background-color: #b02a37;
-}
-
 .bookinfo-btn {
   background-color: #007bff;
   color: white;
@@ -766,18 +818,6 @@ body {
 
 .result-info p strong {
   margin-right: 5px;
-}
-
-.availability {
-  color: green;
-}
-
-.unavailable {
-  color: red;
-}
-
-.reserved {
-  color: red;
 }
 
 .result-actions {

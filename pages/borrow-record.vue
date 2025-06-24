@@ -2,19 +2,12 @@
   <div class="scroll-wrapper">
     <div class="intro">
       <div class="history-bg">
-        <h1 class="history-title">預約清單</h1>
+        <h1 class="history-title">借書清單</h1>
 
         <!-- 登入檢查 -->
-        <div v-if="!isLoggedIn" class="login-required">
-          <div class="login-required-icon">🔒</div>
-          <h2>需要登入會員</h2>
-          <p>您需要登入會員才能使用預約清單功能</p>
-          <button @click="goToLogin" class="login-required-btn">
-            前往登入
-          </button>
-        </div>
+        <LoginRequiredPrompt v-if="!isLoggedIn" />
 
-        <!-- 預約清單內容（只有登入後才顯示） -->
+        <!-- 借書清單內容（只有登入後才顯示） -->
         <div v-else class="history-main">
           <!-- 控制面板 -->
           <div class="history-control-panel">
@@ -50,7 +43,7 @@
           </div>
 
           <!-- 批量操作面板 -->
-          <div v-if="reservationList.length > 0" class="batch-control-panel">
+          <div v-if="borrowList.length > 0" class="batch-control-panel">
             <div class="batch-control-left">
               <label class="batch-checkbox-label">
                 <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" class="batch-checkbox" />
@@ -60,16 +53,16 @@
                 已選擇 {{ selectedCount }} 本書籍
               </span>
               <span v-if="selectedCount > 10" class="batch-warning">
-                (一次最多只能預約10本書)
+                (一次最多只能借閱10本書)
               </span>
             </div>
             <div class="batch-control-right">
               <button @click="removeSelected" class="batch-btn batch-btn-remove" :disabled="selectedCount === 0">
                 移除選取
               </button>
-              <button @click="batchReserve" class="batch-btn batch-btn-reserve"
+              <button @click="batchBorrow" class="batch-btn batch-btn-borrow"
                 :disabled="selectedCount === 0 || selectedCount > 10">
-                批量預約 ({{ selectedCount }})
+                確認借閱 ({{ selectedCount }})
               </button>
             </div>
           </div>
@@ -90,8 +83,8 @@
           <!-- 無資料狀態 -->
           <div v-else-if="!paginatedBooks.length" class="history-empty">
             <div class="history-empty-icon">📚</div>
-            <p>預約清單中沒有書籍</p>
-            <p class="history-empty-subtitle">請先搜尋書籍並加入預約清單</p>
+            <p>借書清單中沒有書籍</p>
+            <p class="history-empty-subtitle">請先搜尋書籍並加入借書清單</p>
             <button @click="goToSearch" class="history-empty-btn">
               前往搜尋書籍
             </button>
@@ -134,10 +127,10 @@
                   <button @click="removeFromList(book.id)" class="history-remove-btn-card">×</button>
                 </div>
                 <div class="history-grid-img-wrap">
-                  <img :src="getDefaultCoverUrl(index)" :alt="book.title" class="history-grid-img" />
+                  <img :src="getDefaultCoverUrl(book)" :alt="book.title" class="history-grid-img" />
                 </div>
                 <div class="history-grid-info">
-                  <h3 class="history-grid-title reservation-record-book-title">{{ book.title }}</h3>
+                  <h3 class="history-grid-title borrow-record-book-title">{{ book.title }}</h3>
                   <p class="history-grid-author">作者：{{ book.author }}</p>
                   <p class="history-grid-date">加入時間：{{ formatDateTime(book.addedDate) }}</p>
                   <button class="history-detail-btn" @click="viewBookDetail(book)">詳情</button>
@@ -177,19 +170,23 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useHead } from '#imports'
-import { reservationAPI } from '~/utils/api'
 import CustomAlert from '~/components/CustomAlert.vue'
+import { borrowApi } from '~/utils/borrowApi'
 
 // ===== 頁面設定 =====
-useHead({ title: '預約清單' })
+useHead({ title: '借書清單' })
 
 // ===== 響應式資料 =====
 const router = useRouter()
 const viewMode = ref('table')
-const reservationList = ref([])
+const borrowList = ref([])
 const selectedBooks = ref([])
 const loading = ref(false)
 const error = ref(null)
+const loginError = ref(false)
+
+// 登入狀態檢查
+const isLoggedIn = ref(false)
 
 // 自訂提示視窗
 const customAlert = ref({
@@ -208,10 +205,6 @@ const closeAlert = () => {
   customAlert.value.show = false
 }
 
-// 登入狀態檢查
-const isLoggedIn = ref(false)
-const user = ref(null)
-
 // 分頁設定
 const pageSizes = [10, 20, 30, 50, 100]
 const itemsPerPage = ref(10)
@@ -224,8 +217,20 @@ const sortConfig = ref({
 })
 
 // ===== 工具函數 =====
-const getDefaultCoverUrl = (index) =>
-  `https://via.placeholder.com/300x400/4ECDC4/FFFFFF?text=${encodeURIComponent('書籍封面')}`
+const getDefaultCoverUrl = (book) => {
+  // 如果有書籍的 imgUrl，使用它
+  if (book.imgUrl) {
+    return book.imgUrl
+  }
+
+  // 如果有 ISBN，嘗試從 OpenLibrary 獲取封面
+  if (book.isbn) {
+    return `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`
+  }
+
+  // 否則使用預設封面
+  return 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png'
+}
 
 const formatDateTime = (dateTimeStr) => {
   if (!dateTimeStr) return ''
@@ -240,109 +245,50 @@ const formatDateTime = (dateTimeStr) => {
   })
 }
 
-// ===== API 錯誤處理 =====
-const handleApiError = (error, defaultMessage) => {
-  console.error(defaultMessage, error)
-  console.log('錯誤詳情:', {
-    status: error.response?.status,
-    statusText: error.response?.statusText,
-    data: error.response?.data
-  })
-
-  if (error.response?.status === 404) {
-    return '記錄不存在，可能已被刪除'
-  } else if (error.response?.status === 400) {
-    return '請求參數錯誤'
-  } else if (error.response?.data?.message) {
-    return error.response.data.message
-  }
-
-  return defaultMessage
-}
-
-// ===== 資料轉換 =====
-const convertReservationLogToBook = (item) => ({
-  id: item.logId,
-  title: item.title,
-  author: item.author,
-  isbn: item.bookId,
-  addedDate: item.createdAt,
-  status: item.status,
-  action: item.action
-})
-
-// ===== 核心 API 操作 =====
-const loadReservationList = async () => {
+// ===== 核心操作 =====
+const loadBorrowList = async () => {
   loading.value = true
   error.value = null
 
   try {
-    console.log('開始載入預約清單...')
-    const response = await reservationAPI.getReservationLogs(1)
-    console.log('API 回應：', response.data)
+    console.log('開始載入借書清單...')
+    const savedList = localStorage.getItem('borrowList')
 
-    if (response.data && Array.isArray(response.data)) {
-      reservationList.value = response.data.map(convertReservationLogToBook)
-      console.log('載入的預約清單：', reservationList.value)
-      console.log('清單長度：', reservationList.value.length)
+    if (savedList) {
+      const parsedList = JSON.parse(savedList)
+      // 為每本書添加加入時間（如果沒有）
+      borrowList.value = parsedList.map(book => ({
+        ...book,
+        addedDate: book.addedDate || new Date().toISOString()
+      }))
     } else {
-      console.log('API 回應不是陣列或為空')
-      reservationList.value = []
+      borrowList.value = []
     }
+
+    console.log('載入的借書清單：', borrowList.value)
   } catch (err) {
-    const errorMessage = handleApiError(err, '載入預約清單失敗')
-    error.value = errorMessage
-    reservationList.value = []
+    console.error('載入借書清單失敗', err)
+    error.value = '載入借書清單失敗'
+    borrowList.value = []
   } finally {
     loading.value = false
   }
 }
 
-const addToReservationList = async (book) => {
-  try {
-    console.log('開始加入預約清單，書籍：', book)
-
-    const response = await reservationAPI.addReservation({
-      bookId: parseInt(book.isbn) || 1,
-      userId: 1,
-      status: 'PENDING',
-      reservationDate: new Date().toISOString().slice(0, 19).replace('T', ' ')
-    })
-
-    console.log('加入預約 API 回應：', response.data)
-
-    if (response.data?.success) {
-      console.log('預約加入成功，重新載入清單...')
-      await loadReservationList()
-      showAlert('成功', '已成功加入預約清單！')
-      return true
-    } else {
-      throw new Error('加入失敗')
-    }
-  } catch (err) {
-    const errorMessage = handleApiError(err, '加入預約清單失敗')
-    showAlert('錯誤', errorMessage)
-    return false
-  }
-}
-
 const removeFromList = async (bookId) => {
   try {
-    console.log('嘗試移除預約，ID：', bookId)
-    const response = await reservationAPI.deleteReservationLog(bookId)
-    console.log('刪除 API 回應：', response)
+    console.log('嘗試移除書籍，ID：', bookId)
 
-    if (response.status === 200 || (response.status >= 200 && response.status < 300)) {
-      console.log('刪除成功，重新載入清單')
-      await loadReservationList()
-      removeFromSelection(bookId)
-      showAlert('成功', '移除成功！')
-    } else {
-      throw new Error(`移除失敗，HTTP狀態碼：${response.status}`)
-    }
+    // 從 localStorage 中移除
+    const updatedList = borrowList.value.filter(book => book.id !== bookId)
+    borrowList.value = updatedList
+    localStorage.setItem('borrowList', JSON.stringify(updatedList))
+
+    removeFromSelection(bookId)
+    showAlert('成功', '移除成功！')
   } catch (err) {
-    const errorMessage = handleApiError(err, '移除書籍失敗')
-    showAlert('移除失敗', errorMessage)
+    console.error('移除書籍失敗', err)
+    showAlert('移除失敗', '移除書籍失敗')
   }
 }
 
@@ -352,26 +298,13 @@ const removeSelected = async () => {
     return
   }
 
-  const selectedCount = selectedBooks.value.length
-  console.log('要移除的書籍 IDs：', selectedBooks.value)
-
   try {
-    const selectedIds = [...selectedBooks.value]
-    const results = await Promise.allSettled(
-      selectedIds.map(id => reservationAPI.deleteReservationLog(id))
-    )
-
-    const successCount = results.filter(result =>
-      result.status === 'fulfilled' &&
-      (result.value.status === 200 || result.value.status === 204)
-    ).length
-
-    const errorCount = selectedCount - successCount
-
-    await loadReservationList()
+    const updatedList = borrowList.value.filter(book => !selectedBooks.value.includes(book.id))
+    borrowList.value = updatedList
+    localStorage.setItem('borrowList', JSON.stringify(updatedList))
     selectedBooks.value = []
 
-    showBatchResult(successCount, errorCount, selectedCount)
+    showAlert('成功', `成功移除 ${selectedBooks.value.length} 本書籍`)
   } catch (err) {
     console.error('批量移除書籍失敗：', err)
     showAlert('錯誤', '批量移除失敗，請稍後再試')
@@ -384,16 +317,6 @@ const removeFromSelection = (bookId) => {
   if (selectedIndex !== -1) {
     selectedBooks.value.splice(selectedIndex, 1)
     console.log('從選取清單移除成功')
-  }
-}
-
-const showBatchResult = (successCount, errorCount, totalCount) => {
-  if (errorCount === 0) {
-    showAlert('成功', `成功移除 ${successCount} 本書籍`)
-  } else if (successCount === 0) {
-    showAlert('失敗', `移除失敗，所有 ${errorCount} 本書籍都無法刪除`)
-  } else {
-    showAlert('部分成功', `成功移除 ${successCount} 本書籍，${errorCount} 本書籍刪除失敗`)
   }
 }
 
@@ -418,43 +341,80 @@ const toggleSelectAll = () => {
 // ===== 導航函數 =====
 const viewBookDetail = (book) => {
   router.push({
-    path: '/bookinfo',
+    path: '/borrow-bookinfo',
     query: {
+      id: book.id,
       isbn: book.isbn,
+      title: book.title,
+      author: book.author,
+      publisher: book.publisher,
+      publishdate: book.publishdate,
+      imgUrl: book.imgUrl,
       returnQuery: '',
       returnPage: '1',
-      from: 'reservation-list',
+      from: 'borrow-list',
       returnType: 'list'
     }
   })
 }
 
 const goToSearch = () => {
-  router.push('/catalogue-search')
+  router.push('/borrow-search')
 }
 
-const batchReserve = () => {
+const batchBorrow = async () => {
   if (selectedBooks.value.length === 0) {
-    showAlert('提示', '請先選擇要預約的書籍')
+    showAlert('提示', '請至少選擇一本書')
     return
   }
 
-  if (selectedBooks.value.length > 10) {
-    showAlert('提示', '一次最多只能預約10本書籍，請重新選擇')
-    return
+  // 使用預設值構造請求體
+  const borrowRequest = {
+    books: selectedBooks.value.map(bookId => ({
+      bookId: bookId,
+      duration: 30, // 預設 30 天
+      location: '一樓服務台', // 預設地點
+      method: '親自借書' // 預設方式
+    }))
   }
 
-  const selectedBookData = reservationList.value.filter(book =>
-    selectedBooks.value.includes(book.id)
-  )
+  try {
+    const response = await borrowApi.borrowBooks(borrowRequest)
+    showAlert('成功', '借閱成功！')
 
-  router.push({
-    path: '/book-reservation',
-    query: {
-      batch: 'true',
-      books: JSON.stringify(selectedBookData)
+    // 從 borrowList 和 localStorage 中移除已借閱的書籍
+    const borrowedIds = new Set(selectedBooks.value);
+    borrowList.value = borrowList.value.filter(b => !borrowedIds.has(b.id));
+    localStorage.setItem('borrowList', JSON.stringify(borrowList.value));
+
+    // 清空選取
+    selectedBooks.value = [];
+
+  } catch (err) {
+    console.error('借書失敗:', err)
+    showAlert('失敗', err.message || '借書失敗，請稍後再試')
+  }
+}
+
+const fetchBorrowList = async () => {
+  loading.value = true
+  error.value = null
+  loginError.value = false // 重置登入錯誤狀態
+
+  try {
+    await loadBorrowList()
+  } catch (err) {
+    console.error('載入借書清單失敗', err)
+    // 假設 API 對於未登入或 token 失效會回傳 401 或 403
+    if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+      isLoggedIn.value = false
+      loginError.value = true
+    } else {
+      error.value = '載入借書清單失敗'
     }
-  })
+  } finally {
+    loading.value = false
+  }
 }
 
 // ===== 排序和分頁 =====
@@ -478,7 +438,7 @@ const isAllSelected = computed(() => {
 const selectedCount = computed(() => selectedBooks.value.length)
 
 const sortedBooks = computed(() => {
-  const books = [...reservationList.value]
+  const books = [...borrowList.value]
   const field = sortConfig.value.field
   const ascending = sortConfig.value.ascending
 
@@ -517,16 +477,14 @@ watch([() => sortConfig.value.field, () => sortConfig.value.ascending], () => {
 })
 
 // ===== 生命週期 =====
-onMounted(() => {
+onMounted(async () => {
+  // 檢查登入狀態
   checkLoginStatus()
-  if (isLoggedIn.value) {
-    loadReservationList()
-  }
-})
 
-// ===== 暴露方法 =====
-defineExpose({
-  addToReservationList
+  // 只有登入後才載入借書清單
+  if (isLoggedIn.value) {
+    await fetchBorrowList()
+  }
 })
 
 // ===== 登入狀態檢查 =====
@@ -543,9 +501,9 @@ const checkLoginStatus = () => {
 
   if (storedUser) {
     try {
-      user.value = JSON.parse(storedUser)
+      const user = JSON.parse(storedUser)
       isLoggedIn.value = true
-      console.log('✅ 用戶已登入：', user.value)
+      console.log('✅ 用戶已登入：', user)
     } catch (e) {
       console.error('❌ 解析用戶資訊失敗：', e)
       isLoggedIn.value = false
@@ -561,11 +519,6 @@ const checkLoginStatus = () => {
 
   console.log('最終登入狀態：', isLoggedIn.value)
   console.log('==================')
-}
-
-// 跳轉到登入頁面
-const goToLogin = () => {
-  router.push('/login')
 }
 </script>
 
@@ -698,123 +651,234 @@ const goToLogin = () => {
   min-width: 100px;
 }
 
+.history-sort-btn:hover {
+  background: #f3f4f6;
+}
+
 .history-view-btn {
-  display: inline-flex;
-  align-items: center;
   border: 1px solid #d1d5db;
   border-radius: 6px;
+  padding: 8px 16px;
   background: #fff;
   color: #18181b;
   font-size: 1rem;
-  padding: 8px 16px;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  margin-right: 4px;
+  transition: all 0.3s ease;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
 }
 
-.history-view-btn:last-child {
-  margin-right: 0;
+.history-view-btn:hover {
+  background: #f3f4f6;
 }
 
 .history-view-btn-active {
-  background: #2563eb;
+  background: #1976d2;
   color: #fff;
+  border-color: #1976d2;
 }
 
-/* 批量操作面板樣式 */
+.history-view-btn-active:hover {
+  background: #1565c0;
+}
+
+/* 批量操作面板 */
 .batch-control-panel {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(229, 231, 235, 0.4);
+  padding: 16px;
+  background: #f8f9fa;
   border-radius: 8px;
-  padding: 16px 20px;
-  margin-bottom: 16px;
+  border: 1px solid #e9ecef;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .batch-control-left {
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .batch-control-right {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .batch-checkbox-label {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 1rem;
-  color: #222;
   cursor: pointer;
+  font-size: 1rem;
+  color: #18181b;
 }
 
 .batch-checkbox {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  accent-color: #2563eb;
 }
 
 .batch-info {
-  font-size: 0.95rem;
-  color: #4b5563;
+  font-size: 1rem;
+  color: #18181b;
 }
 
 .batch-warning {
   font-size: 0.9rem;
-  color: #dc2626;
+  color: #dc3545;
   font-weight: 500;
 }
 
 .batch-btn {
   padding: 8px 16px;
+  border: none;
   border-radius: 6px;
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-size: 1rem;
   cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid;
-}
-
-.batch-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  transition: all 0.3s ease;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
 }
 
 .batch-btn-remove {
-  background: #fff;
-  color: #dc2626;
-  border-color: #dc2626;
+  background: #dc3545;
+  color: #fff;
 }
 
 .batch-btn-remove:hover:not(:disabled) {
-  background: #dc2626;
+  background: #c82333;
+}
+
+.batch-btn-borrow {
+  background: #28a745;
   color: #fff;
+  margin-left: auto;
+  /* 將按鈕推到最右邊 */
 }
 
-.batch-btn-reserve {
-  background: #2563eb;
+.batch-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* 載入中狀態 */
+.history-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  gap: 16px;
+}
+
+.history-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #1976d2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 錯誤狀態 */
+.history-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  gap: 16px;
+  text-align: center;
+}
+
+.history-error-icon {
+  width: 48px;
+  height: 48px;
+  background: #dc3545;
   color: #fff;
-  border-color: #2563eb;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
 }
 
-.batch-btn-reserve:hover:not(:disabled) {
-  background: #1d4ed8;
-  border-color: #1d4ed8;
+.history-error-details {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: #6c757d;
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
 }
 
+/* 無資料狀態 */
+.history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  gap: 16px;
+  text-align: center;
+}
+
+.history-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.history-empty-subtitle {
+  color: #6c757d;
+  margin-bottom: 24px;
+}
+
+.history-empty-btn {
+  padding: 12px 24px;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.history-empty-btn:hover {
+  background: #1565c0;
+}
+
+/* 表格視圖 */
 .history-table-scroll {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
+  border: 1px solid #e9ecef;
   border-radius: 8px;
-  border: 1px solid rgba(229, 231, 235, 0.4);
   overflow: hidden;
 }
 
@@ -828,39 +892,19 @@ const goToLogin = () => {
 }
 
 .history-grid-table {
-  width: 100%;
+  background: #fff;
 }
 
-.history-grid-header,
-.history-grid-row {
+.history-grid-header {
   display: grid;
-  grid-template-columns: 50px 2fr 1fr 1fr 1fr;
+  grid-template-columns: 50px 1fr 1fr 1fr 120px;
   gap: 16px;
-  padding: 16px 20px;
-  background: rgba(243, 244, 246, 0.6);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(229, 231, 235, 0.4);
+  padding: 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
   font-weight: 600;
-  color: #222;
-  font-size: 0.95rem;
-}
-
-.history-grid-header>div:nth-child(3),
-.history-grid-header>div:nth-child(4),
-.history-grid-header>div:nth-child(5),
-.history-grid-row>div:nth-child(3),
-.history-grid-row>div:nth-child(4),
-.history-grid-row>div:nth-child(5) {
-  text-align: center;
-  justify-content: center;
+  color: #18181b;
   align-items: center;
-  display: flex;
-}
-
-.history-grid-header>div,
-.history-grid-row>div {
-  /* border: 1px solid #222; */
-  box-sizing: border-box;
 }
 
 .history-grid-body {
@@ -870,16 +914,16 @@ const goToLogin = () => {
 
 .history-grid-row {
   display: grid;
-  grid-template-columns: 50px 2fr 1fr 1fr 1fr;
+  grid-template-columns: 50px 1fr 1fr 1fr 120px;
   gap: 16px;
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(229, 231, 235, 0.2);
+  padding: 16px;
+  border-bottom: 1px solid #e9ecef;
   align-items: center;
-  transition: background 0.2s;
+  transition: background 0.2s ease;
 }
 
 .history-grid-row:hover {
-  background: rgba(243, 244, 246, 0.3);
+  background: #f8f9fa;
 }
 
 .history-grid-row:last-child {
@@ -895,84 +939,58 @@ const goToLogin = () => {
 .history-grid-title-cell {
   font-weight: 500;
   color: #18181b;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
 }
 
 .history-grid-actions {
   display: flex;
-  flex-wrap: nowrap;
   gap: 8px;
-  justify-content: center;
-  align-items: center;
 }
 
 .history-detail-btn {
   padding: 6px 12px;
-  background: #2563eb;
-  color: white;
+  background: #1976d2;
+  color: #fff;
   border: none;
   border-radius: 4px;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s ease;
 }
 
 .history-detail-btn:hover {
-  background: #1d4ed8;
+  background: #1565c0;
 }
 
 .history-remove-btn {
   padding: 6px 12px;
-  background: #dc2626;
-  color: white;
+  background: #dc3545;
+  color: #fff;
   border: none;
   border-radius: 4px;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s ease;
 }
 
 .history-remove-btn:hover {
-  background: #b91c1c;
+  background: #c82333;
 }
 
-.history-remove-btn-card {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
-  background: #dc2626;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-}
-
-.history-remove-btn-card:hover {
-  background: #b91c1c;
-}
-
+/* 網格視圖 */
 .history-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 20px;
-  padding: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  padding: 24px;
+  background: #fff;
 }
 
 .history-grid-card {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+  border: 1px solid #e9ecef;
   border-radius: 8px;
-  border: 1px solid rgba(229, 231, 235, 0.4);
   overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
+  background: #fff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   position: relative;
 }
 
@@ -982,14 +1000,31 @@ const goToLogin = () => {
 }
 
 .history-grid-card-header {
-  position: relative;
-  padding: 12px;
-  background: rgba(243, 244, 246, 0.6);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(229, 231, 235, 0.4);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 12px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.history-remove-btn-card {
+  width: 24px;
+  height: 24px;
+  background: #dc3545;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.history-remove-btn-card:hover {
+  background: #c82333;
 }
 
 .history-grid-img-wrap {
@@ -999,7 +1034,7 @@ const goToLogin = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f3f4f6;
+  background: #f8f9fa;
 }
 
 .history-grid-img {
@@ -1013,134 +1048,43 @@ const goToLogin = () => {
 }
 
 .history-grid-title {
+  margin: 0 0 8px 0;
   font-size: 1.1rem;
   font-weight: 600;
   color: #18181b;
-  margin-bottom: 8px;
   line-height: 1.4;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
 }
 
-.history-grid-author,
+.borrow-record-book-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-grid-author {
+  margin: 0 0 8px 0;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
 .history-grid-date {
+  margin: 0 0 16px 0;
+  color: #6c757d;
   font-size: 0.9rem;
-  color: #4b5563;
-  margin-bottom: 4px;
 }
 
-.history-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  color: #4b5563;
-}
-
-.history-loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #e5e7eb;
-  border-top: 4px solid #2563eb;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.history-error {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  color: #dc2626;
-  text-align: center;
-}
-
-.history-error-icon {
-  width: 48px;
-  height: 48px;
-  background: #dc2626;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 16px;
-}
-
-.history-error-details {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 4px;
-  padding: 12px;
-  margin-top: 12px;
-  font-size: 0.9rem;
-  color: #991b1b;
-  max-width: 100%;
-  overflow-x: auto;
-}
-
-.history-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
-  text-align: center;
-  color: #6b7280;
-}
-
-.history-empty-icon {
-  font-size: 4rem;
-  margin-bottom: 16px;
-}
-
-.history-empty-subtitle {
-  font-size: 1rem;
-  color: #9ca3af;
-  margin-bottom: 24px;
-}
-
-.history-empty-btn {
-  padding: 12px 24px;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.history-empty-btn:hover {
-  background: #1d4ed8;
-}
-
+/* 分頁控制 */
 .history-pagination {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  border-radius: 8px;
-  border: 1px solid rgba(229, 231, 235, 0.4);
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  background: #fff;
+  border-top: 1px solid #e9ecef;
 }
 
 .history-pagination-controls {
@@ -1151,17 +1095,23 @@ const goToLogin = () => {
 }
 
 .history-pagination-btn {
-  padding: 8px 12px;
-  background: #fff;
+  width: 40px;
+  height: 40px;
   border: 1px solid #d1d5db;
-  border-radius: 4px;
+  background: #fff;
+  color: #18181b;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 1rem;
 }
 
 .history-pagination-btn:hover:not(:disabled) {
   background: #f3f4f6;
+  border-color: #9ca3af;
 }
 
 .history-pagination-btn:disabled {
@@ -1171,111 +1121,120 @@ const goToLogin = () => {
 
 .history-pagination-input {
   width: 60px;
-  padding: 8px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
+  height: 40px;
   text-align: center;
-  font-size: 0.9rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: #18181b;
+  background: #fff;
+}
+
+.history-pagination-input:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
 }
 
 .history-pagination-info {
   font-size: 0.9rem;
-  color: #6b7280;
+  color: #6c757d;
+  text-align: center;
 }
 
 /* 響應式設計 */
 @media (max-width: 768px) {
+  .history-bg {
+    padding: 16px 16px 80px 16px;
+  }
+
   .history-control-panel {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
   }
 
-  .history-control-panel-left,
+  .history-control-panel-left {
+    gap: 16px;
+  }
+
   .history-control-panel-right {
     justify-content: center;
   }
 
   .batch-control-panel {
     flex-direction: column;
-    gap: 16px;
+    align-items: stretch;
+    gap: 12px;
   }
 
-  .batch-control-left,
+  .batch-control-left {
+    justify-content: center;
+  }
+
   .batch-control-right {
     justify-content: center;
   }
 
-  .history-grid-header,
-  .history-grid-row {
-    grid-template-columns: 40px 1.5fr 1fr 80px;
+  .history-grid-header {
+    grid-template-columns: 40px 1fr 1fr 1fr 100px;
+    gap: 8px;
+    padding: 12px;
     font-size: 0.9rem;
   }
 
-  .history-grid-header>div:nth-child(4),
-  .history-grid-header>div:nth-child(5),
-  .history-grid-row>div:nth-child(4),
-  .history-grid-row>div:nth-child(5) {
-    display: none;
+  .history-grid-row {
+    grid-template-columns: 40px 1fr 1fr 1fr 100px;
+    gap: 8px;
+    padding: 12px;
+    font-size: 0.9rem;
   }
 
   .history-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .history-pagination-controls {
+    gap: 8px;
+  }
+
+  .history-pagination-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .history-pagination-input {
+    width: 50px;
+    height: 36px;
   }
 }
 
-/* 登入提示樣式 */
-.login-required {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
-  text-align: center;
-  color: #6b7280;
-  background: transparent;
-  border-radius: 12px;
-  margin: 20px;
-}
+@media (max-width: 480px) {
+  .history-grid-header {
+    grid-template-columns: 30px 1fr 1fr 1fr 80px;
+    gap: 4px;
+    padding: 8px;
+    font-size: 0.8rem;
+  }
 
-.login-required-icon {
-  font-size: 4rem;
-  margin-bottom: 16px;
-}
+  .history-grid-row {
+    grid-template-columns: 30px 1fr 1fr 1fr 80px;
+    gap: 4px;
+    padding: 8px;
+    font-size: 0.8rem;
+  }
 
-.login-required h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 12px;
-}
+  .history-grid-actions {
+    flex-direction: column;
+    gap: 4px;
+  }
 
-.login-required p {
-  font-size: 1rem;
-  color: #6b7280;
-  margin-bottom: 24px;
-  max-width: 400px;
-}
-
-.login-required-btn {
-  padding: 12px 32px;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-}
-
-.login-required-btn:hover {
-  background: #1d4ed8;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
-}
-
-.login-required-btn:active {
-  transform: translateY(0);
+  .history-detail-btn,
+  .history-remove-btn {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+  }
 }
 </style>

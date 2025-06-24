@@ -73,21 +73,23 @@ const menuItems = computed(() => {
         {
             label: '館藏查詢',
             children: [
-                { label: '館藏查詢', href: '/catalogue-search' }
+                { label: '館藏查詢', href: '/catalogue-search' },
             ]
         },
         {
             label: '館藏預約',
             children: [
-                { label: '預約清單', href: '/reservation-record' },
-                { label: '預約紀錄', href: '/reservation-history' }
+                { label: '預約清單', href: '/reserve/reservation-record' },
+                { label: '預約紀錄', href: '/reserve/reservation-history' }
             ]
         },
         {
-            label: '書籍續借',
+            label: '讀者服務',
             children: [
-                { label: '我要續借', href: '/borrow-continue' },
-                { label: '歷史查詢', href: '#' }
+                { label: '借書查詢', href: '/borrow-search' },
+                { label: '我要借書', href: '/borrow-record' },
+                { label: '我要續借', href: '/borrow-continue' }
+
             ]
         },
         {

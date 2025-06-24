@@ -15,7 +15,7 @@
               </svg>
             </div>
             <h1 class="result-success-title">
-              {{ isAllSuccess ? (isBatchMode ? '批量預約成功！' : '預約成功！') : '部分預約失敗' }}
+              {{ isAllSuccess ? (isBatchMode ? '批量預約成功！' : '預約成功！') : '書籍已預約過，無法重複預約' }}
             </h1>
             <p class="result-success-subtitle">
               {{ isAllSuccess
@@ -29,7 +29,7 @@
           <div v-if="!isAllSuccess && failedResults.length > 0" class="result-error-detail">
             <h3 class="result-error-title">預約失敗詳情</h3>
             <div class="result-error-list">
-              <div v-for="item in failedResults" :key="item.bookId" class="result-error-item">
+              <div v-for="(item, idx) in failedResults" :key="item.bookId" class="result-error-item">
                 <span class="result-error-bookid">書籍ID {{ item.bookId }}</span>
                 <span class="result-error-reason">{{ item.reason || '未知錯誤' }}</span>
               </div>
@@ -76,7 +76,7 @@
                 </div>
                 <div class="result-info-item">
                   <span class="result-info-label">預約編號：</span>
-                  <span class="result-info-value">{{ batchReservationId || '生成中...' }}</span>
+                  <span class="result-info-value">{{ reservationIds[0] || '生成中...' }}</span>
                 </div>
               </div>
             </div>
@@ -109,6 +109,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useHead } from '#imports'
@@ -175,17 +176,17 @@ const form = computed(() => {
   // 如果是批量預約，從第一本書籍中獲取預約資訊
   if (isBatchMode.value && reservationBooks.value.length > 0) {
     return {
-      time: reservationBooks.value[0].time || '',
-      location: reservationBooks.value[0].location || '',
-      method: reservationBooks.value[0].method || ''
+      time: reservationBooks.value[0].reserve_time || reservationBooks.value[0].time || '',
+      location: reservationBooks.value[0].location || '一樓服務台',
+      method: reservationBooks.value[0].method || '親自取書'
     }
   }
 
   // 單本書籍預約
   return {
-    time: String(route.query.time || ''),
-    location: String(route.query.location || ''),
-    method: String(route.query.method || '')
+    time: String(route.query.reserve_time || route.query.time || ''),
+    location: String(route.query.location || '一樓服務台'),
+    method: String(route.query.method || '親自取書')
   }
 })
 
@@ -212,7 +213,7 @@ function formatDateTime(dateTimeStr: string) {
 
 // 跳轉到預約清單頁面
 function goToReservationList() {
-  router.push('/reservation-record')
+  router.push('/reserve/reservation-record')
 }
 
 // 返回首頁
@@ -224,13 +225,13 @@ function goToHome() {
 onMounted(() => {
   // 檢查是否有書籍資料
   if (reservationBooks.value.length === 0) {
-    router.push('/book-reservation')
+    router.push('/reserve/book-reservation')
     return
   }
 
-  // 檢查是否有預約資訊
-  if (!form.value.time || !form.value.location || !form.value.method) {
-    router.push('/book-reservation')
+  // 檢查是否有預約時間（地點和方式有預設值）
+  if (!form.value.time) {
+    router.push('/reserve/book-reservation')
     return
   }
 })

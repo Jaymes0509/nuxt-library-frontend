@@ -1,14 +1,37 @@
 <template>
-  <div class="reader-login-btn" @click="goToLogin" aria-label="讀者登入" role="button">
+  <div v-if="!isLoggedIn" class="reader-login-btn" @click="goToLogin" aria-label="讀者登入" role="button">
     <img src="/public/images/user.png" alt="User Icon" class="user-icon" />
     <div class="label">讀者登入</div>
   </div>
 </template>
 
 <script setup>
-const goToLogin = () => {
-  navigateTo('/login') //  將這裡換成你的登入頁路由
+import { ref, onMounted, onUnmounted } from 'vue'
+
+const isLoggedIn = ref(false)
+
+const checkLoginStatus = () => {
+  const storedUser = localStorage.getItem('user')
+  if (storedUser) {
+    isLoggedIn.value = true
+  } else {
+    isLoggedIn.value = false
+  }
 }
+
+const goToLogin = () => {
+  navigateTo('/login')
+}
+
+onMounted(() => {
+  checkLoginStatus()
+  window.addEventListener('storage', checkLoginStatus)
+  window.addEventListener('focus', checkLoginStatus)
+})
+onUnmounted(() => {
+  window.removeEventListener('storage', checkLoginStatus)
+  window.removeEventListener('focus', checkLoginStatus)
+})
 </script>
 
 <style scoped>

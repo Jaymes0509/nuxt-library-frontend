@@ -115,22 +115,21 @@ const bookCoverUrl = computed(() => {
 
 const goBack = () => {
   const query = {
-    q: route.query.returnQuery,
-    page: route.query.returnPage,
-    from: 'bookinfo',
-    returnType: route.query.returnType
-  }
+    returnPage: route.query.returnPage,
+    returnType: route.query.returnType,
+  };
 
-  if (route.query.categorysystem) query.categorysystem = route.query.categorysystem
-  if (route.query.language) query.language = route.query.language
-  if (route.query.yearFrom) query.yearFrom = route.query.yearFrom
-  if (route.query.yearTo) query.yearTo = route.query.yearTo
+  if (route.query.returnType === 'advanced') {
+    query.returnAdvanced = route.query.returnAdvanced;
+  } else {
+    query.q = route.query.returnQuery;
+  }
 
   router.push({
     path: '/catalogue-search',
-    query
-  })
-}
+    query,
+  });
+};
 
 // 加入預約清單功能
 const addToReservationList = async () => {
