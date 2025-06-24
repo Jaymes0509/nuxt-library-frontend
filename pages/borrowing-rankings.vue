@@ -127,12 +127,6 @@
 
       <!-- 分頁與每頁顯示設定 -->
       <div class="pagination">
-        <div>
-          每頁顯示：
-          <select v-model="pageSize" class="select">
-            <option v-for="size in [10, 20, 50, 100]" :key="size" :value="size">{{ size }}</option>
-          </select> 本
-        </div>
         <div class="page-buttons">
           <button v-for="page in totalPages" :key="page" @click="currentPage = page"
             :class="['page-button', currentPage === page ? 'active' : '']">
@@ -244,6 +238,11 @@
 
 .ranking-item.consistent-height.detail-card {
   margin-top: 0.5rem;
+}
+
+.ranking-item.detail-card {
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 
@@ -389,6 +388,12 @@
 .detail-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
+
+.detail-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
 </style>
 
 <script setup>
@@ -418,7 +423,9 @@ const selectedYear = ref(new Date().getFullYear())
 const selectedMonth = ref(new Date().getMonth() + 1)
 const searchKeyword = ref('')
 const currentPage = ref(1)
-const pageSize = ref(10)
+const pageSize = 20
+const totalItems = ref(0)
+const totalPages = ref(1)
 
 const bookCategories = [
   '總類', '哲學類', '宗教類', '科學類', '應用科學類', '社會科學類',
@@ -432,15 +439,24 @@ async function fetchRankings() {
   try {
     if (step.value === 'summary') {
       const res = await api.get('/api/rankings/all')
-
       rankedReserveBooks.value = res.data.reservationRanking || []
       rankedBorrowBooks.value = res.data.borrowRanking || []
       rankedRatingBooks.value = res.data.ratingRanking || []
-      rankedBooks.value = [] // summary 畫面不直接用 rankedBooks
+      rankedBooks.value = []
+
+      // ✅ 歸零分頁狀態（放在 summary 裡）
+      totalItems.value = 0
+      totalPages.value = 1
+
       return
     }
 
-    const params = {}
+    const params = {
+      type: step.value,
+      page: currentPage.value - 1, // 後端從 0 開始
+      size: pageSize
+    }
+
     if (selectedCategory.value) {
       params.category = selectedCategory.value
     }
@@ -453,30 +469,25 @@ async function fetchRankings() {
     }
     if (searchKeyword.value.trim()) {
       params.keyword = searchKeyword.value.trim()
+    } else {
+      params.keyword = null // 一定要補這行
     }
-    params.type = step.value
 
-    console.log('📦 傳給後端的搜尋參數：', JSON.stringify(params))
+    console.log('step:', step.value)
+    console.log('currentPage:', currentPage.value)
+    console.log('params:', params)
 
     const res = await api.get('/api/rankings/detail', { params })
 
-    if (step.value === 'reservation') {
-      rankedReserveBooks.value = res.data || []
-      rankedBooks.value = rankedReserveBooks.value
-    } else if (step.value === 'borrow') {
-      rankedBorrowBooks.value = res.data || []
-      rankedBooks.value = rankedBorrowBooks.value
-    } else if (step.value === 'rating') {
-      rankedRatingBooks.value = res.data || []
-      rankedBooks.value = rankedRatingBooks.value
-    } else {
-      rankedBooks.value = []
-    }
+    // 後端回傳的是 Page 格式
+    const content = res.data.content || []
+    totalItems.value = res.data.totalElements || 0
+    totalPages.value = res.data.totalPages || 1
+    rankedBooks.value = content
   } catch (error) {
     console.error('❌ 載入排行榜失敗', error)
   }
 }
-
 
 function topBooks(type, isSummary = false) {
   let list = isSummary
@@ -484,30 +495,23 @@ function topBooks(type, isSummary = false) {
       : type === 'borrow' ? rankedBorrowBooks.value
         : rankedRatingBooks.value
     : rankedBooks.value
-  if (!isSummary && selectedCategory.value) {
-    list = list.filter(book => book.categoryName === selectedCategory.value)
-  }
 
-  // 全部轉成數字（確保排序正確）
   list.forEach(book => book.statCount = Number(book.statCount))
 
   return list
-    .filter(book => isSummary || step.value === type)
-    .sort((a, b) => {
-      if (type === 'rating') {
-        const diff = (b.averageRating || 0) - (a.averageRating || 0)
-        if (diff !== 0) return diff
-        const diff2 = (b.statCount || 0) - (a.statCount || 0)
-        if (diff2 !== 0) return diff2
-        return (a.bookId || 0) - (b.bookId || 0)
-      } else {
-        const diff = (b.statCount || 0) - (a.statCount || 0)
-        if (diff !== 0) return diff
-        return (a.bookId || 0) - (b.bookId || 0)
+    .filter(book => {
+      if (!isSummary && step.value !== type) return false
+
+      // 總覽也要過濾掉不該出現的 0 值
+      if (type === 'reservation' || type === 'borrow') {
+        return book.statCount > 0
+      } else if (type === 'rating') {
+        return book.averageRating > 0
       }
+      return true
     })
-    .slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value)
 }
+
 
 
 function goBackToSummary() {
@@ -522,9 +526,9 @@ function goBackToSummary() {
 }
 
 
-const totalPages = computed(() => {
-  return Math.ceil(rankedBooks.value.length / pageSize.value) || 1
-})
+// const totalPages = computed(() => {
+//   return Math.ceil(rankedBooks.value.length / pageSize.value) || 1
+// })
 
 watch([selectedPeriod, selectedCategory, selectedYear, selectedMonth, searchKeyword], () => {
   console.log('🎯 篩選條件變更，重新查詢')
@@ -534,6 +538,10 @@ watch([selectedPeriod, selectedCategory, selectedYear, selectedMonth, searchKeyw
 
 
 watch(step, () => {
+  fetchRankings()
+})
+
+watch(currentPage, () => {
   fetchRankings()
 })
 
