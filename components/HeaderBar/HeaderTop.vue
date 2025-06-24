@@ -17,7 +17,11 @@
 
       <!-- 漢堡選單按鈕 -->
       <button class="menu-toggle" @click="toggleMenu" aria-label="選單">
-        <img src="/images/TSUNG-YAN.jpg" alt="選單" class="menu-toggle-img" />
+        <svg class="menu-toggle-svg" width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+          <rect x="3" y="6" width="22" height="4" rx="2" fill="#111" />
+          <rect x="3" y="12" width="22" height="4" rx="2" fill="#111" />
+          <rect x="3" y="18" width="22" height="4" rx="2" fill="#111" />
+        </svg>
       </button>
 
       <!-- 遮罩，選單展開時顯示，點擊可關閉選單 -->
@@ -632,11 +636,9 @@ const submitSearch = () => {
     justify-content: center;
   }
 
-  .menu-toggle-img {
-    width: 32px;
-    height: 32px;
-    object-fit: cover;
-    border-radius: 8px;
+  .menu-toggle-svg {
+    width: 40px;
+    height: 40px;
     display: block;
   }
 
@@ -679,29 +681,30 @@ const submitSearch = () => {
   }
 
   .search {
-    width: 100%;
-    margin: 0.5rem 0;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    gap: 0.5rem !important;
   }
 
   .search-input {
-    width: 80%;
-    min-width: 0;
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+    width: auto !important;
     font-size: 1rem;
   }
 
   .search-icon {
-    width: 36px;
-    height: 36px;
+    width: 36px !important;
+    height: 36px !important;
+    margin-left: 0.5rem !important;
+    flex-shrink: 0 !important;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
-    margin-left: 0.5rem;
     font-size: 1.1rem;
     border-radius: 6px;
     border: 1px solid #d1d5db;
@@ -828,12 +831,9 @@ const submitSearch = () => {
   }
 }
 
-.menu-toggle-img,
-.user-avatar-img {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
+.menu-toggle-svg {
+  width: 28px;
+  height: 28px;
   display: block;
 }
 

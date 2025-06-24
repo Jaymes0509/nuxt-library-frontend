@@ -365,7 +365,7 @@ async function handleReserve() {
 
         // 無論成功或失敗，都跳轉到結果頁面，並帶上完整的結果資訊
         router.push({
-            path: '/book-reserveresult',
+            path: '/reserve/book-reserveresult',
             query: {
                 books: JSON.stringify(books.value.map(book => ({
                     title: book.title,

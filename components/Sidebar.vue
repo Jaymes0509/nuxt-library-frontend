@@ -79,8 +79,8 @@ const menuItems = computed(() => {
         {
             label: '館藏預約',
             children: [
-                { label: '預約清單', href: '/reservation-record' },
-                { label: '預約紀錄', href: '/reservation-history' }
+                { label: '預約清單', href: '/reserve/reservation-record' },
+                { label: '預約紀錄', href: '/reserve/reservation-history' }
             ]
         },
         {
@@ -89,7 +89,7 @@ const menuItems = computed(() => {
                 { label: '借書查詢', href: '/borrow-search' },
                 { label: '我要借書', href: '/borrow-record' },
                 { label: '我要續借', href: '/borrow-continue' }
-                
+
             ]
         },
         {
