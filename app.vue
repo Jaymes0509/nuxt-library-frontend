@@ -10,7 +10,7 @@
          </div>
       </div>
 
-      <!-- ✅ Footer 移出 main-container -->
+      <!-- Footer 移出 main-container -->
       <div :class="['footer-container', { 'footer--collapsed': !isSidebarOpen }]">
          <FooterBar />
       </div>
