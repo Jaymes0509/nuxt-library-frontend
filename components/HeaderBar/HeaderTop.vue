@@ -61,7 +61,7 @@
           </div>
           <div class="login-status">
             <div v-if="isLoggedIn" class="user-info" @click="toggleUserMenu" :aria-expanded="showUserMenu">
-              <img src="/images/zheng.jpg" alt="會員頭像" class="user-avatar-img" />
+              <img src="/public/images/user.png" alt="User Icon" class="user-avatar-img" />
               <span class="user-name">{{ userInfo.name || '會員' }}</span>
               <span class="user-menu-arrow">{{ showUserMenu ? '▲' : '▼' }}</span>
               <div v-if="showUserMenu" class="user-menu" @click.stop>
@@ -71,7 +71,6 @@
                 <button @click="logout" class="user-menu-item">🚪 登出</button>
               </div>
             </div>
-            <NuxtLink v-else to="/login" class="login-btn">🔑 登入</NuxtLink>
           </div>
         </div>
       </div>
@@ -103,9 +102,9 @@
         </div>
 
         <!-- 登入狀態顯示器 -->
-        <div class="login-status">
-          <div v-if="isLoggedIn" class="user-info" @click="toggleUserMenu" :aria-expanded="showUserMenu">
-            <img src="/images/zheng.jpg" alt="會員頭像" class="user-avatar-img" />
+        <div class="login-status" v-if="isLoggedIn">
+          <div class="user-info" @click="toggleUserMenu" :aria-expanded="showUserMenu">
+            <img src="/public/images/user.png" alt="User Icon" class="user-avatar-img" />
             <span class="user-name">{{ userInfo.name || '會員' }}</span>
             <span class="user-menu-arrow">{{ showUserMenu ? '▲' : '▼' }}</span>
             <div v-if="showUserMenu" class="user-menu" @click.stop>
@@ -117,9 +116,6 @@
               </button>
             </div>
           </div>
-          <NuxtLink v-else to="/login" class="login-btn">
-            🔑 登入
-          </NuxtLink>
         </div>
       </div>
 
@@ -200,9 +196,7 @@ const checkLoginStatus = () => {
     try {
       userInfo.value = JSON.parse(storedUser)
       isLoggedIn.value = true
-      console.log('✅ 用戶已登入：', userInfo.value)
     } catch (e) {
-      console.error('❌ 解析用戶資訊失敗：', e)
       isLoggedIn.value = false
       userInfo.value = {}
     }
@@ -210,11 +204,9 @@ const checkLoginStatus = () => {
     // 如果有 token 但沒有用戶資訊，也視為已登入
     isLoggedIn.value = true
     userInfo.value = { name: '會員', role: 'user' }
-    console.log('✅ 檢測到登入 token')
   } else {
     isLoggedIn.value = false
     userInfo.value = {}
-    console.log('❌ 用戶未登入')
   }
 }
 
