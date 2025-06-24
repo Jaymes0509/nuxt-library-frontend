@@ -104,7 +104,7 @@
             <div v-else class="history-grid">
               <div v-for="(book, index) in paginatedBooks" :key="index" class="history-grid-card">
                 <div class="history-grid-img-wrap">
-                  <img :src="book.coverUrl || getDefaultCoverUrl(index)" :alt="book.title" class="history-grid-img" />
+                  <img :src="getDefaultCoverUrl(book, index)" :alt="book.title" class="history-grid-img" />
                 </div>
                 <div class="history-grid-info">
                   <h3 class="history-grid-title">{{ book.title }}</h3>
@@ -247,7 +247,8 @@ async function fetchBorrowHistory() {
         renewCount: item.renewCount || 0,
         isReturned: item.status === 'RETURNED',
         status: item.status,
-        coverUrl: null
+        imgUrl: item.imgUrl || '',
+        isbn: item.isbn || '',
       }))
     } else {
       borrowedBooks.value = []
@@ -376,11 +377,13 @@ onMounted(() => {
   }
 })
 
-// 封面預設
-function getDefaultCoverUrl(index) {
-  const colors = ['#4A90E2', '#50E3C2', '#B8E986', '#F8E71C', '#F5A623', '#BD10E0', '#9013FE', '#4A4A4A'];
-  const colorIndex = index % colors.length;
-  return `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="${colors[colorIndex]}"/><text x="50" y="50" font-family="Arial" font-size="14" fill="white" text-anchor="middle" dominant-baseline="middle">無封面</text></svg>`
+// 封面預設（優先 imgUrl > isbn > 預設 SVG）
+function getDefaultCoverUrl(book, index) {
+  if (book.imgUrl) {
+    return book.imgUrl
+  }
+  // 沒有圖片時顯示與館藏查詢相同的預設圖
+  return 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png'
 }
 </script>
 
