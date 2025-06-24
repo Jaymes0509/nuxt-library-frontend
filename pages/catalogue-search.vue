@@ -277,7 +277,7 @@ const handleReturnFromBookInfo = () => {
 // 修改 fetchBooks 函數
 const fetchBooks = async (params) => {
   try {
-    const response = await axios.get('http://localhost:8080/api/books/simple-search', {
+    const response = await axios.get('http://localhost:8080/api/elasticsearch/simple-search', {
       params: {
         ...params,
         page: currentPage.value - 1,
