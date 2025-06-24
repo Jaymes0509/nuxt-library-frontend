@@ -1,87 +1,48 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import axios from 'axios'
 
 const members = ref([])
 const loading = ref(true)
 const error = ref(null)
+const itemsPerPage = ref(20)
+const currentPage = ref(1)
+const totalPages = ref(1)
+const totalElements = ref(0)
 
-onMounted(async () => {
+const fetchMembers = async () => {
+  loading.value = true
   try {
-    const res = await axios.get('http://localhost:8080/api/manager/accounts/all')
-    members.value = res.data || []
+    const res = await axios.get('http://localhost:8080/api/manager/accounts/all', {
+      params: {
+        page: currentPage.value - 1, // 後端通常從0開始
+        size: itemsPerPage.value
+      }
+    })
+    members.value = res.data.content || []
+    totalPages.value = res.data.totalPages
+    totalElements.value = res.data.totalElements
   } catch (e) {
     error.value = '載入會員失敗'
   } finally {
     loading.value = false
   }
-})
+}
 
-
-// const accounts = [
-//   {
-//     user_id: 1,
-//     name: "王小明",
-//     gender: "男",
-//     id_number: "A123456789",
-//     birth_date: "1995-05-10",
-//     nationality: "中華民國",
-//     education: "大學",
-//     occupation: "工程師",
-//     address_city: "台北市",
-//     address_zip: "100",
-//     address_dist: "中正區",
-//     address_detail: "忠孝東路一段1號",
-//     email: "ming@example.com",
-//     phone: "0912345678",
-//     password: "pass123",
-//     created_at: "2025-06-16 14:00:00",
-//     updated_at: "2025-06-16 14:00:00"
-//   },
-//   {
-//     user_id: 2,
-//     name: "陳美麗",
-//     gender: "女",
-//     id_number: "B987654321",
-//     birth_date: "1990-08-25",
-//     nationality: "中華民國",
-//     education: "碩士",
-//     occupation: "設計師",
-//     address_city: "新北市",
-//     address_zip: "220",
-//     address_dist: "板橋區",
-//     address_detail: "中山路二段88號",
-//     email: "mei@example.com",
-//     phone: "0922333444",
-//     password: "12345678",
-//     created_at: "2025-06-16 14:00:00",
-//     updated_at: "2025-06-16 14:00:00"
-//   },
-//   {
-//     user_id: 3,
-//     name: "李志豪",
-//     gender: "男",
-//     id_number: "C112233445",
-//     birth_date: "1988-03-03",
-//     nationality: "中華民國",
-//     education: "博士",
-//     occupation: "教授",
-//     address_city: "台中市",
-//     address_zip: "400",
-//     address_dist: "西區",
-//     address_detail: "台灣大道三段2號",
-//     email: "zhihao@example.com",
-//     phone: "0933444555",
-//     password: "admin999",
-//     created_at: "2025-06-16 14:00:00",
-//     updated_at: "2025-06-16 14:00:00"
-//   }
-// ]
+onMounted(fetchMembers)
+watch([itemsPerPage, currentPage], fetchMembers)
 </script>
 
 <template>
   <div class="p-8">
     <h2 class="text-2xl font-bold mb-4">會員管理</h2>
+    <div>
+      每頁顯示：
+      <select v-model="itemsPerPage">
+        <option :value="20">20 筆</option>
+        <option :value="50">50 筆</option>
+      </select>
+    </div>
     <div v-if="loading">載入中...</div>
     <div v-else-if="error">{{ error }}</div>
     <table v-else class="min-w-full border">
@@ -108,5 +69,55 @@ onMounted(async () => {
         </tr>
       </tbody>
     </table>
+    <div>
+      <button :disabled="currentPage === 1" @click="currentPage--">上一頁</button>
+      <span>第 {{ currentPage }} / {{ totalPages }} 頁</span>
+      <button :disabled="currentPage === totalPages" @click="currentPage++">下一頁</button>
+    </div>
+    <div>共 {{ totalElements }} 筆</div>
   </div>
 </template>
+
+<style scoped>
+table {
+  width: 100%;
+  background: #fff;
+  border-collapse: collapse;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+th,
+td {
+  border: 1px solid #d1d5db;
+  /* 淡灰色邊框 */
+  padding: 8px 12px;
+  text-align: left;
+}
+
+th {
+  background: #f3f4f6;
+  /* 表頭淡灰色 */
+  font-weight: bold;
+  color: #374151;
+}
+
+tbody tr:nth-child(even) {
+  background: #fafbfc;
+  /* 斑馬紋效果 */
+}
+
+tbody tr:hover {
+  background: #f1f5f9;
+  /* 滑鼠移過時高亮 */
+}
+
+.text-green-600 {
+  color: #16a34a;
+  font-weight: bold;
+}
+
+.text-red-600 {
+  color: #dc2626;
+  font-weight: bold;
+}
+</style>
