@@ -33,7 +33,7 @@ async function onSubmit(event: Event) {
     localStorage.setItem('jwt_token', token)
 
     console.log("*************************************************")
-    alert('token: ' + token)
+    // alert('token: ' + token)
     console.log("*************************************************")
 
     // 跳轉到首頁或會員頁
