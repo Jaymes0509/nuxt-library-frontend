@@ -57,17 +57,23 @@
 import { ref, onMounted } from 'vue'
 import { SeatStatus } from '@/utils/seat-status'
 
+const props = defineProps({
+    selectedDate: String,
+    selectedSlot: Object
+})
+
 const step = ref(2)
 
 const emit = defineEmits(['confirm'])
 
-const confirmSeat = () => {
+const confirmSeat = async () => {
     if (!selectedSeat.value) {
         alert('⚠️ 請先選擇一個座位再確認')
         return
     }
     alert('✅ 點擊確認成功，選擇座位為：' + selectedSeat.value)
     emit('confirm', selectedSeat.value) // 通知父元件座位編號
+    await refreshStatus() // 這行是關鍵，重新從後端載入座位狀態
 }
 const seats = ref(
     Array.from({ length: 6 }, (_, rowIdx) => {
@@ -128,6 +134,8 @@ async function refreshStatus() {
         const data = await res.json()
         statusMap.value = Object.fromEntries(data.map(s => [s.seatLabel, s.status]))
         // console.log('statusMap keys:', Object.keys(statusMap.value))
+        console.log('🎯 從後端取得的座位狀態:', data)
+        console.log('📌 statusMap keys:', Object.keys(statusMap.value))
     } catch (err) {
         console.error('❌ 載入座位狀態失敗:', err)
     } finally {
@@ -164,40 +172,45 @@ async function handleClick(label) {
     const seatKey = label.toUpperCase()
     const seatStatusRaw = statusMap.value[seatKey]
 
+    console.log('🪑 點擊座位:', label)
+    console.log('🧭 對應 key:', seatKey)
+    console.log('📦 查到狀態:', seatStatusRaw)
+
     if (!seatStatusRaw) {
         alert('❌ 無法取得座位狀態')
         return
     }
 
-    const status = seatStatusRaw.toLowerCase()
+    const status = seatStatusRaw.toUpperCase()
 
     switch (status) {
         case SeatStatus.BROKEN:
             alert('🛠️ 此座位維修中，無法預約')
             return
 
-        case SeatStatus.RESERVED:
-            alert('❌ 這個座位已被預約')
-            return
-
         case SeatStatus.AVAILABLE:
             try {
-                const res = await fetch(`http://localhost:8080/api/seats/reserve/${label}`, {
-                    method: 'PUT'
-                })
 
-                if (!res.ok) {
-                    throw new Error('預約請求失敗')
+                //  檢查是否已被其他人預約
+                const occupiedRes = await fetch(
+                    `http://localhost:8080/api/seats/reservations/occupied?date=${props.selectedDate}&timeSlot=${props.selectedSlot.enum}`
+                )
+
+                const occupiedSeats = await occupiedRes.json()
+
+                if (occupiedSeats.includes(seatKey)) {
+                    alert('❌ 此座位已被其他人預約')
+                    return
                 }
 
-                const message = await res.text()
-                alert(message)
                 selectedSeat.value = label
-                await refreshStatus()
+                alert('✅ 已選擇座位：' + label)
+
             } catch (err) {
-                alert(`❌ 預約錯誤：${err.message}`)
+                alert(`❌ 無法確認座位是否被預約：${err.message}`)
             }
             return
+
         default:
             alert('❌ 無效的座位狀態')
     }

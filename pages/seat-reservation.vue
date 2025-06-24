@@ -26,7 +26,8 @@
 
                 <div v-if="step === 2">
                     <ButtonsBackButton :step="step" @update:step="step = $event" />
-                    <SeatMap @confirm="handleConfirmSeat" />
+                    <SeatMap :selectedDate="selectedDate" :selectedSlot="selectedSlot" @confirm="handleConfirmSeat" />
+
                 </div>
 
                 <SeatReservationSummary v-if="step === 3" :selectedDate="selectedDate"
@@ -48,7 +49,7 @@ import { useFetch } from '#app'
 
 const selectedDate = ref('')
 const selectedSeat = ref(null)
-const selectedSlot = ref('')
+const selectedSlot = ref(null)
 const step = ref(1)
 
 // 假設你已取得登入的 userId
