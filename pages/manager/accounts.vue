@@ -88,7 +88,7 @@ async function saveMemberDetail() {
         <option :value="50">50 筆</option>
       </select>
     </div>
-    <button @click="showModal = true">測試開啟 Modal</button>
+
     <div v-if="loading">載入中...</div>
     <div v-else-if="error">{{ error }}</div>
     <table v-else class="min-w-full border">
@@ -114,7 +114,7 @@ async function saveMemberDetail() {
             {{ member.addressCounty }}{{ member.addressTown }}{{ member.addressDetail }}
           </td>
           <td class="border px-2 py-1">
-            <button class="bg-blue-500 text-white px-4 py-2 rounded" @click="openDetailModal(member)">詳細資料</button>
+            <NuxtLink :to="`/member/${member.id}`" class="bg-blue-500 text-white px-4 py-2 rounded">詳細資料</NuxtLink>
           </td>
         </tr>
       </tbody>
@@ -123,32 +123,6 @@ async function saveMemberDetail() {
       <button :disabled="currentPage === 1" @click="currentPage--">上一頁</button>
       <span>第 {{ currentPage }} / {{ totalPages }} 頁</span>
       <button :disabled="currentPage === totalPages" @click="currentPage++">下一頁</button>
-    </div>
-
-    <!-- Modal -->
-    <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-      <div class="bg-white p-6 rounded shadow-lg min-w-[350px]">
-        <h3 class="text-xl font-bold mb-4">會員詳細資料</h3>
-        <div v-if="selectedMember">
-          <div class="mb-2">ID：{{ selectedMember.id }}</div>
-          <div class="mb-2">姓名：{{ selectedMember.name }}</div>
-          <div class="mb-2">性別：{{ selectedMember.gender }}</div>
-          <div class="mb-2">信箱：{{ selectedMember.email }}</div>
-          <div class="mb-2">電話：{{ selectedMember.phone }}</div>
-          <div class="mb-2">
-            居住地：
-            <input v-model="editAddressCounty" class="border px-1 w-20" placeholder="縣市" />
-            <input v-model="editAddressTown" class="border px-1 w-20" placeholder="鄉鎮" />
-            <input v-model="editAddressDetail" class="border px-1 w-32" placeholder="詳細地址" />
-          </div>
-          <!-- 你可以再加其他欄位 -->
-        </div>
-        <div class="flex justify-end gap-2 mt-4">
-          <button class="px-3 py-1 border rounded" @click="closeModal">取消</button>
-          <button class="px-3 py-1 border rounded bg-blue-500 text-white" @click="saveMemberDetail">儲存</button>
-        </div>
-      </div>
-      <div>共 {{ totalElements }} 筆</div>
     </div>
   </div>
 </template>
