@@ -1,23 +1,29 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import axios from 'axios'
 
 const books = ref([])
 const loading = ref(true)
 const error = ref(null)
+const itemsPerPage = ref(20)
+const currentPage = ref(1)
+const totalPages = ref(1)
+const totalElements = ref(0)
 
-onMounted(async () => {
+const fetchBooks = async () => {
+  loading.value = true
   try {
-    // 請根據你的後端實際 port 調整 baseURL
     const res = await axios.get('http://localhost:8080/api/manager/books/all', {
       params: {
         field: 'title',
         keyword: '',
-        page: 0,
-        size: 100
+        page: currentPage.value - 1, // 後端通常從0開始
+        size: itemsPerPage.value
       }
     })
-    books.value = res.data || []
+    books.value = res.data.content || []
+    totalPages.value = res.data.totalPages
+    totalElements.value = res.data.totalElements
 
     // 查看books_id
     console.log('book_id：', res.data.book_id)
@@ -27,13 +33,22 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-})
+}
 
+onMounted(fetchBooks)
+watch([itemsPerPage, currentPage], fetchBooks)
 </script>
 
 <template>
   <div class="p-8">
     <h2 class="text-2xl font-bold mb-4">書籍管理</h2>
+    <div class="mb-4">
+      每頁顯示：
+      <select v-model="itemsPerPage">
+        <option :value="20">20 筆</option>
+        <option :value="50">50 筆</option>
+      </select>
+    </div>
     <div v-if="loading">載入中...</div>
     <div v-else-if="error">{{ error }}</div>
     <table v-else class="min-w-full border">
@@ -67,6 +82,18 @@ onMounted(async () => {
         </tr>
       </tbody>
     </table>
+    <div class="mt-4 flex items-center gap-4">
+      <button :disabled="currentPage === 1" @click="currentPage--"
+        class="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed">
+        上一頁
+      </button>
+      <span>第 {{ currentPage }} / {{ totalPages }} 頁</span>
+      <button :disabled="currentPage === totalPages" @click="currentPage++"
+        class="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed">
+        下一頁
+      </button>
+      <span>共 {{ totalElements }} 筆</span>
+    </div>
   </div>
 </template>
 
