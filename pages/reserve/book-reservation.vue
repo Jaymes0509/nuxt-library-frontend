@@ -232,7 +232,7 @@ function validateForm() {
 
         if (selectedTime < currentTime) {
             console.log('取書時間小於現在時間')
-            errors.value.time = '取書時間不能小於現在時間，請重新選擇'
+            errors.value.time = '取書時間不能小於當前時間，請重新選擇'
             shakeField('time')
             isValid = false
         }
@@ -319,9 +319,22 @@ async function handleReserve() {
     }
 
     try {
+        // 獲取當前登入用戶的 ID
+        const storedUser = localStorage.getItem('user')
+        let currentUserId = 1 // 預設值
+
+        if (storedUser) {
+            try {
+                const userData = JSON.parse(storedUser)
+                currentUserId = userData.user_id || userData.id || 1
+            } catch (e) {
+                console.error('解析用戶資訊失敗：', e)
+            }
+        }
+
         // 準備批量預約資料，完全符合後端 ReservationBatchRequestDTO 格式
         const reservationData = {
-            userId: 1, // 使用數字 ID
+            userId: currentUserId, // 使用當前用戶的 ID
             books: books.value.map(book => ({
                 bookId: (book as any).book_id, // 直接使用 book_id
                 reserveTime: form.value.time

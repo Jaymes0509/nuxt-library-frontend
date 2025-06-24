@@ -276,7 +276,12 @@ const loadReservationList = async () => {
 
   try {
     console.log('開始載入預約清單...')
-    const response = await reservationAPI.getReservationLogs(1)
+
+    // 獲取當前登入用戶的 ID
+    const currentUserId = user.value?.user_id || user.value?.id || 1
+    console.log('當前用戶 ID：', currentUserId)
+
+    const response = await reservationAPI.getReservationLogs(currentUserId)
     console.log('API 回應：', response.data)
 
     if (response.data && Array.isArray(response.data)) {
@@ -307,9 +312,12 @@ const addToReservationList = async (book) => {
   try {
     console.log('開始加入預約清單，書籍：', book)
 
+    // 獲取當前登入用戶的 ID
+    const currentUserId = user.value?.user_id || user.value?.id || 1
+
     const response = await reservationAPI.addReservation({
       bookId: parseInt(book.isbn) || 1,
-      userId: 1,
+      userId: currentUserId,
       status: 'PENDING',
       reservationDate: new Date().toISOString().slice(0, 19).replace('T', ' ')
     })

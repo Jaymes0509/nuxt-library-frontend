@@ -883,6 +883,7 @@ const submitSearch = () => {
   font-size: 0.95rem;
   color: #6b7280;
   font-weight: 500;
+  text-align: center;
 }
 
 .user-menu-item {
