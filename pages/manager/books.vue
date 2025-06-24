@@ -17,12 +17,10 @@ onMounted(async () => {
         size: 100
       }
     })
-
-    console.log('後端回傳資料1：', res.data)
-
     books.value = res.data || []
-    console.log('後端回傳資料2：', res.data)
 
+    // 查看books_id
+    console.log('book_id：', res.data.book_id)
 
   } catch (e) {
     error.value = '載入書籍失敗'
@@ -30,42 +28,6 @@ onMounted(async () => {
     loading.value = false
   }
 })
-
-
-// const books = [
-//   {
-//     bookID: 1,
-//     isbn: '9789864791924',
-//     title: '圖書館管理學',
-//     author: '王小明',
-//     publisher: '知識出版社',
-//     publishdate: '2022-01-01',
-//     version: '1',
-//     type: '專業書籍',
-//     language: '中文',
-//     classification: '020',
-//     c_id: 1,
-//     is_available: 1,
-//     created_at: '2022-01-01 10:00:00',
-//     updated_at: '2022-01-01 10:00:00'
-//   },
-//   {
-//     bookID: 2,
-//     isbn: '9789573274597',
-//     title: '現代圖書資訊',
-//     author: '李大華',
-//     publisher: '學術出版社',
-//     publishdate: '2021-05-15',
-//     version: '2',
-//     type: '參考書',
-//     language: '中文',
-//     classification: '025',
-//     c_id: 2,
-//     is_available: 0,
-//     created_at: '2021-05-15 09:00:00',
-//     updated_at: '2021-05-15 09:00:00'
-//   }
-// ]
 
 </script>
 
@@ -77,18 +39,19 @@ onMounted(async () => {
     <table v-else class="min-w-full border">
       <thead>
         <tr>
-          <th class="border px-2 py-1">ID</th>
+          <th class="border px-2 py-1">書籍編號</th>
           <th class="border px-2 py-1">ISBN</th>
           <th class="border px-2 py-1">書名</th>
           <th class="border px-2 py-1">作者</th>
           <th class="border px-2 py-1">出版社</th>
           <th class="border px-2 py-1">出版日期</th>
           <th class="border px-2 py-1">狀態</th>
+          <th class="border px-2 py-1">詳細資料</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="book in books" :key="book.bookID">
-          <td class="border px-2 py-1">{{ book.book_ID }}</td>
+        <tr v-for="book in books" :key="book.book_id">
+          <td class="border px-2 py-1">{{ book.book_id }}</td>
           <td class="border px-2 py-1">{{ book.isbn }}</td>
           <td class="border px-2 py-1">{{ book.title }}</td>
           <td class="border px-2 py-1">{{ book.author }}</td>
@@ -98,8 +61,56 @@ onMounted(async () => {
             <span v-if="book.is_available" class="text-green-600">在架</span>
             <span v-else class="text-red-600">借出</span>
           </td>
+          <td class="border px-2 py-1">
+            <button class="bg-blue-500 text-white px-4 py-2 rounded">詳細資料</button>
+          </td>
         </tr>
       </tbody>
     </table>
   </div>
 </template>
+
+
+<style scoped>
+table {
+  width: 100%;
+  background: #fff;
+  border-collapse: collapse;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+th,
+td {
+  border: 1px solid #d1d5db;
+  /* 淡灰色邊框 */
+  padding: 8px 12px;
+  text-align: left;
+}
+
+th {
+  background: #f3f4f6;
+  /* 表頭淡灰色 */
+  font-weight: bold;
+  color: #374151;
+}
+
+tbody tr:nth-child(even) {
+  background: #fafbfc;
+  /* 斑馬紋效果 */
+}
+
+tbody tr:hover {
+  background: #f1f5f9;
+  /* 滑鼠移過時高亮 */
+}
+
+.text-green-600 {
+  color: #16a34a;
+  font-weight: bold;
+}
+
+.text-red-600 {
+  color: #dc2626;
+  font-weight: bold;
+}
+</style>
