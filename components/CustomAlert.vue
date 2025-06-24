@@ -1,16 +1,24 @@
 <template>
     <transition name="custom-alert-fade">
-        <div v-if="show" class="custom-alert-backdrop" @click="close">
+        <div v-if="show" class="custom-alert-backdrop" @click.self="handleClose">
             <div class="custom-alert-container" @click.stop>
                 <div class="custom-alert-header">
                     <h3 class="custom-alert-title">{{ title }}</h3>
-                    <button class="custom-alert-close-btn" @click="close">&times;</button>
+                    <button class="custom-alert-close-btn" @click="handleClose">&times;</button>
                 </div>
                 <div class="custom-alert-body">
                     <p class="custom-alert-message">{{ message }}</p>
+                    <ul v-if="items && items.length" class="custom-alert-items-list">
+                        <li v-for="(item, index) in items" :key="index" class="custom-alert-item">
+                            {{ item }}
+                        </li>
+                    </ul>
                 </div>
                 <div class="custom-alert-footer">
-                    <button class="custom-alert-confirm-btn" @click="close">確認</button>
+                    <button class="custom-alert-btn custom-alert-confirm-btn" @click="handleConfirm">{{ confirmText
+                    }}</button>
+                    <button v-if="type === 'confirm'" class="custom-alert-btn custom-alert-cancel-btn"
+                        @click="handleClose">{{ cancelText }}</button>
                 </div>
             </div>
         </div>
@@ -21,23 +29,23 @@
 import { defineProps, defineEmits } from 'vue'
 
 defineProps({
-    show: {
-        type: Boolean,
-        required: true,
-    },
-    title: {
-        type: String,
-        default: '提示',
-    },
-    message: {
-        type: String,
-        required: true,
-    },
+    show: { type: Boolean, required: true },
+    title: { type: String, default: '提示' },
+    message: { type: String, required: true },
+    items: { type: Array, default: () => [] },
+    type: { type: String, default: 'alert' }, // 'alert' or 'confirm'
+    confirmText: { type: String, default: '確認' },
+    cancelText: { type: String, default: '取消' },
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'confirm'])
 
-const close = () => {
+const handleClose = () => {
+    emit('close')
+}
+
+const handleConfirm = () => {
+    emit('confirm')
     emit('close')
 }
 </script>
@@ -101,14 +109,39 @@ const close = () => {
 .custom-alert-body {
     padding: 24px;
     line-height: 1.6;
+    max-height: 60vh;
+    overflow-y: auto;
 }
 
 .custom-alert-message {
-    font-size: 1.5rem;
+    font-size: 1rem;
     color: #374151;
     margin: 0;
     white-space: pre-wrap;
     /* To respect newlines in the message */
+    margin-bottom: 16px;
+}
+
+.custom-alert-items-list {
+    list-style-type: none;
+    padding-left: 0;
+    margin-top: 12px;
+    margin-bottom: 0;
+    text-align: left;
+    background-color: #f9fafb;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.custom-alert-item {
+    font-size: 0.95rem;
+    color: #4b5563;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.custom-alert-item:last-child {
+    border-bottom: none;
 }
 
 .custom-alert-footer {
@@ -116,27 +149,37 @@ const close = () => {
     background-color: #f9fafb;
     display: flex;
     justify-content: flex-end;
+    gap: 12px;
     border-top: 1px solid #e5e7eb;
 }
 
-.custom-alert-confirm-btn {
-    background-color: #2563eb;
-    color: white;
+.custom-alert-btn {
     border: none;
     border-radius: 8px;
     padding: 10px 20px;
     font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
+    transition: all 0.2s ease;
+}
+
+.custom-alert-confirm-btn {
+    background-color: #2563eb;
+    color: white;
 }
 
 .custom-alert-confirm-btn:hover {
     background-color: #1d4ed8;
 }
 
-.custom-alert-confirm-btn:active {
-    transform: scale(0.98);
+.custom-alert-cancel-btn {
+    background-color: #ffffff;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+}
+
+.custom-alert-cancel-btn:hover {
+    background-color: #f3f4f6;
 }
 
 /* Transitions */

@@ -32,27 +32,27 @@ const todayStr = now.toISOString().split('T')[0]
 const timeSlots = [
     {
         label: '09:00 - 11:00',
-        value: { start: '09:00', end: '11:00' }
+        value: { start: '09:00', end: '11:00', enum: 'SLOT_09_11' }
     },
     {
         label: '11:00 - 13:00',
-        value: { start: '11:00', end: '13:00' }
+        value: { start: '11:00', end: '13:00', enum: 'SLOT_11_13' }
     },
     {
         label: '13:00 - 15:00',
-        value: { start: '13:00', end: '15:00' }
+        value: { start: '13:00', end: '15:00', enum: 'SLOT_13_15' }
     },
     {
         label: '15:00 - 17:00',
-        value: { start: '15:00', end: '17:00' }
+        value: { start: '15:00', end: '17:00', enum: 'SLOT_15_17' }
     },
     {
         label: '17:00 - 19:00',
-        value: { start: '17:00', end: '19:00' }
+        value: { start: '17:00', end: '19:00', enum: 'SLOT_17_19' }
     },
     {
         label: '19:00 - 21:00',
-        value: { start: '19:00', end: '21:00' }
+        value: { start: '19:00', end: '21:00', enum: 'SLOT_19_21' }
     }
 ]
 

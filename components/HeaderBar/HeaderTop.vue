@@ -17,7 +17,11 @@
 
       <!-- 漢堡選單按鈕 -->
       <button class="menu-toggle" @click="toggleMenu" aria-label="選單">
-        <img src="/images/TSUNG-YAN.jpg" alt="選單" class="menu-toggle-img" />
+        <svg class="menu-toggle-svg" width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+          <rect x="3" y="6" width="22" height="4" rx="2" fill="#111" />
+          <rect x="3" y="12" width="22" height="4" rx="2" fill="#111" />
+          <rect x="3" y="18" width="22" height="4" rx="2" fill="#111" />
+        </svg>
       </button>
 
       <!-- 遮罩，選單展開時顯示，點擊可關閉選單 -->
@@ -57,7 +61,7 @@
           </div>
           <div class="login-status">
             <div v-if="isLoggedIn" class="user-info" @click="toggleUserMenu" :aria-expanded="showUserMenu">
-              <img src="/images/zheng.jpg" alt="會員頭像" class="user-avatar-img" />
+              <img src="/public/images/user.png" alt="User Icon" class="user-avatar-img" />
               <span class="user-name">{{ userInfo.name || '會員' }}</span>
               <span class="user-menu-arrow">{{ showUserMenu ? '▲' : '▼' }}</span>
               <div v-if="showUserMenu" class="user-menu" @click.stop>
@@ -67,7 +71,6 @@
                 <button @click="logout" class="user-menu-item">🚪 登出</button>
               </div>
             </div>
-            <NuxtLink v-else to="/login" class="login-btn">🔑 登入</NuxtLink>
           </div>
         </div>
       </div>
@@ -99,9 +102,9 @@
         </div>
 
         <!-- 登入狀態顯示器 -->
-        <div class="login-status">
-          <div v-if="isLoggedIn" class="user-info" @click="toggleUserMenu" :aria-expanded="showUserMenu">
-            <img src="/images/zheng.jpg" alt="會員頭像" class="user-avatar-img" />
+        <div class="login-status" v-if="isLoggedIn">
+          <div class="user-info" @click="toggleUserMenu" :aria-expanded="showUserMenu">
+            <img src="/public/images/user.png" alt="User Icon" class="user-avatar-img" />
             <span class="user-name">{{ userInfo.name || '會員' }}</span>
             <span class="user-menu-arrow">{{ showUserMenu ? '▲' : '▼' }}</span>
             <div v-if="showUserMenu" class="user-menu" @click.stop>
@@ -113,9 +116,6 @@
               </button>
             </div>
           </div>
-          <NuxtLink v-else to="/login" class="login-btn">
-            🔑 登入
-          </NuxtLink>
         </div>
       </div>
 
@@ -196,9 +196,7 @@ const checkLoginStatus = () => {
     try {
       userInfo.value = JSON.parse(storedUser)
       isLoggedIn.value = true
-      console.log('✅ 用戶已登入：', userInfo.value)
     } catch (e) {
-      console.error('❌ 解析用戶資訊失敗：', e)
       isLoggedIn.value = false
       userInfo.value = {}
     }
@@ -206,11 +204,9 @@ const checkLoginStatus = () => {
     // 如果有 token 但沒有用戶資訊，也視為已登入
     isLoggedIn.value = true
     userInfo.value = { name: '會員', role: 'user' }
-    console.log('✅ 檢測到登入 token')
   } else {
     isLoggedIn.value = false
     userInfo.value = {}
-    console.log('❌ 用戶未登入')
   }
 }
 
@@ -531,8 +527,32 @@ const submitSearch = () => {
   font-size: 1.25rem;
 }
 
-.login-btn {
-  font-size: 1.25rem;
+.login-btn,
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 4px 16px;
+  font-size: 1rem;
+  background: #fff;
+  color: #222;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  font-weight: 500;
+  text-decoration: none;
+  outline: none;
+  min-height: 36px;
+  min-width: 36px;
+  justify-content: center;
+}
+
+.login-btn:hover,
+.user-menu-item:hover {
+  background: #f3f4f6;
+  color: #1976d2;
 }
 
 .top-right {
@@ -608,11 +628,9 @@ const submitSearch = () => {
     justify-content: center;
   }
 
-  .menu-toggle-img {
-    width: 32px;
-    height: 32px;
-    object-fit: cover;
-    border-radius: 8px;
+  .menu-toggle-svg {
+    width: 40px;
+    height: 40px;
     display: block;
   }
 
@@ -655,29 +673,30 @@ const submitSearch = () => {
   }
 
   .search {
-    width: 100%;
-    margin: 0.5rem 0;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    gap: 0.5rem !important;
   }
 
   .search-input {
-    width: 80%;
-    min-width: 0;
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+    width: auto !important;
     font-size: 1rem;
   }
 
   .search-icon {
-    width: 36px;
-    height: 36px;
+    width: 36px !important;
+    height: 36px !important;
+    margin-left: 0.5rem !important;
+    flex-shrink: 0 !important;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
-    margin-left: 0.5rem;
     font-size: 1.1rem;
     border-radius: 6px;
     border: 1px solid #d1d5db;
@@ -804,12 +823,9 @@ const submitSearch = () => {
   }
 }
 
-.menu-toggle-img,
-.user-avatar-img {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
+.menu-toggle-svg {
+  width: 28px;
+  height: 28px;
   display: block;
 }
 
@@ -871,20 +887,22 @@ const submitSearch = () => {
 
 .user-menu-item {
   width: 100%;
-  padding: 10px 16px;
-  background: none;
+  padding: 6px 12px;
+  background: #2563eb;
   border: none;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
-  font-size: 0.95rem;
-  color: #374151;
+  font-size: 0.8rem;
+  color: #fff;
+  border-radius: 6px;
   transition: background 0.2s;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
 }
 
 .user-menu-item:hover {
-  background: #f3f4f6;
+  background: #1d4ed8;
 }
 </style>
