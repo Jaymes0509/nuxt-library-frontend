@@ -241,7 +241,7 @@ const sendNotificationEmail = async () => {
     // 準備郵件通知資料
     const emailData = {
       userId: currentUserId,
-      reservationIds: reservationIds.value
+      reservationIds: reservationIds.value.map(id => id.toString())
     }
 
     console.log('自動發送郵件通知，資料：', emailData)

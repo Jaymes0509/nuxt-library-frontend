@@ -16,7 +16,11 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // 可以在這裡添加認證 token
-    const token = localStorage.getItem('authToken')
+    // 優先使用 jwt_token，然後是 authToken
+    const jwtToken = localStorage.getItem('jwt_token')
+    const authToken = localStorage.getItem('authToken')
+    const token = jwtToken || authToken
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -50,11 +54,9 @@ api.interceptors.response.use(
 export const reservationAPI = {
   // 獲取預約清單 - 修改為可選參數
   getReservationList: (userId) => {
-    if (userId) {
-      return api.get('/api/bookreservations', { params: { userId } })
-    } else {
-      return api.get('/api/bookreservations')
-    }
+    // 根據 API 文檔，GET /api/bookreservations 需要 Authorization 頭部
+    // 不需要 userId 參數，會從 token 中獲取用戶資訊
+    return api.get('/api/bookreservations')
   },
   
   // 獲取當前用戶的預約清單
