@@ -65,7 +65,8 @@
 
                     <div class="form-group">
                         <label class="form-label">出生日期：</label>
-                        <input v-model="form.birthDate" type="date" required />
+                        <input v-model="form.birthDate" type="date" :max="today.toISOString().slice(0, 10)" required />
+                        <div v-if="birthDateError" class="error-message">{{ birthDateError }}</div>
                     </div>
 
                     <div class="form-group">
@@ -167,6 +168,7 @@
 
 <script setup>
 import { ref, reactive, watch } from 'vue'
+import { parseISO, isAfter } from 'date-fns'
 import { useNavigation } from '@/composables/useNavigation'
 
 const { goHome } = useNavigation()
@@ -200,6 +202,9 @@ const form = reactive({
     phone: '',
     password: '',
 })
+
+const birthDateError = ref('')
+const today = new Date()
 
 const countries = [
     "中華民國 Republic of China",
@@ -262,6 +267,16 @@ const occupations = [
     '退休人員 Retired',
     '職業(無) Not Employed'
 ]
+
+watch(() => form.birthDate, (newDate) => {
+    if (!newDate) {
+        birthDateError.value = '請選擇出生日期'
+    } else if (isAfter(parseISO(newDate), today)) {
+        birthDateError.value = '出生日期不能是未來'
+    } else {
+        birthDateError.value = ''
+    }
+})
 
 const counties = ref([])
 
@@ -338,6 +353,12 @@ const submitForm = async () => {
 </script>
 
 <style scoped>
+.error-message {
+    color: red;
+    font-size: 0.9em;
+    margin-top: 0.25rem;
+}
+
 .loading-spinner {
     border: 6px solid #f3f3f3;
     border-top: 6px solid #003366;
@@ -611,6 +632,7 @@ a:hover {
 
 .password-wrapper input {
     flex: 1;
+    width: 20rem;
 }
 
 .password-wrapper button {
@@ -633,7 +655,6 @@ input {
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 6px;
-    font-size: 1rem;
 }
 
 button[type='submit'] {

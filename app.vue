@@ -16,7 +16,7 @@
       </div>
 
       <!-- 讀者登入按鈕 -->
-      <MemberLoginButton />
+      <MemberLoginButton v-if="route.path !== '/login'" />
    </div>
 
 </template>
@@ -30,6 +30,8 @@ import MemberLoginButton from '@/components/MemberLoginButton.vue'
 
 // 定義 sidebar 開關狀態
 const isSidebarOpen = ref(true)
+
+const route = useRoute()
 </script>
 
 <style>
