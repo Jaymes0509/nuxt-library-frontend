@@ -1,10 +1,14 @@
     <template>
+
         <div class="scroll-wrapper">
             <div class="library-card">
                 <div class="title-row">
                     <img src="/images/libraryCard.jpg" alt="借閱證圖片" />
                     <h1>自習座位預約</h1>
                 </div>
+
+                <!-- <LoginRequiredPrompt v-if="!isLoggedIn" message="您需要登入才能預約座位" /> -->
+                <!-- <div v-else> -->
                 <h1 class="section-title"> {{
                     step === 1 ? '選擇日期 & 預計就座時段' :
                         step === 2 ? '選擇座位' :
@@ -35,6 +39,7 @@
                 </div>
             </div>
         </div>
+        <!-- </div> -->
     </template>
 
 <script setup>
