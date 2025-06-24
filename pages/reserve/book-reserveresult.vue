@@ -87,6 +87,7 @@
               <ul class="result-notice-list">
                 <li>請在預約時間內完成取書</li>
                 <li>超過預約時間未取書將自動取消預約</li>
+                <li>預約成功通知郵件已自動發送至您的信箱</li>
                 <li>如需取消預約，請至「我的預約」頁面操作</li>
                 <li>如有任何問題，請聯繫圖書館服務台</li>
               </ul>
@@ -221,6 +222,51 @@ function goToHome() {
   router.push('/')
 }
 
+// 自動發送預約成功通知郵件
+const sendNotificationEmail = async () => {
+  try {
+    // 獲取當前登入用戶的 ID
+    const storedUser = localStorage.getItem('user')
+    let currentUserId = 1 // 預設值
+
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser)
+        currentUserId = userData.user_id || userData.id || 1
+      } catch (e) {
+        console.error('解析用戶資訊失敗：', e)
+      }
+    }
+
+    // 準備郵件通知資料
+    const emailData = {
+      userId: currentUserId,
+      reservationIds: reservationIds.value.map(id => id.toString())
+    }
+
+    console.log('自動發送郵件通知，資料：', emailData)
+
+    // 調用後端郵件通知 API
+    const response = await fetch('http://localhost:8080/api/reservation-notification/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(emailData)
+    })
+
+    const result = await response.json()
+
+    if (response.ok && result.success) {
+      console.log('✅ 預約成功通知郵件已自動發送！')
+    } else {
+      console.error('❌ 自動發送郵件失敗：', result.message || '郵件發送失敗')
+    }
+  } catch (error) {
+    console.error('自動發送郵件失敗：', error)
+  }
+}
+
 // 檢查必要參數
 onMounted(() => {
   // 檢查是否有書籍資料
@@ -233,6 +279,11 @@ onMounted(() => {
   if (!form.value.time) {
     router.push('/reserve/book-reservation')
     return
+  }
+
+  // 預約成功時自動發送通知郵件
+  if (isAllSuccess.value) {
+    sendNotificationEmail()
   }
 })
 </script>
