@@ -17,7 +17,7 @@
       </div>
 
       <div style="display: flex; justify-content: center; gap: 3rem; margin-bottom: 3rem;">
-        <div class="feature-card blue" @click="goToWrite">
+        <div class="feature-card blue" @click="handleGoToWrite">
           <div style="font-size: 2rem; margin-bottom: 0.5rem;">📝</div>
           <div class="feature-card-title">撰寫心得</div>
           <div class="feature-card-text">針對您借閱的書籍，留下寶貴評論與評分</div>
@@ -445,55 +445,97 @@ input[type="text"] {
 
 <script setup>
 import { ref, computed, onMounted, toRaw, nextTick } from 'vue'
-import { useCookie } from '#app'
+import { jwtDecode } from 'jwt-decode'
+
+/* 🔐 使用者身份 */
+const email = ref('')
+const userId = ref(null)
+const isLoggedIn = ref(false)
+const isReady = ref(false)
+
+onMounted(async () => {
+  console.log('📌 onMounted 執行')
+
+  const token = localStorage.getItem('jwt_token')
+  console.log('📦 取得 token:', token)
+
+  if (!token) {
+    console.warn('❌ 沒有 token，略過會員初始化')
+    isReady.value = true
+    return
+  }
+
+  try {
+    const decoded = jwtDecode(token)
+    console.log('🔓 解析 token 成功:', decoded)
+
+    email.value = decoded?.sub || ''
+    console.log('📧 解出 email:', email.value)
+
+    if (email.value) {
+      const encodedEmail = encodeURIComponent(email.value)
+      const res = await $fetch(`http://localhost:8080/api/book-comments/user-id-by-email/${encodedEmail}`)
+      userId.value = res
+      isLoggedIn.value = true
+      console.log('🆔 成功取得 userId:', userId.value)
+    } else {
+      console.warn('⚠️ token 中沒有 email')
+    }
+
+    await fetchReviewableBooks()
+    await fetchMyReviews()
+    await enrichReviewsWithLikes()
+  } catch (err) {
+    console.error('❌ token 解析或 $fetch 失敗:', err)
+  }
+
+  isReady.value = true
+  console.log('✅ 初始化完成 isReady = true')
+})
+
+/* 📄 畫面狀態控制 */
 const step = ref(null)
-const selectedBook = ref(null)
-const editingReview = ref(null)
-const selectedBookForReview = ref(null)
+const previousStep = ref('read')
 const actionMode = ref(null)
+const selectedBook = ref(null)
+const selectedBookForReview = ref(null)
+const editingReview = ref(null)
+
+/* ✍️ 書評輸入 */
 const newReview = ref({ rating: '', comment: '' })
-const searchedBooks = ref([])
+const reviewText = ref('')
+const reviewRating = ref(5)
+
+/* 📚 書籍與書評資料 */
+const borrowedBooks = ref([])
+const allBorrowedBooks = ref([])
 const allReviews = ref([])
+const bookReviews = ref([])
+const myReviews = ref([])
 
-const user = useCookie('user')
-
+/* 🔎 搜尋與篩選 */
 const categoryFilter = ref('')
 const searchKeyword = ref('')
 const sortReviewOption = ref('latest')
-const bookReviews = ref([])
-const reviewText = ref('')
-const reviewRating = ref(5)
-const previousStep = ref('read')
 
-// 分頁用變數
-const searchPageInfo = ref({ totalPages: 1, number: 0 }) // 分頁資訊
-const currentPage = ref(1) // 當前頁碼，1 起算
+/* 📄 分頁資訊 */
+const searchPageInfo = ref({ totalPages: 1, number: 0 })
+const currentPage = ref(1)
 
-// 取消點讚冷卻秒數
+/* 🕒 常數設定 */
 const cooldownSeconds = 24 * 60 * 60
-
 const randomBooks = ref([])
+const searchedBooks = ref([])
 
-const borrowedBooks = ref([])
-
-const allBorrowedBooks = ref([]) // 新增完整書籍清單
-
+/* 📚 書籍相關功能 */
 const fetchReviewableBooks = async () => {
-  if (!isLoggedIn.value) return
-  const userId = Number(user.value)
-
+  if (!userId.value) return
   try {
-    const res = await fetch(`http://localhost:8080/api/book-comments/reviewable-books/${userId}`, {
-      credentials: 'include'
-    })
-    if (!res.ok) throw new Error('取得可撰寫書評的書籍失敗')
+    const res = await fetch(`http://localhost:8080/api/book-comments/reviewable-books/${userId.value}`, { credentials: 'include' })
+    if (!res.ok) throw new Error('取得可撰寫書籍失敗')
     const data = await res.json()
     borrowedBooks.value = data
-    allBorrowedBooks.value = data.slice() // 複製一份完整清單，保持不變
-    // console.log('fetchReviewableBooks 讀到的書籍資料:', allBorrowedBooks.value)
-
-    // console.log('fetchReviewableBooks 詳細資料:', JSON.stringify(allBorrowedBooks.value, null, 2))
-    console.log('fetchReviewableBooks 抓到的書籍資料:', data)
+    allBorrowedBooks.value = data.slice()
   } catch (err) {
     console.error(err)
     borrowedBooks.value = []
@@ -501,83 +543,20 @@ const fetchReviewableBooks = async () => {
   }
 }
 
-const deleteReview = async review => {
-  if (!confirm('確定要刪除這則書評嗎？')) return
-
+const fetchAllBorrowedBooks = async () => {
+  if (!userId.value) return
   try {
-    const res = await fetch(`http://localhost:8080/api/book-comments/${review.commentId}`, {
-      method: 'DELETE',
-      credentials: 'include'
-    })
-
-    if (!res.ok) throw new Error('刪除失敗')
-
-    // 從書評列表移除
-    allReviews.value = allReviews.value.filter(r => r.commentId !== review.commentId)
-
-    // 重新取得完整借閱書籍清單（包含有無評論的所有書）
-    await fetchAllBorrowedBooks()
-
-    // 找尋對應書籍
-    const rawBooks = toRaw(allBorrowedBooks.value)
-    const book = rawBooks.find(b => String(b.bookId) === String(review.bookId))
-
-    if (book) {
-      // 這裡判斷撰寫書評用的 borrowedBooks 是否已包含，沒包含再放入
-      const bookExists = borrowedBooks.value.some(b => b.bookId === book.bookId)
-      if (!bookExists) {
-        borrowedBooks.value.push({
-          bookId: book.bookId,
-          title: book.title,
-          author: book.author
-        })
-      }
-    } else {
-      console.warn(`找不到書籍資料，bookId: ${review.bookId}`)
-    }
-
-    alert('✅ 書評已刪除')
-    step.value = 'write'
-    actionMode.value = 'edit'
+    const res = await fetch(`http://localhost:8080/api/book-comments/borrowed-books/${userId.value}`, { credentials: 'include' })
+    if (!res.ok) throw new Error('取得所有借閱書籍失敗')
+    const data = await res.json()
+    allBorrowedBooks.value = data
+    borrowedBooks.value = data.slice()
   } catch (error) {
-    alert('❌ 書評刪除失敗，請稍後再試')
     console.error(error)
+    allBorrowedBooks.value = []
+    borrowedBooks.value = []
   }
 }
-
-const goToWrite = async () => {
-  if (!isLoggedIn.value) {
-    alert('請先登入會員後才能撰寫書評')
-    return
-  }
-
-  // 清空狀態
-  selectedBook.value = null
-  selectedBookForReview.value = null
-  editingReview.value = null
-  actionMode.value = null
-  newReview.value = { rating: '', comment: '' }
-
-  // 從後端載入可撰寫書評的書籍
-  await fetchReviewableBooks()
-
-  step.value = 'write'
-}
-
-const simulateLogin = () => {
-  document.cookie = 'user=123; path=/'
-  user.value = '123' // 同步更新 Nuxt3 composable
-  location.reload()
-}
-
-const simulateLogout = () => {
-  document.cookie = 'user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/'
-  location.reload()
-}
-
-const isLoggedIn = computed(() => {
-  return user.value && !isNaN(Number(user.value))
-})
 
 const fetchRandomBooks = async () => {
   try {
@@ -590,23 +569,43 @@ const fetchRandomBooks = async () => {
   }
 }
 
-const fetchMyReviews = async () => {
-  if (!isLoggedIn.value) return
-  const userId = Number(user.value)
+const fetchSearchedBooks = async () => {
+  try {
+    const params = new URLSearchParams()
+    if (categoryFilter.value.trim()) params.append('category', categoryFilter.value.trim())
+    if (searchKeyword.value.trim()) params.append('keyword', searchKeyword.value.trim())
+    params.append('page', currentPage.value)
+    params.append('pageSize', 10)
 
+    const res = await fetch(`http://localhost:8080/api/search-books?${params.toString()}`, { credentials: 'include' })
+    if (!res.ok) throw new Error('取得書籍失敗')
+    const data = await res.json()
+    searchedBooks.value = data.content
+    searchPageInfo.value = data
+  } catch (error) {
+    console.error(error)
+    searchedBooks.value = []
+    searchPageInfo.value = { totalPages: 1, number: 0 }
+  }
+}
+
+/* 📖 書評相關 */
+const fetchMyReviews = async () => {
+  if (!userId.value) return
   try {
     if (allBorrowedBooks.value.length === 0) {
-      await fetchAllBorrowedBooks()  // 確保抓取所有借閱書籍
+      await fetchAllBorrowedBooks()
     }
 
-    const res = await fetch(`http://localhost:8080/api/book-comments/user/${userId}`, {
+    const res = await fetch(`http://localhost:8080/api/book-comments/user/${userId.value}`, {
       credentials: 'include'
     })
     if (!res.ok) throw new Error('取得我的書評失敗')
-    const reviews = await res.json()
 
+    const reviews = await res.json()
     const rawBooks = toRaw(allBorrowedBooks.value)
-    allReviews.value = reviews.map(r => {
+
+    const enriched = reviews.map(r => {
       const book = rawBooks.find(b => String(b.bookId) === String(r.bookId)) || {}
       return {
         ...r,
@@ -615,267 +614,34 @@ const fetchMyReviews = async () => {
         reviewer: '您'
       }
     })
-    console.log('fetchMyReviews 執行完畢, allReviews:', allReviews.value)
+
+    allReviews.value = enriched
+    myReviews.value = enriched // 🔧 同步到 myReviews，用於我的專屬畫面
   } catch (error) {
     console.error(error)
     allReviews.value = []
+    myReviews.value = []
   }
 }
 
-const fetchAllBorrowedBooks = async () => {
-  if (!isLoggedIn.value) return
-  const userId = Number(user.value)
-  try {
-    const res = await fetch(`http://localhost:8080/api/book-comments/borrowed-books/${userId}`, {
-      credentials: 'include'
-    })
-    if (!res.ok) throw new Error('取得所有借閱書籍失敗')
-    const data = await res.json()
-    allBorrowedBooks.value = data
-    borrowedBooks.value = data.slice() // 複製一份給撰寫用
-    console.log('fetchAllBorrowedBooks 取得完整借閱書籍:', data)
-  } catch (error) {
-    console.error(error)
-    allBorrowedBooks.value = []
-    borrowedBooks.value = []
-  }
-}
-
-onMounted(async () => {
-  if (isLoggedIn.value) {
-    await fetchReviewableBooks()
-    await fetchMyReviews()
-    await enrichReviewsWithLikes()
-  }
-})
-
-// 替每則書評補上「點讚數」與「是否已點讚」
-const enrichReviewsWithLikes = async () => {
-  for (const review of allReviews.value) {
-    const commentId = review.commentId || review.id
-
-    // 查詢點讚數量
-    try {
-      const res1 = await fetch(`http://localhost:8080/api/comment/${commentId}/like-count`)
-      const likeCount = await res1.json()
-      review.likes = likeCount
-    } catch (err) {
-      console.warn('載入點讚數失敗', commentId, err)
-      review.likes = 0
-    }
-
-    // 查詢使用者是否已點讚
-    if (user.value) {
-      try {
-        const res2 = await fetch(`http://localhost:8080/api/comment/${commentId}/liked?userId=${user.value}`)
-        const liked = await res2.json()
-        review.liked = liked
-      } catch (err) {
-        console.warn('載入點讚狀態失敗', commentId, err)
-        review.liked = false
-      }
-    } else {
-      review.liked = false
-    }
-  }
-}
-
-const goToEditReviews = async () => {
-  actionMode.value = 'edit'
-  await fetchAllBorrowedBooks()  // 先確保 allBorrowedBooks 有所有借閱書籍資料
-  await fetchMyReviews()        // 再抓書評並配對書籍資料
-}
-
-const myReviews = computed(() => {
-  return allReviews.value.filter(r => r.reviewer === '您')
-})
-
-const viewBookReviews = async book => {
-  selectedBook.value = book
-  previousStep.value = step.value
-  step.value = 'bookReviews'
-
-  try {
-    const res = await fetch(`http://localhost:8080/api/book-comments/book/${book.bookId}`, {
-      credentials: 'include'
-    })
-    if (!res.ok) throw new Error('取得書評失敗')
-    const reviews = await res.json()
-    initReviews(reviews)
-
-    // 加入點讚數與是否已點讚
-    for (const review of bookReviews.value) {
-      const commentId = review.commentId || review.id
-
-      // 點讚數量
-      try {
-        const res1 = await fetch(`http://localhost:8080/api/comment/${commentId}/like-count`)
-        const likeCount = await res1.json()
-        review.likes = likeCount
-      } catch (err) {
-        console.warn('載入點讚數失敗', commentId, err)
-        review.likes = 0
-      }
-
-      // 是否已點讚
-      if (user.value) {
-        try {
-          const res2 = await fetch(`http://localhost:8080/api/comment/${commentId}/liked?userId=${user.value}`)
-          const liked = await res2.json()
-          review.liked = liked
-        } catch (err) {
-          console.warn('載入點讚狀態失敗', commentId, err)
-          review.liked = false
-        }
-      } else {
-        review.liked = false
-      }
-    }
-  } catch (error) {
-    console.error(error)
-    bookReviews.value = []
-  }
-}
-
-
-const returnToPrevious = () => {
-  step.value = previousStep.value || null
-}
-
-const returnToPreviousStepAndReset = async () => {
-  const targetStep = previousStep.value || null
-  step.value = targetStep
-
-  if (targetStep === 'write' || targetStep === 'read') {
-    categoryFilter.value = ''
-    searchKeyword.value = ''
-    await nextTick()
-  }
-}
-
-
-
-function initReviews(reviews) {
-  bookReviews.value = reviews.map(r => ({
-    ...r,
-    likes: Number(r.likes) || 0,
-    liked: false,
-    cooldown: false,
-    createdAt: r.createdAt,
-    updatedAt: r.updatedAt
-  }))
-}
-
-const fetchSearchedBooks = async () => {
-  try {
-    const params = new URLSearchParams()
-    if (categoryFilter.value && categoryFilter.value.trim() !== '') params.append('category', categoryFilter.value.trim())
-    if (searchKeyword.value && searchKeyword.value.trim() !== '') params.append('keyword', searchKeyword.value.trim())
-    params.append('page', currentPage.value)
-    params.append('pageSize', 10)
-
-    const res = await fetch(`http://localhost:8080/api/search-books?${params.toString()}`, { credentials: 'include' })
-    if (!res.ok) throw new Error('取得書籍失敗')
-    const data = await res.json()
-
-    searchedBooks.value = data.content // 取分頁物件裡的資料陣列
-    searchPageInfo.value = data // 整個分頁資訊物件
-  } catch (error) {
-    console.error(error)
-    searchedBooks.value = []
-    searchPageInfo.value = { totalPages: 1, number: 0 }
-  }
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  if (isNaN(date)) return ''
-  return date.toLocaleString() // 你也可以改成自己想要的格式
-}
-
-watch([categoryFilter, searchKeyword, currentPage], () => {
-  if (categoryFilter.value.trim() !== '' || searchKeyword.value.trim() !== '') {
-    fetchSearchedBooks()
-  } else {
-    searchedBooks.value = []
-    searchPageInfo.value = { totalPages: 1, number: 0 }
-  }
-})
-
-const sortedBookReviews = computed(() => {
-  if (sortReviewOption.value === 'likes') {
-    return [...bookReviews.value].sort((a, b) => b.likes - a.likes)
-  } else {
-    // 使用 updatedAt（如果有）或 createdAt 排序
-    return [...bookReviews.value].sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
-  }
-})
-
-const toggleLike = async review => {
-  const commentId = review.commentId || review.id
-
-  if (!user.value) {
-    alert('請先登入才能點讚書評')
-    return
-  }
-
-  if (review.liked) {
-    if (review.cooldown) {
-      alert(`取消點讚請等待 ${cooldownSeconds} 秒冷卻時間`)
-      return
-    }
-
-    try {
-      const res = await fetch(`http://localhost:8080/api/comment/${commentId}/like?userId=${user.value}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      })
-      if (!res.ok) throw new Error('取消點讚失敗')
-      review.liked = false
-      review.likes--
-      review.cooldown = true
-      setTimeout(() => (review.cooldown = false), cooldownSeconds * 1000)
-    } catch (error) {
-      alert(error.message)
-    }
-  } else {
-    try {
-      const res = await fetch(`http://localhost:8080/api/comment/${commentId}/like?userId=${user.value}`, {
-        method: 'POST', // or 'DELETE'
-        credentials: 'include'
-      })
-      if (!res.ok) throw new Error('點讚失敗')
-      review.liked = true
-      review.likes++
-    } catch (error) {
-      alert(error.message)
-    }
-  }
-}
 
 const submitReview = async () => {
-  // console.log('selectedBookForReview.value', selectedBookForReview.value)
-
   if (!newReview.value.rating || !newReview.value.comment.trim()) {
     alert('請完整填寫評分與評論內容')
     return
   }
 
-  const userId = Number(user.value)
-  if (!userId) {
-    alert('登入資訊失效或尚未登入，請重新登入後再提交書評')
+  if (!userId.value) {
+    alert('登入資訊失效，請重新登入後再提交書評')
     return
   }
 
   const payload = {
     bookId: selectedBookForReview.value.bookId,
-    userId,
+    userId: userId.value,
     rating: Number(newReview.value.rating),
     comment: newReview.value.comment
   }
-
-  console.log('送出書評的 payload:', payload)
 
   try {
     const res = await fetch('http://localhost:8080/api/book-comments', {
@@ -884,9 +650,7 @@ const submitReview = async () => {
       body: JSON.stringify(payload),
       credentials: 'include'
     })
-
     if (!res.ok) throw new Error('提交失敗')
-
     const data = await res.json()
 
     allReviews.value.push({
@@ -902,19 +666,121 @@ const submitReview = async () => {
     })
 
     borrowedBooks.value = borrowedBooks.value.filter(book => book.bookId !== selectedBookForReview.value.bookId)
-
     selectedBook.value = null
     selectedBookForReview.value = null
     newReview.value = { rating: '', comment: '' }
     actionMode.value = null
     editingReview.value = null
     step.value = null
-
     alert('✅ 您的書評已成功提交')
   } catch (error) {
     alert('❌ 書評送出失敗，請稍後再試')
     console.error(error)
   }
+}
+
+const updateReview = async () => {
+  if (!reviewRating.value || !reviewText.value.trim()) {
+    alert('請完整填寫評分與評論內容')
+    return
+  }
+
+  if (!userId.value) {
+    alert('登入資訊失效，請重新登入後再提交書評')
+    return
+  }
+
+  const payload = {
+    bookId: editingReview.value.bookId,
+    userId: userId.value,
+    rating: reviewRating.value,
+    comment: reviewText.value
+  }
+
+  try {
+    const res = await fetch(`http://localhost:8080/api/book-comments/${editingReview.value.commentId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      credentials: 'include'
+    })
+    if (!res.ok) throw new Error('更新失敗')
+    const data = await res.json()
+
+    const index = allReviews.value.findIndex(r => r.commentId === editingReview.value.commentId)
+    if (index !== -1) {
+      allReviews.value[index].rating = data.rating
+      allReviews.value[index].comment = data.comment
+      allReviews.value[index].date = data.updatedAt || allReviews.value[index].date
+    }
+
+    alert('✅ 書評更新成功')
+    step.value = 'write'
+    actionMode.value = 'edit'
+    editingReview.value = null
+    reviewText.value = ''
+    reviewRating.value = 5
+  } catch (error) {
+    alert('❌ 書評更新失敗，請稍後再試')
+    console.error(error)
+  }
+}
+
+const deleteReview = async review => {
+  if (!confirm('確定要刪除這則書評嗎？')) return
+  try {
+    const res = await fetch(`http://localhost:8080/api/book-comments/${review.commentId}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    })
+    if (!res.ok) throw new Error('刪除失敗')
+
+    allReviews.value = allReviews.value.filter(r => r.commentId !== review.commentId)
+    await fetchAllBorrowedBooks()
+
+    const rawBooks = toRaw(allBorrowedBooks.value)
+    const book = rawBooks.find(b => String(b.bookId) === String(review.bookId))
+    if (book && !borrowedBooks.value.some(b => b.bookId === book.bookId)) {
+      borrowedBooks.value.push({ bookId: book.bookId, title: book.title, author: book.author })
+    }
+
+    alert('✅ 書評已刪除')
+    step.value = 'write'
+    actionMode.value = 'edit'
+  } catch (error) {
+    alert('❌ 書評刪除失敗，請稍後再試')
+    console.error(error)
+  }
+}
+
+const enrichReviewsWithLikes = async () => {
+  for (const review of allReviews.value) {
+    const commentId = review.commentId || review.id
+
+    try {
+      const res1 = await fetch(`http://localhost:8080/api/comment/${commentId}/like-count`)
+      review.likes = await res1.json()
+    } catch {
+      review.likes = 0
+    }
+
+    if (userId.value) {
+      try {
+        const res2 = await fetch(`http://localhost:8080/api/comment/${commentId}/liked?userId=${userId.value}`)
+        review.liked = await res2.json()
+      } catch {
+        review.liked = false
+      }
+    } else {
+      review.liked = false
+    }
+  }
+}
+
+/* 🎯 書評相關 UI 操作 */
+const startWritingReview = book => {
+  selectedBookForReview.value = book
+  newReview.value = { rating: '', comment: '' }
 }
 
 const editReview = review => {
@@ -929,73 +795,183 @@ const editReview = review => {
   step.value = 'editReview'
 }
 
-const updateReview = async () => {
-  // console.log('updateReview 被呼叫，editingReview:', editingReview.value)
+const toggleLike = async review => {
+  const commentId = review.commentId || review.id
+  if (!userId.value) return alert('請先登入才能點讚書評')
 
-  if (!reviewRating.value || !reviewText.value.trim()) {
-    alert('請完整填寫評分與評論內容')
-    return
+  if (review.liked) {
+    if (review.cooldown) return alert(`取消點讚請等待 ${cooldownSeconds} 秒冷卻時間`)
+    try {
+      const res = await fetch(`http://localhost:8080/api/comment/${commentId}/like?userId=${userId.value}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      if (!res.ok) throw new Error()
+      review.liked = false
+      review.likes--
+      review.cooldown = true
+      setTimeout(() => (review.cooldown = false), cooldownSeconds * 1000)
+    } catch {
+      alert('取消點讚失敗')
+    }
+  } else {
+    try {
+      const res = await fetch(`http://localhost:8080/api/comment/${commentId}/like?userId=${userId.value}`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+      if (!res.ok) throw new Error()
+      review.liked = true
+      review.likes++
+    } catch {
+      alert('點讚失敗')
+    }
   }
+}
 
-  const userId = Number(user.value)
-  if (!userId) {
-    alert('登入資訊失效或尚未登入，請重新登入後再提交書評')
-    return
-  }
-
-  const payload = {
-    bookId: editingReview.value.bookId,
-    userId,
-    rating: reviewRating.value,
-    comment: reviewText.value
-  }
+const viewBookReviews = async book => {
+  selectedBook.value = book
+  previousStep.value = step.value
+  step.value = 'bookReviews'
 
   try {
-    const res = await fetch(`http://localhost:8080/api/book-comments/${editingReview.value.commentId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+    const res = await fetch(`http://localhost:8080/api/book-comments/book/${book.bookId}`, {
       credentials: 'include'
     })
+    if (!res.ok) throw new Error()
+    const reviews = await res.json()
+    initReviews(reviews)
 
-    if (!res.ok) throw new Error('更新失敗')
+    for (const review of bookReviews.value) {
+      const commentId = review.commentId || review.id
+      try {
+        const res1 = await fetch(`http://localhost:8080/api/comment/${commentId}/like-count`)
+        review.likes = await res1.json()
+      } catch {
+        review.likes = 0
+      }
 
-    const data = await res.json()
-    // console.log('更新後 API 回傳的書評資料', data)
-
-    const index = allReviews.value.findIndex(r => r.commentId === editingReview.value.commentId)
-    // console.log('找到的 index:', index)
-
-    if (index !== -1) {
-      allReviews.value[index].rating = data.rating
-      allReviews.value[index].comment = data.comment
-      allReviews.value[index].date = data.updatedAt || allReviews.value[index].date
+      if (userId.value) {
+        try {
+          const res2 = await fetch(`http://localhost:8080/api/comment/${commentId}/liked?userId=${userId.value}`)
+          review.liked = await res2.json()
+        } catch {
+          review.liked = false
+        }
+      } else {
+        review.liked = false
+      }
     }
-
-    // console.log('更新後的 allReviews', allReviews.value)
-    // console.log('myReviews 重新計算結果', myReviews.value)
-
-    alert('✅ 書評更新成功')
-
-    step.value = 'write'
-    actionMode.value = 'edit'
-    editingReview.value = null
-    reviewText.value = ''
-    reviewRating.value = 5
   } catch (error) {
-    alert('❌ 書評更新失敗，請稍後再試')
     console.error(error)
+    bookReviews.value = []
   }
 }
 
-const startWritingReview = book => {
-  selectedBookForReview.value = book
-  newReview.value = { rating: '', comment: '' }
+/* 🔁 流程控制與畫面回復 */
+const goToEditReviews = async () => {
+  actionMode.value = 'edit'
+  await fetchAllBorrowedBooks()
+  await fetchMyReviews()
 }
 
-watch(step, val => {
-  if (val === 'read') fetchRandomBooks()
+const goToWrite = async () => {
+  console.log('📝 嘗試撰寫，登入狀態:', isLoggedIn.value)
+
+  // 等待初始化完成
+  if (!isReady.value) {
+    alert('資料尚未初始化完成，請稍候再試')
+    return
+  }
+
+  if (!isLoggedIn.value) {
+    alert('請先登入會員')
+    return
+  }
+  selectedBook.value = null
+  selectedBookForReview.value = null
+  editingReview.value = null
+  actionMode.value = null
+  newReview.value = { rating: '', comment: '' }
+  await fetchReviewableBooks()
+  step.value = 'write'
+}
+
+function handleGoToWrite() {
+  console.log('🖱 點擊撰寫書評')
+  console.log('🧪 isReady:', isReady.value)
+  console.log('🧪 isLoggedIn:', isLoggedIn.value)
+
+  if (!isReady.value) {
+    alert('請稍候，資料尚在初始化中')
+    return
+  }
+
+  if (!isLoggedIn.value) {
+    alert('請先登入會員')
+    return
+  }
+
+  console.log('📘 條件 OK，準備進入撰寫書評')
+  goToWrite()
+}
+
+
+
+const returnToPrevious = () => {
+  step.value = previousStep.value || null
+}
+
+const returnToPreviousStepAndReset = async () => {
+  const targetStep = previousStep.value || null
+  step.value = targetStep
+  if (targetStep === 'write' || targetStep === 'read') {
+    categoryFilter.value = ''
+    searchKeyword.value = ''
+    await nextTick()
+  }
+}
+
+/* 🛠 工具 */
+function initReviews(reviews) {
+  bookReviews.value = reviews.map(r => ({
+    ...r,
+    likes: Number(r.likes) || 0,
+    liked: false,
+    cooldown: false,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt
+  }))
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  if (isNaN(date)) return ''
+  return date.toLocaleString()
+}
+
+/* 🔄 搜尋觸發 */
+watch([categoryFilter, searchKeyword, currentPage], () => {
+  if (categoryFilter.value.trim() || searchKeyword.value.trim()) {
+    fetchSearchedBooks()
+  } else {
+    searchedBooks.value = []
+    searchPageInfo.value = { totalPages: 1, number: 0 }
+  }
 })
 
+/* 📊 書評排序邏輯 */
+const sortedBookReviews = computed(() => {
+  if (sortReviewOption.value === 'likes') {
+    return [...bookReviews.value].sort((a, b) => b.likes - a.likes)
+  } else {
+    return [...bookReviews.value].sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
+  }
+})
+
+watch(isLoggedIn, (val) => {
+  console.log('🔍 isLoggedIn 狀態變化:', val)
+})
 
 </script>
