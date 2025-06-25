@@ -1,47 +1,40 @@
-    <template>
+<template>
+    <div class="scroll-wrapper">
+        <div class="library-card">
+            <div class="title-row">
+                <img src="/images/libraryCard.jpg" alt="借閱證圖片" />
+                <h1>自習座位預約</h1>
+            </div>
 
-        <div class="scroll-wrapper">
-            <div class="library-card">
-                <div class="title-row">
-                    <img src="/images/libraryCard.jpg" alt="借閱證圖片" />
-                    <h1>自習座位預約</h1>
-                </div>
-
-                <!-- <LoginRequiredPrompt v-if="!isLoggedIn" message="您需要登入才能預約座位" /> -->
-                <!-- <div v-else> -->
-                <h1 class="section-title"> {{
+            <h1 class="section-title">
+                {{
                     step === 1 ? '選擇日期 & 預計就座時段' :
                         step === 2 ? '選擇座位' :
                             '預約結果'
-                }}</h1>
+                }}
+            </h1>
 
+            <div v-if="step === 1">
+                <SeatDatePicker v-model="selectedDate" />
+                <br>
+                <SeatTimeSlot v-model="selectedSlot" :selected-date="selectedDate" />
+                <ButtonsNextButton :disabled="!selectedDate || !selectedSlot?.start" @next="handleNextStep" />
+            </div>
 
-                <div v-if="step === 1">
-                    <SeatDatePicker v-model="selectedDate" />
-                    <br>
-                    <SeatTimeSlot v-model="selectedSlot" :selected-date="selectedDate" />
-                    <ButtonsNextButton :disabled="!selectedDate || !selectedSlot?.start" @next="handleNextStep" />
+            <div v-if="step === 2">
+                <ButtonsBackButton :step="step" @update:step="step = $event" />
+                <SeatMap :selectedDate="selectedDate" :selectedSlot="selectedSlot" @confirm="handleConfirmSeat" />
+            </div>
 
-                </div>
+            <SeatReservationSummary v-if="step === 3" :selectedDate="selectedDate"
+                :selectedSlot="`${selectedSlot.start} - ${selectedSlot.end}`" :selectedSeat="selectedSeat" />
 
-                <div v-if="step === 2">
-                    <ButtonsBackButton :step="step" @update:step="step = $event" />
-                    <SeatMap :selectedDate="selectedDate" :selectedSlot="selectedSlot" @confirm="handleConfirmSeat" />
-
-                </div>
-
-                <SeatReservationSummary v-if="step === 3" :selectedDate="selectedDate"
-                    :selectedSlot="`${selectedSlot.start} - ${selectedSlot.end}`" :selectedSeat="selectedSeat" />
-
-                <div v-if="step === 3" class="cancel-button-wrapper" style="margin-top: 20px; text-align: center;">
-                    <button @click="cancelReservation" class="cancel-btn">
-                        ❌ 取消預約
-                    </button>
-                </div>
+            <div v-if="step === 3" class="cancel-button-wrapper" style="margin-top: 20px; text-align: center;">
+                <button @click="cancelReservation" class="cancel-btn">❌ 取消預約</button>
             </div>
         </div>
-        <!-- </div> -->
-    </template>
+    </div>
+</template>
 
 <script setup>
 import { ref } from 'vue'
@@ -51,46 +44,28 @@ const selectedDate = ref('')
 const selectedSeat = ref(null)
 const selectedSlot = ref(null)
 const step = ref(1)
-
-// 假設你已取得登入的 userId
-const userId = ref(123) // 替換成你實際取得的值
+const userId = ref(125) // 實際整合時請改為動態取得登入者 ID
 
 const handleNextStep = async () => {
     const slotLabel = `${selectedSlot.value.start} - ${selectedSlot.value.end}`
-
     const { data, error } = await useFetch('http://localhost:8080/api/seats/reservations/check', {
         method: 'GET',
-        query: {
-            userId: userId.value,
-            date: selectedDate.value,
-            timeSlot: slotLabel
-        }
+        query: { userId: userId.value, date: selectedDate.value, timeSlot: slotLabel }
     })
 
-    if (error.value) {
-        alert('❌ 檢查預約時發生錯誤')
-        return
-    }
+    if (error.value) return alert('❌ 檢查預約時發生錯誤')
+    if (data.value === true) return alert('⚠️ 您已預約同一時段的座位')
 
-    if (data.value === true) {
-        alert('⚠️ 您已預約同一時段的座位')
-        return
-    }
-
-    step.value = 2 // 只有沒預約過才進入座位選擇頁
+    step.value = 2
 }
 
-
-
-// 點擊座位後觸發預約
 const handleConfirmSeat = async (seatLabel) => {
     selectedSeat.value = seatLabel
-
     const res = await useFetch('http://localhost:8080/api/seats/reservations/book', {
         method: 'POST',
         body: {
             userId: userId.value,
-            seatLabel: seatLabel,
+            seatLabel,
             reservationDate: selectedDate.value,
             timeSlot: `${selectedSlot.value.start} - ${selectedSlot.value.end}`
         }
@@ -99,11 +74,7 @@ const handleConfirmSeat = async (seatLabel) => {
     if (res.error.value) {
         const msg = res.error.value?.data || '❌ 發生錯誤';
         if (res.status.value === 409) {
-            if (msg.includes('同一時段')) {
-                alert('⚠️ 您已預約同一時段的座位')
-            } else {
-                alert('⚠️ 該座位已被預約')
-            }
+            alert(msg.includes('同一時段') ? '⚠️ 您已預約同一時段的座位' : '⚠️ 該座位已被預約')
         } else {
             alert('❌ 發生錯誤，請稍後再試')
             console.error(res.error.value)
@@ -134,8 +105,6 @@ const cancelReservation = async () => {
         selectedDate.value = '';
     }
 };
-
-
 </script>
 
 <style scoped>
