@@ -225,17 +225,29 @@ function goToHome() {
 // 自動發送預約成功通知郵件
 const sendNotificationEmail = async () => {
   try {
+    // 檢查是否有預約 ID
+    if (!reservationIds.value || reservationIds.value.length === 0) {
+      console.log('沒有預約 ID，跳過郵件通知')
+      return
+    }
+
     // 獲取當前登入用戶的 ID
     const storedUser = localStorage.getItem('user')
-    let currentUserId = 1 // 預設值
+    let currentUserId = null
 
     if (storedUser) {
       try {
         const userData = JSON.parse(storedUser)
-        currentUserId = userData.user_id || userData.id || 1
+        currentUserId = userData.user_id || userData.id
       } catch (e) {
         console.error('解析用戶資訊失敗：', e)
       }
+    }
+
+    // 如果沒有用戶 ID，跳過郵件通知
+    if (!currentUserId) {
+      console.log('無法獲取用戶 ID，跳過郵件通知')
+      return
     }
 
     // 準備郵件通知資料
@@ -244,26 +256,30 @@ const sendNotificationEmail = async () => {
       reservationIds: reservationIds.value.map(id => id.toString())
     }
 
-    console.log('自動發送郵件通知，資料：', emailData)
+    console.log('嘗試發送郵件通知，資料：', emailData)
 
-    // 調用後端郵件通知 API
+    // 調用後端郵件通知 API（如果存在的話）
     const response = await fetch('http://localhost:8080/api/reservation-notification/send', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('jwt_token') || localStorage.getItem('authToken') || ''}`
       },
       body: JSON.stringify(emailData)
     })
 
-    const result = await response.json()
-
-    if (response.ok && result.success) {
-      console.log('✅ 預約成功通知郵件已自動發送！')
+    if (response.ok) {
+      const result = await response.json()
+      if (result.success) {
+        console.log('✅ 預約成功通知郵件已自動發送！')
+      } else {
+        console.log('⚠️ 郵件通知 API 返回失敗：', result.message || '郵件發送失敗')
+      }
     } else {
-      console.error('❌ 自動發送郵件失敗：', result.message || '郵件發送失敗')
+      console.log('⚠️ 郵件通知 API 不存在或發生錯誤，狀態碼：', response.status)
     }
   } catch (error) {
-    console.error('自動發送郵件失敗：', error)
+    console.log('⚠️ 郵件通知功能暫時不可用：', error.message)
   }
 }
 

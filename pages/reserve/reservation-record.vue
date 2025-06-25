@@ -233,9 +233,24 @@ const checkLoginStatus = () => {
       isLoggedIn.value = false
     }
   } else if (jwtToken || authToken) {
-    // 如果有 token 但沒有用戶資訊，也視為已登入
-    isLoggedIn.value = true
-    console.log('✅ 檢測到登入 token')
+    // 如果有 token 但沒有用戶資訊，嘗試從 token 解析用戶資訊
+    try {
+      const token = jwtToken || authToken
+      const userInfo = parseJwtToken(token)
+      if (userInfo) {
+        user.value = userInfo
+        isLoggedIn.value = true
+        // 將解析出的用戶資訊儲存到 localStorage
+        localStorage.setItem('user', JSON.stringify(userInfo))
+        console.log('✅ 從 token 解析用戶資訊成功：', userInfo)
+      } else {
+        isLoggedIn.value = false
+        console.log('❌ 無法從 token 解析用戶資訊')
+      }
+    } catch (e) {
+      console.error('❌ 解析 token 失敗：', e)
+      isLoggedIn.value = false
+    }
   } else {
     isLoggedIn.value = false
     console.log('❌ 用戶未登入')
@@ -245,39 +260,31 @@ const checkLoginStatus = () => {
   console.log('==================')
 }
 
-// 統一取得 userId 的方法
-const getCurrentUserId = () => {
-  // 先從 user.value 取
-  if (user.value?.user_id) {
-    console.log('[getCurrentUserId] 取自 user.value.user_id:', user.value.user_id)
-    return user.value.user_id
-  }
-  if (user.value?.id) {
-    console.log('[getCurrentUserId] 取自 user.value.id:', user.value.id)
-    return user.value.id
-  }
-  // 再從 localStorage 取
-  const storedUser = localStorage.getItem('user')
-  if (storedUser) {
-    try {
-      const userData = JSON.parse(storedUser)
-      if (userData.user_id) {
-        console.log('[getCurrentUserId] 取自 localStorage.user_id:', userData.user_id)
-        return userData.user_id
-      }
-      if (userData.id) {
-        console.log('[getCurrentUserId] 取自 localStorage.id:', userData.id)
-        return userData.id
-      }
-    } catch (e) {
-      console.error('[getCurrentUserId] localStorage 解析失敗', e)
+// 解析 JWT token 的函數
+const parseJwtToken = (token) => {
+  try {
+    // JWT token 格式：header.payload.signature
+    const base64Url = token.split('.')[1]
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+    }).join(''))
+
+    const payload = JSON.parse(jsonPayload)
+    console.log('解析的 token payload：', payload)
+
+    // 根據你的後端 JWT 結構，調整這些欄位名稱
+    return {
+      user_id: payload.userId || payload.user_id || payload.sub || payload.id,
+      id: payload.userId || payload.user_id || payload.sub || payload.id,
+      email: payload.email,
+      username: payload.username || payload.name,
+      role: payload.role || payload.authorities?.[0] || 'USER'
     }
+  } catch (error) {
+    console.error('解析 JWT token 失敗：', error)
+    return null
   }
-  // 都沒有就強制導向登入
-  console.warn('[getCurrentUserId] 無法取得 userId，導向登入頁')
-  alert('請先登入！')
-  window.location.href = '/login'
-  return null
 }
 
 // 分頁設定
@@ -349,15 +356,15 @@ const loadReservationList = async () => {
   try {
     console.log('開始載入預約清單...')
 
-    // 獲取當前登入用戶的 ID
-    const currentUserId = getCurrentUserId()
-    if (!currentUserId) {
-      console.warn('無法取得 userId，停止載入預約清單')
-      return
+    let response
+    try {
+      // 不傳 userId，讓後端自動從 token 解析
+      response = await reservationAPI.getReservationLogs()
+    } catch (firstError) {
+      console.log('不傳 userId 失敗，錯誤：', firstError.response?.data)
+      throw firstError
     }
-    console.log('當前用戶 ID：', currentUserId)
 
-    const response = await reservationAPI.getReservationLogs(currentUserId)
     console.log('API 回應：', response.data)
 
     if (response.data && Array.isArray(response.data)) {
@@ -390,16 +397,16 @@ const addToReservationList = async (book) => {
   try {
     console.log('開始加入預約清單，書籍：', book)
 
-    // 獲取當前登入用戶的 ID
-    const currentUserId = getCurrentUserId()
-    if (!currentUserId) return false
-
-    const response = await reservationAPI.addReservation({
+    // 準備預約資料
+    const reservationData = {
       bookId: parseInt(book.isbn) || 1,
-      userId: currentUserId,
       status: 'PENDING',
       reservationDate: new Date().toISOString().slice(0, 19).replace('T', ' ')
-    })
+    }
+
+    console.log('預約資料：', reservationData)
+
+    const response = await reservationAPI.addReservation(reservationData)
 
     console.log('加入預約 API 回應：', response.data)
 

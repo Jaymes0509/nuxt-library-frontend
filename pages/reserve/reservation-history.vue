@@ -345,23 +345,13 @@ async function fetchReservations() {
     try {
         console.log('開始載入預約歷史記錄...')
 
-        // 獲取當前登入用戶的 ID
-        const currentUserId = user.value?.user_id || user.value?.id || 1
-        console.log('當前用戶 ID：', currentUserId)
-
         let response
         try {
-            // 使用當前用戶的 ID 查詢預約記錄
-            response = await reservationAPI.getReservations(currentUserId)
+            // 不傳 userId，讓後端自動從 token 解析
+            response = await reservationAPI.getReservations()
         } catch (firstError) {
-            console.log('使用當前用戶 ID 失敗，嘗試不傳參數:', firstError)
-            try {
-                // 備用方案：不傳參數
-                response = await reservationAPI.getReservations()
-            } catch (secondError) {
-                console.log('所有方案都失敗:', secondError)
-                throw secondError
-            }
+            console.log('不傳 userId 失敗:', firstError)
+            throw firstError
         }
 
         console.log('API 回傳資料：', response.data)

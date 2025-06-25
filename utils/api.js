@@ -52,23 +52,17 @@ api.interceptors.response.use(
 
 // 預約相關 API
 export const reservationAPI = {
-  // 獲取預約清單 - 修改為可選參數
-  getReservationList: (userId) => {
-    // 根據 API 文檔，GET /api/bookreservations 需要 Authorization 頭部
-    // 不需要 userId 參數，會從 token 中獲取用戶資訊
+  // 獲取預約清單 - 不傳入 userId，讓後端從 token 中獲取用戶資訊
+  getReservationList: () => {
     return api.get('/api/bookreservations')
   },
   
   // 獲取當前用戶的預約清單
   getCurrentUserReservations: () => api.get('/api/bookreservations/current'),
   
-  // 獲取預約歷史記錄
-  getReservations: (userId) => {
-    if (userId) {
-      return api.get('/api/bookreservations/history', { params: { userId } })
-    } else {
-      return api.get('/api/bookreservations/history')
-    }
+  // 獲取預約歷史記錄 - 不傳入 userId，讓後端從 token 中獲取用戶資訊
+  getReservations: () => {
+    return api.get('/api/bookreservations/history')
   },
   
   // 新增單本預約
@@ -99,9 +93,9 @@ export const reservationAPI = {
     return api.post('/api/reservations/confirm', data)
   },
 
-  // 取得使用者的預約日誌
-  getReservationLogs: (userId) => {
-    return api.get('/api/reservation-logs', { params: { userId } })
+  // 取得使用者的預約日誌 - 不傳入 userId，讓後端從 token 中獲取用戶資訊
+  getReservationLogs: () => {
+    return api.get('/api/reservation-logs')
   },
 
   // 刪除預約日誌
@@ -122,17 +116,6 @@ export const reservationAPI = {
   // 取消預約 (by reservation_id) - 更新為 PUT 方法
   cancelReservation(reservationId) {
     return api.put(`/api/bookreservations/${reservationId}/cancel`, {});
-  },
-
-  // 獲取預約記錄 (reservations) - 更新為包含已取消的記錄
-  getReservations: (userId) => {
-    const params = {
-      includeCancelled: false
-    };
-    if (userId) {
-      params.userId = userId;
-    }
-    return api.get('/api/bookreservations/history', { params });
   }
 }
 
