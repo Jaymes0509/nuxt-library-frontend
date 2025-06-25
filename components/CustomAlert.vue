@@ -16,7 +16,7 @@
                 </div>
                 <div class="custom-alert-footer">
                     <button class="custom-alert-btn custom-alert-confirm-btn" @click="handleConfirm">{{ confirmText
-                    }}</button>
+                        }}</button>
                     <button v-if="type === 'confirm'" class="custom-alert-btn custom-alert-cancel-btn"
                         @click="handleClose">{{ cancelText }}</button>
                 </div>

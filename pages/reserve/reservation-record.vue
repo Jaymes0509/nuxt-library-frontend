@@ -195,18 +195,90 @@ const customAlert = ref({
 })
 
 const showAlert = (title, message) => {
+  console.log('[CustomAlert] show:', { title, message })
   customAlert.value.title = title
   customAlert.value.message = message
   customAlert.value.show = true
 }
 
 const closeAlert = () => {
+  console.log('[CustomAlert] close')
   customAlert.value.show = false
 }
 
 // 登入狀態檢查
 const isLoggedIn = ref(false)
 const user = ref(null)
+
+const checkLoginStatus = () => {
+  // 檢查 localStorage 中的用戶資訊
+  const storedUser = localStorage.getItem('user')
+  const jwtToken = localStorage.getItem('jwt_token')
+  const authToken = localStorage.getItem('authToken')
+
+  console.log('=== 登入狀態檢查 ===')
+  console.log('storedUser:', storedUser)
+  console.log('jwtToken:', jwtToken)
+  console.log('authToken:', authToken)
+
+  if (storedUser) {
+    try {
+      user.value = JSON.parse(storedUser)
+      isLoggedIn.value = true
+      console.log('✅ 用戶已登入：', user.value)
+      localStorage.setItem('user', JSON.stringify(user.value))
+      localStorage.setItem('jwt_token', jwtToken)
+    } catch (e) {
+      console.error('❌ 解析用戶資訊失敗：', e)
+      isLoggedIn.value = false
+    }
+  } else if (jwtToken || authToken) {
+    // 如果有 token 但沒有用戶資訊，也視為已登入
+    isLoggedIn.value = true
+    console.log('✅ 檢測到登入 token')
+  } else {
+    isLoggedIn.value = false
+    console.log('❌ 用戶未登入')
+  }
+
+  console.log('最終登入狀態：', isLoggedIn.value)
+  console.log('==================')
+}
+
+// 統一取得 userId 的方法
+const getCurrentUserId = () => {
+  // 先從 user.value 取
+  if (user.value?.user_id) {
+    console.log('[getCurrentUserId] 取自 user.value.user_id:', user.value.user_id)
+    return user.value.user_id
+  }
+  if (user.value?.id) {
+    console.log('[getCurrentUserId] 取自 user.value.id:', user.value.id)
+    return user.value.id
+  }
+  // 再從 localStorage 取
+  const storedUser = localStorage.getItem('user')
+  if (storedUser) {
+    try {
+      const userData = JSON.parse(storedUser)
+      if (userData.user_id) {
+        console.log('[getCurrentUserId] 取自 localStorage.user_id:', userData.user_id)
+        return userData.user_id
+      }
+      if (userData.id) {
+        console.log('[getCurrentUserId] 取自 localStorage.id:', userData.id)
+        return userData.id
+      }
+    } catch (e) {
+      console.error('[getCurrentUserId] localStorage 解析失敗', e)
+    }
+  }
+  // 都沒有就強制導向登入
+  console.warn('[getCurrentUserId] 無法取得 userId，導向登入頁')
+  alert('請先登入！')
+  window.location.href = '/login'
+  return null
+}
 
 // 分頁設定
 const pageSizes = [10, 20, 30, 50, 100]
@@ -278,7 +350,11 @@ const loadReservationList = async () => {
     console.log('開始載入預約清單...')
 
     // 獲取當前登入用戶的 ID
-    const currentUserId = user.value?.user_id || user.value?.id || 1
+    const currentUserId = getCurrentUserId()
+    if (!currentUserId) {
+      console.warn('無法取得 userId，停止載入預約清單')
+      return
+    }
     console.log('當前用戶 ID：', currentUserId)
 
     const response = await reservationAPI.getReservationLogs(currentUserId)
@@ -296,8 +372,10 @@ const loadReservationList = async () => {
     const errorMessage = handleApiError(err, '載入預約清單失敗')
     error.value = errorMessage
     reservationList.value = []
+    console.error('載入預約清單失敗:', err)
   } finally {
     loading.value = false
+    console.log('預約清單載入結束')
   }
 }
 
@@ -313,7 +391,8 @@ const addToReservationList = async (book) => {
     console.log('開始加入預約清單，書籍：', book)
 
     // 獲取當前登入用戶的 ID
-    const currentUserId = user.value?.user_id || user.value?.id || 1
+    const currentUserId = getCurrentUserId()
+    if (!currentUserId) return false
 
     const response = await reservationAPI.addReservation({
       bookId: parseInt(book.isbn) || 1,
@@ -356,6 +435,7 @@ const removeFromList = async (bookId) => {
   } catch (err) {
     const errorMessage = handleApiError(err, '移除書籍失敗')
     showAlert('移除失敗', errorMessage)
+    console.error('移除書籍失敗:', err)
   }
 }
 
@@ -456,6 +536,7 @@ const batchReserve = () => {
   const selectedBookData = reservationList.value.filter(book =>
     selectedBooks.value.includes(book.id)
   )
+  console.log('[batchReserve] 選取的書籍資料:', selectedBookData)
 
   router.push({
     path: '/reserve/book-reservation',
@@ -527,9 +608,13 @@ watch([() => sortConfig.value.field, () => sortConfig.value.ascending], () => {
 
 // ===== 生命週期 =====
 onMounted(() => {
+  console.log('[onMounted] 頁面掛載，開始檢查登入狀態')
   checkLoginStatus()
   if (isLoggedIn.value) {
+    console.log('[onMounted] 已登入，開始載入預約清單')
     loadReservationList()
+  } else {
+    console.log('[onMounted] 未登入，不載入預約清單')
   }
 })
 
@@ -537,40 +622,6 @@ onMounted(() => {
 defineExpose({
   addToReservationList
 })
-
-// ===== 登入狀態檢查 =====
-const checkLoginStatus = () => {
-  // 檢查 localStorage 中的用戶資訊
-  const storedUser = localStorage.getItem('user')
-  const jwtToken = localStorage.getItem('jwt_token')
-  const authToken = localStorage.getItem('authToken')
-
-  console.log('=== 登入狀態檢查 ===')
-  console.log('storedUser:', storedUser)
-  console.log('jwtToken:', jwtToken)
-  console.log('authToken:', authToken)
-
-  if (storedUser) {
-    try {
-      user.value = JSON.parse(storedUser)
-      isLoggedIn.value = true
-      console.log('✅ 用戶已登入：', user.value)
-    } catch (e) {
-      console.error('❌ 解析用戶資訊失敗：', e)
-      isLoggedIn.value = false
-    }
-  } else if (jwtToken || authToken) {
-    // 如果有 token 但沒有用戶資訊，也視為已登入
-    isLoggedIn.value = true
-    console.log('✅ 檢測到登入 token')
-  } else {
-    isLoggedIn.value = false
-    console.log('❌ 用戶未登入')
-  }
-
-  console.log('最終登入狀態：', isLoggedIn.value)
-  console.log('==================')
-}
 
 </script>
 
