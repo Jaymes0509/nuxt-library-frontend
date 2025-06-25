@@ -15,7 +15,7 @@
             <div v-if="step === 1" class="instructions">
                 <ol>
                     <li>親愛的讀者，您好~😃</li>
-                    <li>感謝您使用本館書籍薦購功能，本功能僅限「個人借閱證」證號使用，同一證號最多推薦5筆（含圖書、視聽），請謹慎使用推薦額度。</li>
+                    <li>感謝您使用本館書籍薦購功能，本功能僅限本館會員使用，每位會員最多推薦5筆（含圖書、視聽），請謹慎使用推薦額度。</li>
                     <li>手動輸入書名、ISBN欄位時請務必確認資料正確性。</li>
                     <li>每月薦購資料將於次月彙整後統一檢視</li>
                     <li>推薦好書前，請先確認該書是否已在本館館藏中。如已有該書，則不受理推薦。</li>
@@ -23,7 +23,7 @@
                 </ol>
 
                 <label class="consent">
-                    <input type="checkbox" v-model="agreed" />
+                    <input type="checkbox" v-model="agreed" @change="console.log('agreed:', agreed)" />
                     我已閱讀並同意以上聲明
                 </label>
 
@@ -71,11 +71,16 @@
                         <input v-model="form.publisher" />
                     </div>
 
+                    <div class="form-group">
+                        <label class="form-label">出版年：</label>
+                        <input v-model="form.publishYear" type="number" />
+                    </div>
+
                     <div class="form-group textarea-wrapper">
-                        <label class="form-label">內容：</label>
+                        <label class="form-label">推薦原因：</label>
                         <div class="textarea-container">
                             <textarea v-model="form.reason" required rows="6" maxlength="1000"></textarea>
-                            <span class="word-counter">{{ form.content.length }}/1000</span>
+                            <span class="word-counter">{{ form.reason.length }}/1000</span>
                         </div>
                     </div>
 
@@ -114,24 +119,44 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 
-
-const loading = ref(false)
 
 const step = ref(1)
 const agreed = ref(false)
+const loading = ref(false)
 
 const form = reactive({
     title: '',
     isbn: '',
     author: '',
     publisher: '',
+    publishYear: '',
     reason: '',
     captcha: ''
 })
-
+const count = reactive({ used: 0, remaining: 5 })
+const loadingCount = ref(true)
+const jwt = useCookie('jwt_token')?.value
 const captchaUrl = ref(getCaptchaUrl());
+
+const fetchCount = async () => {
+    loadingCount.value = true
+    const { data } = await useFetch('http://localhost:8080/api/recommendations/count', {
+        headers: {
+            Authorization: `Bearer ${jwt}`
+        }
+    })
+    if (data.value) {
+        count.used = data.value.used
+        count.remaining = data.value.remaining
+    }
+    loadingCount.value = false
+}
+
+onMounted(() => {
+    fetchCount()
+})
 
 function getCaptchaUrl() {
     return `http://localhost:8080/api/captcha/m1?ts=${Date.now()}`; // 加上 timestamp 防止瀏覽器快取
@@ -146,6 +171,7 @@ function resetForm() {
     form.isbn = '';
     form.author = '';
     form.publisher = '';
+    form.publishYear = '';
     form.reason = '';
     form.captcha = '';
     refreshCaptcha();
@@ -154,6 +180,16 @@ function resetForm() {
 const submitted = ref(false)
 
 const submitForm = async () => {
+    if (!form.captcha) {
+        alert("請輸入驗證碼");
+        return;
+    }
+
+    if (count.remaining === 0) {
+        alert("您已達推薦上限，無法再推薦");
+        return;
+    }
+
     try {
         await $fetch('http://localhost:8080/api/recommendations', {
             method: 'POST',
@@ -162,15 +198,18 @@ const submitForm = async () => {
                 isbn: form.isbn,
                 author: form.author,
                 publisher: form.publisher,
+                publishYear: form.publishYear,
                 reason: form.reason,
                 captcha: form.captcha
             },
             credentials: 'include'
         });
 
+        await fetchCount(); //  更新推薦冊數
         alert("✅ 推薦成功！感謝您的建議");
         submitted.value = true;
         step.value = 3;
+
     } catch (err) {
         // 回傳 400 會進來這裡
         const msg = err?.data || err?.message || '提交失敗';
@@ -208,194 +247,6 @@ const submitForm = async () => {
     display: flex;
     flex-direction: column;
 }
-
-.feedback {
-    flex: 1;
-    max-width: 1000px;
-    /* max-height: 1000px; */
-    margin: 0 auto;
-    padding: 0 10px 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    /* width: 100%; */
-    height: 100%;
-    scrollbar-width: thin;
-    /* for Firefox */
-    scrollbar-color: transparent transparent;
-}
-
-
-/* 滾動條預設為透明 */
-.feedback::-webkit-scrollbar {
-    width: 8px;
-}
-
-.feedback::-webkit-scrollbar-thumb {
-    background-color: transparent;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-}
-
-/* 滑鼠靠近 wrapper 時顯示滾動條 */
-.scroll-wrapper:hover .feedback::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.4);
-}
-
-/* 滑鼠靠近時滾動條背景也顯示 */
-.scroll-wrapper:hover .feedback {
-    scrollbar-color: rgba(0, 0, 0, 0.4) transparent;
-}
-
-
-
-
-.title-row {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    /* 圖片與文字間距 */
-}
-
-.title-row img {
-    width: 50px;
-    height: auto;
-}
-
-.title-row h1 {
-    margin: 0;
-    font-size: 2rem;
-}
-
-.section-title {
-    position: relative;
-    padding-left: 1rem;
-    font-size: 1.5rem;
-    font-weight: bold;
-    padding: 0 1.5rem;
-}
-
-.section-title::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 6px;
-    background-color: skyblue;
-    /* 橘色 */
-    border-radius: 2px;
-}
-
-.section-title::after {
-    content: "";
-    position: absolute;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    width: 6px;
-    background-color: skyblue;
-    border-radius: 2px;
-}
-
-.instructions li {
-    margin-bottom: 0.5rem;
-    /* 行與行之間的間距 */
-    line-height: 2;
-    /* 文字行高 */
-    /* text-align: center; */
-}
-
-.instructions ul {
-    subject: form.subject,
-        content: form.content,
-        captcha: form.captcha
-}
-
-,
-credentials: 'include'
-});
-
-alert("✅ 送出成功！");
-submitted.value=true;
-step.value=3;
-}
-
-catch (err) {
-    // 回傳 400 會進來這裡
-    const msg=err?.data || err?.message || '提交失敗';
-    alert("❌ 錯誤：" + msg);
-    refreshCaptcha(); // 驗證碼錯就重新載入
-}
-}
-
-</script><style scoped>.loading-spinner {
-    border: 6px solid #f3f3f3;
-    border-top: 6px solid #003366;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin: 1rem auto;
-}
-
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-.scroll-wrapper {
-    position: relative;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-.feedback {
-    flex: 1;
-    max-width: 1000px;
-    /* max-height: 1000px; */
-    margin: 0 auto;
-    padding: 0 10px 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    /* width: 100%; */
-    height: 100%;
-    scrollbar-width: thin;
-    /* for Firefox */
-    scrollbar-color: transparent transparent;
-}
-
-
-/* 滾動條預設為透明 */
-.feedback::-webkit-scrollbar {
-    width: 8px;
-}
-
-.feedback::-webkit-scrollbar-thumb {
-    background-color: transparent;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-}
-
-/* 滑鼠靠近 wrapper 時顯示滾動條 */
-.scroll-wrapper:hover .feedback::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.4);
-}
-
-/* 滑鼠靠近時滾動條背景也顯示 */
-.scroll-wrapper:hover .feedback {
-    scrollbar-color: rgba(0, 0, 0, 0.4) transparent;
-}
-
-
-
 
 .title-row {
     display: flex;
@@ -490,6 +341,32 @@ a:hover {
     background-color: #ccc;
     color: #666;
     cursor: not-allowed;
+}
+
+.recommend-count {
+    margin-bottom: 20px;
+}
+
+.count-box {
+    background-color: #00b3b3;
+    color: white;
+    text-align: center;
+    padding: 10px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.count-box .value {
+    background-color: #f0f0f0;
+    color: #000;
+    font-size: 24px;
+    padding: 5px 0;
+}
+
+.form-block-message {
+    color: red;
+    font-weight: bold;
+    margin-top: 10px;
 }
 
 .form {
@@ -745,43 +622,6 @@ button[type='submit']:hover {
 .success {
     color: green;
     font-weight: bold;
-}
-
-.already-applied-step {
-    background-color: #fff8e1;
-    border: 1px solid #ffcc80;
-    padding: 2rem;
-    border-radius: 1rem;
-    text-align: center;
-    margin-top: 2rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.already-applied-step h2 {
-    color: #e65100;
-    font-size: 1.8rem;
-    margin-bottom: 1rem;
-}
-
-.already-applied-step p {
-    font-size: 1rem;
-    color: #4e342e;
-    margin-bottom: 1.5rem;
-}
-
-.already-applied-step button {
-    background-color: #ff9800;
-    color: white;
-    border: none;
-    padding: 0.6rem 1.2rem;
-    font-size: 1rem;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.already-applied-step button:hover {
-    background-color: #fb8c00;
 }
 
 html.accessible-mode .back-button,
