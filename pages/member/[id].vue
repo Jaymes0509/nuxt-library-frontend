@@ -20,6 +20,7 @@ const editFields = ref({
     nationality: '',
     education: '',
     occupation: '',
+    password: '',
 })
 
 onMounted(async () => {
@@ -36,6 +37,8 @@ onMounted(async () => {
         console.log(res.data.email)
         console.log(res.data.nationality)
         console.log(res.data.education)
+        console.log(res.data.occupation)
+        console.log(res.data.password)
         console.log('--------------------------------')
         editFields.value = {
             addressCounty: res.data.addressCounty,
@@ -47,6 +50,7 @@ onMounted(async () => {
             nationality: res.data.nationality,
             education: res.data.education,
             occupation: res.data.occupation,
+            // password: res.data.password,
         }
     } catch (e) {
         error.value = '載入會員資料失敗'
@@ -105,6 +109,9 @@ async function saveMemberDetail() {
                 </div>
                 <div class="mb-2"><span class="font-bold">電話：</span>
                     <input v-model="editFields.phone" class="border px-1 w-32" placeholder="電話" />
+                </div>
+                <div class="mb-2"><span class="font-bold">密碼：</span>
+                    <input v-model="editFields.password" class="border px-1 w-32" placeholder="密碼" />
                 </div>
                 <div class="mb-2"><span class="font-bold">建立時間：</span>{{ member.createdAt.replace('T', ' ') }}</div>
                 <div class="mb-2"><span class="font-bold">更新時間：</span>{{ member.updatedAt.replace('T', ' ') }}</div>
