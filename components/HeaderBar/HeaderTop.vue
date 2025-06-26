@@ -68,6 +68,7 @@
                 <div class="user-menu-header">
                   <span class="user-role">{{ userInfo.role === 'admin' ? '管理員' : '一般會員' }}</span>
                 </div>
+                <NuxtLink :to="`/member/${userInfo.id}`" class="user-menu-item">👤 個人資訊</NuxtLink>
                 <button @click="logout" class="user-menu-item">🚪 登出</button>
               </div>
             </div>
@@ -111,6 +112,7 @@
               <div class="user-menu-header">
                 <span class="user-role">{{ userInfo.role === 'admin' ? '管理員' : '一般會員' }}</span>
               </div>
+              <NuxtLink :to="`/member/${userInfo.id}`" class="user-menu-item">👤 個人資訊</NuxtLink>
               <button @click="logout" class="user-menu-item">
                 🚪 登出
               </button>
@@ -196,6 +198,7 @@ const checkLoginStatus = () => {
     try {
       userInfo.value = JSON.parse(storedUser)
       isLoggedIn.value = true
+      // alert('userInfo.value.id: ' + userInfo.value.id)
     } catch (e) {
       isLoggedIn.value = false
       userInfo.value = {}
