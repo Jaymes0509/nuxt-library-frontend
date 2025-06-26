@@ -415,6 +415,9 @@
   min-height: 240px;
   display: flex;
   align-items: flex-start;
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .detail-card .book-title {
@@ -422,6 +425,9 @@
   font-weight: 700;
   line-height: 1.4;
   margin-bottom: 0.4rem;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .detail-card:hover {
@@ -440,6 +446,13 @@
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
+}
+
+.book-description p {
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  line-height: 1.6;
 }
 
 .toggle-button {
@@ -490,7 +503,6 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import axios from 'axios'
-
 const api = axios.create({
   baseURL: 'http://localhost:8080' // 🔧 請改成你的後端位置
 })
@@ -501,13 +513,6 @@ const rankedBorrowBooks = ref([])
 const rankedRatingBooks = ref([])
 const rankedBooks = ref([])
 const defaultCover = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png'
-
-const sortOptions = [
-  { label: '預約次數', value: 'reserve' },
-  { label: '借閱次數', value: 'borrow' },
-  { label: '評分高低', value: 'rating' }
-]
-
 const selectedPeriod = ref('all')
 const selectedCategory = ref('')
 const selectedYear = ref(new Date().getFullYear())
