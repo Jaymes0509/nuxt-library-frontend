@@ -38,11 +38,11 @@
                 <!-- 推薦冊數顯示區塊 -->
                 <div v-if="!loadingCount" class="recommend-count">
                     <div class="count-box">
-                        <div class="title">已推薦冊數</div>
+                        <div class="title1">已推薦冊數</div>
                         <div class="value">{{ count.used }}</div>
                     </div>
                     <div class="count-box">
-                        <div class="title">尚可推薦冊數</div>
+                        <div class="title2">尚可推薦冊數</div>
                         <div class="value">{{ count.remaining }}</div>
                     </div>
                     <div v-if="count.remaining === 0" class="form-block-message">
@@ -77,7 +77,7 @@
                     </div>
 
                     <div class="form-group textarea-wrapper">
-                        <label class="form-label">推薦原因：</label>
+                        <label class="form-label-reason">推薦原因：</label>
                         <div class="textarea-container">
                             <textarea v-model="form.reason" required rows="6" maxlength="1000"></textarea>
                             <span class="word-counter">{{ form.reason.length }}/1000</span>
@@ -171,7 +171,7 @@ function resetForm() {
     form.isbn = '';
     form.author = '';
     form.publisher = '';
-    form.publishYear = '';
+    form.publishYear === '' ? null : parseInt(form.publishYear);
     form.reason = '';
     form.captcha = '';
     refreshCaptcha();
@@ -212,7 +212,8 @@ const submitForm = async () => {
 
     } catch (err) {
         // 回傳 400 會進來這裡
-        const msg = err?.data || err?.message || '提交失敗';
+        console.error(err) // 你可以看到錯誤的詳細內容
+        const msg = err?.data?.message || err?.message || '提交失敗';
         alert("❌ 錯誤：" + msg);
         refreshCaptcha(); // 驗證碼錯就重新載入
     }
@@ -246,6 +247,44 @@ const submitForm = async () => {
     height: 100%;
     display: flex;
     flex-direction: column;
+}
+
+.feedback {
+    flex: 1;
+    max-width: 1000px;
+    /* max-height: 1000px; */
+    margin: 0 auto;
+    padding: 0 10px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* width: 100%; */
+    height: 100%;
+    scrollbar-width: thin;
+    /* for Firefox */
+    scrollbar-color: transparent transparent;
+}
+
+
+/* 滾動條預設為透明 */
+.feedback::-webkit-scrollbar {
+    width: 8px;
+}
+
+.feedback::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+/* 滑鼠靠近 wrapper 時顯示滾動條 */
+.scroll-wrapper:hover .feedbackd::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* 滑鼠靠近時滾動條背景也顯示 */
+.scroll-wrapper:hover .feedback {
+    scrollbar-color: rgba(0, 0, 0, 0.4) transparent;
 }
 
 .title-row {
@@ -344,29 +383,54 @@ a:hover {
 }
 
 .recommend-count {
-    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 20px;
 }
 
 .count-box {
-    background-color: #00b3b3;
+    background-color: skyblue;
     color: white;
+    margin-bottom: 1rem;
+    padding: 10px 10px;
+    border-radius: 10px;
+    width: 300px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     text-align: center;
-    padding: 10px;
+}
+
+.count-box .title1 {
+    font-size: 18px;
     font-weight: bold;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
+    background-color: green;
+}
+
+.count-box .title2 {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    background-color: red;
 }
 
 .count-box .value {
     background-color: #f0f0f0;
     color: #000;
-    font-size: 24px;
+    font-size: 36px;
+    font-weight: bold;
     padding: 5px 0;
 }
 
 .form-block-message {
-    color: red;
-    font-weight: bold;
-    margin-top: 10px;
+    margin-top: 20px;
+    background-color: #ffe5e5;
+    border: 1px solid #ff9999;
+    color: #cc0000;
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
 }
 
 .form {
@@ -624,8 +688,32 @@ button[type='submit']:hover {
     font-weight: bold;
 }
 
+html.accessible-mode label,
+html.accessible-mode input,
+/* html.accessible-mode textarea, */
 html.accessible-mode .back-button,
-.reset-button {
+html.accessible-mode .reset-button,
+html.accessible-mode .title1,
+html.accessible-mode .title2,
+html.accessible-mode .value {
     font-size: larger;
+    text-wrap: nowrap;
+}
+
+html.accessible-mode .form-label-reason textarea {
+    padding-right: 3rem;
+}
+
+html.accessible-mode .recommend-count .value {
+    font-size: 2rem;
+}
+
+html.accessible-mode .captcha-row button {
+    font-size: larger;
+    color: white;
+}
+
+html.accessible-mode .captcha-row button:hover {
+    color: yellow;
 }
 </style>
