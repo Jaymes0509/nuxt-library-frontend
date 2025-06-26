@@ -54,7 +54,7 @@ api.interceptors.response.use(
 export const reservationAPI = {
   // 獲取預約清單 - 不傳入 userId，讓後端從 token 中獲取用戶資訊
   getReservationList: () => {
-    return api.get('/api/bookreservations')
+      return api.get('/api/bookreservations')
   },
   
   // 獲取當前用戶的預約清單
@@ -62,7 +62,7 @@ export const reservationAPI = {
   
   // 獲取預約歷史記錄 - 不傳入 userId，讓後端從 token 中獲取用戶資訊
   getReservations: () => {
-    return api.get('/api/bookreservations/history')
+      return api.get('/api/bookreservations/history')
   },
   
   // 新增單本預約
@@ -116,6 +116,11 @@ export const reservationAPI = {
   // 取消預約 (by reservation_id) - 更新為 PUT 方法
   cancelReservation(reservationId) {
     return api.put(`/api/bookreservations/${reservationId}/cancel`, {});
+  },
+
+  // 獲取預約統計
+  getReservationStats: () => {
+    return api.get('/api/bookreservations/stats')
   }
 }
 

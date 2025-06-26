@@ -42,6 +42,49 @@
             </div>
           </div>
 
+          <!-- 預約統計面板 -->
+          <div class="reservation-stats-panel">
+            <div class="stats-header">
+              <h3 class="stats-title">預約狀態</h3>
+              <button @click="loadReservationStats" class="stats-refresh-btn" :disabled="loading">
+                🔄 重新整理
+              </button>
+            </div>
+            <div class="stats-content">
+              <div class="stats-item">
+                <span class="stats-label">待領取：</span>
+                <span class="stats-value stats-pending">{{ reservationStats.pendingCount }} 本</span>
+              </div>
+              <div class="stats-item">
+                <span class="stats-label">已領取：</span>
+                <span class="stats-value stats-completed">{{ reservationStats.completedCount }} 本</span>
+              </div>
+              <div class="stats-item">
+                <span class="stats-label">已取消：</span>
+                <span class="stats-value stats-cancelled">{{ reservationStats.cancelledCount }} 本</span>
+              </div>
+              <div class="stats-item">
+                <span class="stats-label">剩餘可預約：</span>
+                <span class="stats-value"
+                  :class="reservationStats.remainingSlots === 0 ? 'stats-warning' : 'stats-available'">
+                  {{ reservationStats.remainingSlots }} 本
+                </span>
+              </div>
+            </div>
+            <div class="stats-progress">
+              <div class="progress-bar">
+                <div class="progress-fill"
+                  :style="{ width: `${(reservationStats.totalActiveCount / reservationStats.maxAllowed) * 100}%` }">
+                </div>
+              </div>
+              <span class="progress-text">{{ reservationStats.totalActiveCount }} / {{ reservationStats.maxAllowed
+              }}</span>
+            </div>
+            <div v-if="!reservationStats.canReserve" class="stats-warning-message">
+              ⚠️ 您已達到預約上限，無法再進行新的預約
+            </div>
+          </div>
+
           <!-- 批量操作面板 -->
           <div v-if="reservationList.length > 0" class="batch-control-panel">
             <div class="batch-control-left">
@@ -52,7 +95,10 @@
               <span class="batch-info">
                 已選擇 {{ selectedCount }} 本書籍
               </span>
-              <span v-if="selectedCount > 10" class="batch-warning">
+              <span v-if="selectedCount > reservationStats.remainingSlots" class="batch-warning">
+                (只能再預約 {{ reservationStats.remainingSlots }} 本書)
+              </span>
+              <span v-else-if="selectedCount > 10" class="batch-warning">
                 (一次最多只能預約10本書)
               </span>
             </div>
@@ -61,7 +107,7 @@
                 移除選取
               </button>
               <button @click="batchReserve" class="batch-btn batch-btn-reserve"
-                :disabled="selectedCount === 0 || selectedCount > 10">
+                :disabled="selectedCount === 0 || selectedCount > 10 || !reservationStats.canReserve || selectedCount > reservationStats.remainingSlots">
                 預約 ({{ selectedCount }})
               </button>
             </div>
@@ -104,15 +150,16 @@
                 <div>操作</div>
               </div>
               <div class="history-grid-body">
-                <div v-for="(book, index) in paginatedBooks" :key="index" class="history-grid-row">
+                <div v-for="(book, index) in paginatedBooks" :key="index" class="history-grid-row"
+                  @click="handleRowClick(book.id)">
                   <div class="history-grid-checkbox">
                     <input type="checkbox" :checked="selectedBooks.includes(book.id)"
-                      @change="toggleSelectBook(book.id)" class="batch-checkbox" />
+                      @change="toggleSelectBook(book.id)" class="batch-checkbox" @click.stop />
                   </div>
                   <div class="history-grid-title-cell">{{ book.title }}</div>
                   <div>{{ book.author }}</div>
                   <div>{{ formatDateTime(book.addedDate) }}</div>
-                  <div class="history-grid-actions">
+                  <div class="history-grid-actions" @click.stop>
                     <button @click="viewBookDetail(book)" class="history-detail-btn">詳情</button>
                     <button @click="removeFromList(book.id)" class="history-remove-btn">移除</button>
                   </div>
@@ -127,7 +174,9 @@
                   <button @click="removeFromList(book.id)" class="history-remove-btn-card">×</button>
                 </div>
                 <div class="history-grid-img-wrap">
-                  <img :src="getDefaultCoverUrl(index)" :alt="book.title" class="history-grid-img" />
+                  <img :src="book.imgUrl || book.coverUrl || `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`"
+                    :alt="book.title" @error="handleImageError" class="history-grid-img"
+                    onerror="this.onerror=null;this.src='https://cdn-icons-png.flaticon.com/512/2232/2232688.png';" />
                 </div>
                 <div class="history-grid-info">
                   <h3 class="history-grid-title reservation-record-book-title">{{ book.title }}</h3>
@@ -186,6 +235,17 @@ const reservationList = ref([])
 const selectedBooks = ref([])
 const loading = ref(false)
 const error = ref(null)
+
+// 預約統計資料
+const reservationStats = ref({
+  pendingCount: 0,
+  completedCount: 0,
+  cancelledCount: 0,
+  totalActiveCount: 0,
+  maxAllowed: 10,
+  canReserve: true,
+  remainingSlots: 10
+})
 
 // 自訂提示視窗
 const customAlert = ref({
@@ -299,9 +359,6 @@ const sortConfig = ref({
 })
 
 // ===== 工具函數 =====
-const getDefaultCoverUrl = (index) =>
-  `https://via.placeholder.com/300x400/4ECDC4/FFFFFF?text=${encodeURIComponent('書籍封面')}`
-
 const formatDateTime = (dateTimeStr) => {
   if (!dateTimeStr) return ''
   const date = new Date(dateTimeStr)
@@ -345,7 +402,10 @@ const convertReservationLogToBook = (item) => ({
   isbn: item.isbn,
   addedDate: item.createdAt,
   status: item.status,
-  action: item.action
+  action: item.action,
+  // 包含書籍圖片資訊
+  imgUrl: item.imgUrl || item.img_url || null,
+  coverUrl: item.coverUrl || item.cover_url || null
 })
 
 // ===== 核心 API 操作 =====
@@ -356,25 +416,31 @@ const loadReservationList = async () => {
   try {
     console.log('開始載入預約清單...')
 
-    let response
-    try {
-      // 不傳 userId，讓後端自動從 token 解析
-      response = await reservationAPI.getReservationLogs()
-    } catch (firstError) {
-      console.log('不傳 userId 失敗，錯誤：', firstError.response?.data)
-      throw firstError
-    }
+    // 同時載入預約清單和預約統計
+    await Promise.all([
+      loadReservationStats(),
+      (async () => {
+        let response
+        try {
+          // 不傳 userId，讓後端自動從 token 解析
+          response = await reservationAPI.getReservationLogs()
+        } catch (firstError) {
+          console.log('不傳 userId 失敗，錯誤：', firstError.response?.data)
+          throw firstError
+        }
 
-    console.log('API 回應：', response.data)
+        console.log('API 回應：', response.data)
 
-    if (response.data && Array.isArray(response.data)) {
-      reservationList.value = response.data.map(convertReservationLogToBook)
-      console.log('載入的預約清單：', reservationList.value)
-      console.log('清單長度：', reservationList.value.length)
-    } else {
-      console.log('API 回應不是陣列或為空')
-      reservationList.value = []
-    }
+        if (response.data && Array.isArray(response.data)) {
+          reservationList.value = response.data.map(convertReservationLogToBook)
+          console.log('載入的預約清單：', reservationList.value)
+          console.log('清單長度：', reservationList.value.length)
+        } else {
+          console.log('API 回應不是陣列或為空')
+          reservationList.value = []
+        }
+      })()
+    ])
   } catch (err) {
     const errorMessage = handleApiError(err, '載入預約清單失敗')
     error.value = errorMessage
@@ -535,8 +601,15 @@ const batchReserve = () => {
     return
   }
 
-  if (selectedBooks.value.length > 10) {
-    showAlert('提示', '一次最多只能預約10本書籍，請重新選擇')
+  // 檢查是否可以預約
+  if (!reservationStats.value.canReserve) {
+    showAlert('預約限制', `您已有 ${reservationStats.value.totalActiveCount} 本待領取或已領取的書籍，已達上限（${reservationStats.value.maxAllowed}本），無法再進行預約`)
+    return
+  }
+
+  // 檢查選擇的書籍數量是否超過剩餘可預約數量
+  if (selectedBooks.value.length > reservationStats.value.remainingSlots) {
+    showAlert('預約限制', `您只能再預約 ${reservationStats.value.remainingSlots} 本書籍，請減少選擇數量`)
     return
   }
 
@@ -629,6 +702,46 @@ onMounted(() => {
 defineExpose({
   addToReservationList
 })
+
+// ===== 核心 API 操作 =====
+// 查詢預約統計
+const loadReservationStats = async () => {
+  try {
+    console.log('開始查詢預約統計...')
+    const response = await reservationAPI.getReservationStats()
+    console.log('預約統計 API 回應：', response.data)
+
+    if (response.data) {
+      reservationStats.value = {
+        pendingCount: response.data.pendingCount || 0,
+        completedCount: response.data.completedCount || 0,
+        cancelledCount: response.data.cancelledCount || 0,
+        totalActiveCount: response.data.totalActiveCount || 0,
+        maxAllowed: response.data.maxAllowed || 10,
+        canReserve: response.data.canReserve !== false,
+        remainingSlots: response.data.remainingSlots || 0
+      }
+      console.log('預約統計已更新：', reservationStats.value)
+    }
+  } catch (err) {
+    console.error('查詢預約統計失敗：', err)
+    // 統計查詢失敗不影響主要功能，使用預設值
+  }
+}
+
+const handleImageError = (event) => {
+  event.target.src = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png'
+}
+
+const handleRowClick = (bookId) => {
+  // 切換該行的選取狀態
+  const index = selectedBooks.value.indexOf(bookId)
+  if (index === -1) {
+    selectedBooks.value.push(bookId)
+  } else {
+    selectedBooks.value.splice(index, 1)
+  }
+}
 
 </script>
 
@@ -754,6 +867,10 @@ defineExpose({
   font-weight: 500;
   padding: 8px 20px;
   min-width: 90px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.07);
   transition: background 0.2s, color 0.2s, border 0.2s;
   cursor: pointer;
@@ -948,6 +1065,7 @@ defineExpose({
   border-bottom: 1px solid rgba(229, 231, 235, 0.2);
   align-items: center;
   transition: background 0.2s;
+  cursor: pointer;
 }
 
 .history-grid-row:hover {
@@ -1077,7 +1195,14 @@ defineExpose({
 .history-grid-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.history-grid-img:hover {
+  transform: scale(1.05);
 }
 
 .history-grid-info {
@@ -1292,47 +1417,77 @@ defineExpose({
 
   .history-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .history-grid-card {
+    margin-bottom: 0;
+  }
+
+  .history-grid-img-wrap {
+    height: 180px;
+  }
+
+  .history-grid-info {
+    padding: 12px;
+  }
+
+  .history-grid-title {
+    font-size: 1rem;
+  }
+
+  .history-grid-author {
+    font-size: 0.85rem;
+  }
+
+  .history-grid-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* 預約統計面板響應式 */
+  .stats-content {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .stats-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .stats-refresh-btn {
+    align-self: flex-end;
   }
 }
 
-@media screen and (max-width: 767px) {
-  .mobile-extra .user-info {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 100% !important;
-    margin: 0 auto !important;
-    gap: 0.5rem !important;
-    text-align: center !important;
+/* 平板響應式設計 */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .history-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    padding: 20px;
   }
 
-  .mobile-extra .user-avatar-img {
-    width: 24px !important;
-    height: 24px !important;
-    border-radius: 50% !important;
-    object-fit: cover !important;
-  }
-
-  .mobile-extra .user-name,
-  .mobile-extra .user-menu-arrow {
-    font-size: 1rem !important;
-    white-space: nowrap !important;
-  }
-
-  .mobile-extra .user-menu-arrow {
-    margin-left: 0.2rem !important;
+  .stats-content {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
   }
 }
 
-.menu-toggle {
-  display: none !important;
-}
+/* 大螢幕響應式設計 */
+@media (min-width: 1025px) {
+  .history-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+    padding: 24px;
+  }
 
-@media screen and (max-width: 767px) {
-  .menu-toggle {
-    display: flex !important;
-    /* 其他樣式... */
+  .stats-content {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
   }
 }
 
@@ -1367,5 +1522,139 @@ defineExpose({
   background: #fff;
   color: #222;
   text-align: left;
+}
+
+/* 預約統計面板樣式 */
+.reservation-stats-panel {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(229, 231, 235, 0.4);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.stats-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #18181b;
+  margin: 0;
+}
+
+.stats-refresh-btn {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.stats-refresh-btn:hover:not(:disabled) {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.stats-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.stats-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.stats-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(243, 244, 246, 0.6);
+  border-radius: 8px;
+  border: 1px solid rgba(229, 231, 235, 0.4);
+}
+
+.stats-label {
+  font-size: 0.95rem;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.stats-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.stats-pending {
+  color: #f59e0b;
+}
+
+.stats-completed {
+  color: #10b981;
+}
+
+.stats-cancelled {
+  color: #6b7280;
+}
+
+.stats-available {
+  color: #2563eb;
+}
+
+.stats-warning {
+  color: #dc2626;
+}
+
+.stats-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981 0%, #2563eb 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.9rem;
+  color: #6b7280;
+  font-weight: 500;
+  min-width: 60px;
+  text-align: right;
+}
+
+.stats-warning-message {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #dc2626;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: center;
 }
 </style>

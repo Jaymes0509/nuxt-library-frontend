@@ -96,23 +96,28 @@
                                 <div>取書地點</div>
                                 <div>取書方式</div>
                                 <div>取書時間</div>
+                                <div>狀態</div>
                                 <div>操作</div>
                             </div>
                             <div class="history-grid-body">
                                 <div v-for="(reservation, index) in paginatedBooks" :key="index"
-                                    :class="['history-grid-row', { 'is-cancelled': reservation.status === 'cancelled' }]">
+                                    :class="['history-grid-row', { 'is-cancelled': reservation.status === 'cancelled' }]"
+                                    @click="handleRowClick(reservation.reservationId)">
                                     <div class="history-grid-checkbox">
                                         <input type="checkbox"
                                             :checked="selectedBooks.includes(reservation.reservationId)"
                                             @change="toggleSelectBook(reservation.reservationId)" class="batch-checkbox"
-                                            :disabled="reservation.status === 'cancelled'" />
+                                            :disabled="reservation.status === 'cancelled'" @click.stop />
                                     </div>
                                     <div class="history-grid-title-cell">{{ reservation.title }}</div>
                                     <div>{{ reservation.author }}</div>
                                     <div>{{ reservation.pickupLocation }}</div>
                                     <div>{{ reservation.pickupMethod }}</div>
                                     <div>{{ reservation.pickupTime }}</div>
-                                    <div class="history-grid-actions">
+                                    <div :class="['history-status', getStatusClass(reservation.status)]">
+                                        {{ getStatusText(reservation.status) }}
+                                    </div>
+                                    <div class="history-grid-actions" @click.stop>
                                         <button @click="viewBookDetail(reservation)"
                                             class="history-detail-btn">詳情</button>
                                         <button @click="handleCancel(reservation.reservationId)"
@@ -143,6 +148,9 @@
                                         <p>取書方式：{{ reservation.pickupMethod }}</p>
                                         <p>取書時間：{{ reservation.pickupTime }}</p>
                                         <p>預約日期：{{ reservation.reservationDate }}</p>
+                                    </div>
+                                    <div :class="['history-status', getStatusClass(reservation.status)]">
+                                        {{ getStatusText(reservation.status) }}
                                     </div>
                                     <div class="history-grid-actions">
                                         <button class="history-detail-btn"
@@ -278,6 +286,35 @@ const sortConfig = ref({
 // 預設封面圖片
 function getDefaultCoverUrl(index) {
     return `https://via.placeholder.com/300x400/4ECDC4/FFFFFF?text=${encodeURIComponent('書籍封面')}`
+}
+
+// 狀態處理函數
+function getStatusText(status) {
+    const statusMap = {
+        'pending': '待領取',
+        'completed': '已領取',
+        'cancelled': '已取消',
+        'expired': '已過期',
+        'PENDING': '待領取',
+        'COMPLETED': '已領取',
+        'CANCELLED': '已取消',
+        'EXPIRED': '已過期'
+    }
+    return statusMap[status] || status
+}
+
+function getStatusClass(status) {
+    const statusClassMap = {
+        'pending': 'history-status-pending',
+        'completed': 'history-status-completed',
+        'cancelled': 'history-status-cancelled',
+        'expired': 'history-status-expired',
+        'PENDING': 'history-status-pending',
+        'COMPLETED': 'history-status-completed',
+        'CANCELLED': 'history-status-cancelled',
+        'EXPIRED': 'history-status-expired'
+    }
+    return statusClassMap[status] || 'history-status-pending'
 }
 
 // 預約記錄資料
@@ -569,6 +606,23 @@ onMounted(async () => {
         }
     }
 })
+
+// 新增：處理行點擊事件
+function handleRowClick(reservationId) {
+    // 檢查該預約是否已取消
+    const reservation = reservationBooks.value.find(r => r.reservationId === reservationId);
+    if (reservation && reservation.status === 'cancelled') {
+        return; // 已取消的預約不能選取
+    }
+
+    // 切換該行的選取狀態
+    const index = selectedBooks.value.indexOf(reservationId);
+    if (index === -1) {
+        selectedBooks.value.push(reservationId);
+    } else {
+        selectedBooks.value.splice(index, 1);
+    }
+}
 </script>
 
 <style scoped>
@@ -746,7 +800,7 @@ onMounted(async () => {
 
 .history-grid-header {
     display: grid;
-    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 200px;
+    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 1fr 200px;
     gap: 16px;
     padding: 16px 20px;
     background: rgba(243, 244, 246, 0.6);
@@ -770,12 +824,13 @@ onMounted(async () => {
 
 .history-grid-row {
     display: grid;
-    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 200px;
+    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 1fr 200px;
     gap: 16px;
     padding: 16px 20px;
     border-bottom: 1px solid rgba(229, 231, 235, 0.2);
     align-items: center;
     transition: background 0.2s;
+    cursor: pointer;
 }
 
 .history-grid-row:hover {
@@ -791,6 +846,40 @@ onMounted(async () => {
     color: #18181b;
     word-wrap: break-word;
     overflow-wrap: break-word;
+}
+
+/* 狀態樣式 */
+.history-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-align: center;
+    min-width: 80px;
+}
+
+.history-status-pending {
+    background: #fef3c7;
+    color: #d97706;
+    border: 1px solid #fbbf24;
+}
+
+.history-status-completed {
+    background: #d1fae5;
+    color: #059669;
+    border: 1px solid #34d399;
+}
+
+.history-status-cancelled {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #f87171;
+}
+
+.history-status-expired {
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
 }
 
 .history-detail-btn {
@@ -1026,6 +1115,16 @@ onMounted(async () => {
         justify-content: center;
     }
 
+    .batch-control-panel {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .batch-control-left,
+    .batch-control-right {
+        justify-content: center;
+    }
+
     .history-grid-header,
     .history-grid-row {
         grid-template-columns: 1fr 170px;
@@ -1036,10 +1135,12 @@ onMounted(async () => {
     .history-grid-header>div:nth-child(3),
     .history-grid-header>div:nth-child(4),
     .history-grid-header>div:nth-child(5),
+    .history-grid-header>div:nth-child(6),
     .history-grid-row>div:nth-child(2),
     .history-grid-row>div:nth-child(3),
     .history-grid-row>div:nth-child(4),
-    .history-grid-row>div:nth-child(5) {
+    .history-grid-row>div:nth-child(5),
+    .history-grid-row>div:nth-child(6) {
         display: none;
     }
 
@@ -1181,6 +1282,7 @@ onMounted(async () => {
     color: #9ca3af;
     background-color: #f9fafb;
     text-decoration: line-through;
+    cursor: not-allowed;
 }
 
 .is-cancelled .history-grid-title-cell,
@@ -1191,5 +1293,87 @@ onMounted(async () => {
 .history-cancel-btn:disabled {
     background: #9ca3af;
     cursor: not-allowed;
+}
+
+/* 批量操作面板樣式 */
+.batch-control-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(229, 231, 235, 0.4);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+}
+
+.batch-control-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.batch-control-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.batch-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    color: #222;
+    cursor: pointer;
+}
+
+.batch-info {
+    font-size: 0.95rem;
+    color: #4b5563;
+}
+
+.batch-warning {
+    font-size: 0.9rem;
+    color: #dc2626;
+    font-weight: 500;
+}
+
+.batch-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid;
+}
+
+.batch-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.batch-btn-remove {
+    background: #fff;
+    color: #dc2626;
+    border-color: #dc2626;
+}
+
+.batch-btn-remove:hover:not(:disabled) {
+    background: #dc2626;
+    color: #fff;
+}
+
+.batch-btn-reserve {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+
+.batch-btn-reserve:hover:not(:disabled) {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
 }
 </style>
