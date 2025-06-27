@@ -95,23 +95,21 @@
                     </div>
 
                     <div class="form-group-buttons">
-                        <button type="button" @click="step = 1" class="back-button">← 回上一頁</button>
+                        <ButtonsBackButton :step="step" @update:step="step = $event" />
                         <button type="submit">送出推薦</button>
                         <button type="button" @click="resetForm" class="reset-button">🔁 重新填寫</button>
                     </div>
                 </form>
+            </div>
 
-                <!-- 步驟三：成功畫面 -->
-                <div v-if="step === 3" class="success-step">
-                    <h2>✅ 送出成功！</h2>
-                    <p>感謝您的推薦，本館將受理與審核，敬請耐心等候，謝謝!</p>
-                    <div v-if="loading" class="loading-spinner"></div>
-                    <p v-if="loading">即將返回首頁...</p>
+            <!-- 步驟三：成功畫面 -->
+            <div v-if="step === 3" class="success-step">
+                <h2>✅ 送出成功！</h2>
+                <p>感謝您的推薦，本館將受理與審核，敬請耐心等候，謝謝!</p>
+                <div v-if="loading" class="loading-spinner"></div>
+                <p v-if="loading">即將返回首頁...</p>
 
-                    <ButtonsGoHome v-if="!loading" />
-                </div>
-
-
+                <ButtonsGoHome v-if="!loading" />
             </div>
 
         </div>
@@ -120,6 +118,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useStepReset } from '@/composables/useStepReset'
 
 
 const step = ref(1)
@@ -165,6 +164,8 @@ function getCaptchaUrl() {
 function refreshCaptcha() {
     captchaUrl.value = getCaptchaUrl();
 }
+
+useStepReset(step, resetForm) // 使用 useStepReset composable
 
 function resetForm() {
     form.title = '';

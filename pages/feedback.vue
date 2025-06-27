@@ -103,6 +103,8 @@
 <script setup>
 import { ref, reactive, watch } from 'vue'
 import { useNavigation } from '@/composables/useNavigation'
+import { useRoute } from 'vue-router'
+import { watchEffect } from 'vue'
 
 const { goHome } = useNavigation()
 
@@ -129,6 +131,17 @@ const form = reactive({
 })
 
 const captchaUrl = ref(getCaptchaUrl());
+
+const route = useRoute()
+
+watchEffect(() => {
+    console.log('路由變化：', route.fullPath)
+    if (route.query.reset === 'true') {
+        step.value = 1
+        resetForm()
+    }
+})
+
 
 function getCaptchaUrl() {
     return `http://localhost:8080/api/captcha/m1?ts=${Date.now()}`; // 加上 timestamp 防止瀏覽器快取

@@ -1,6 +1,37 @@
 // composables/useNavigation.js
 import { useRouter } from 'vue-router'
 
+// composables/useNavigation.js
+export function generateLink(href) {
+  const pagesNeedReset = [
+    '/card-application',
+    '/seat-reservation',
+    '/book-recommendation',
+    '/feedback'
+  ]
+
+  if (typeof href === 'object' && href.path && pagesNeedReset.includes(href.path)) {
+    return {
+      ...href,
+      query: {
+        ...(href.query || {}),
+        reset: 'true'
+      }
+    }
+  }
+
+  if (typeof href === 'string' && pagesNeedReset.includes(href)) {
+    return {
+      path: href,
+      query: { reset: 'true' }
+    }
+  }
+
+  return href
+}
+
+
+
 export function useNavigation() {
     const router = useRouter()
     const goHome = () => router.push('/')
