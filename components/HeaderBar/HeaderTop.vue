@@ -31,7 +31,7 @@
         <ul>
           <li v-for="(link, index) in links" :key="link.href || link.label" :title="link.label">
             <template v-if="link.label !== '無障礙專區'">
-              <NuxtLink :to="link.href" class="top-link">
+              <NuxtLink :to="generateLink(link.href)" class="top-link">
                 {{ link.label }}
               </NuxtLink>
             </template>
@@ -135,6 +135,8 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { generateLink } from '@/composables/useNavigation'
+
 
 const showDropdown = ref(false)
 const isMenuOpen = ref(false)
