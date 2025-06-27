@@ -578,10 +578,6 @@ async function fetchRankings() {
       params.keyword = null // 一定要補這行
     }
 
-    console.log('step:', step.value)
-    console.log('currentPage:', currentPage.value)
-    console.log('params:', params)
-
     const res = await api.get('/api/rankings/detail', { params })
 
     // 後端回傳的是 Page 格式
@@ -645,7 +641,6 @@ function goBackToSummary() {
 // })
 
 watch([selectedPeriod, selectedCategory, selectedYear, selectedMonth, searchKeyword], () => {
-  console.log('🎯 篩選條件變更，重新查詢')
   currentPage.value = 1
   fetchRankings()
 })

@@ -803,8 +803,6 @@ const goToEditReviews = async () => {
 }
 
 const goToWrite = async () => {
-  console.log('📝 嘗試撰寫，登入狀態:', isLoggedIn.value)
-
   // 等待初始化完成
   if (!isReady.value) {
     alert('資料尚未初始化完成，請稍候再試')
@@ -825,10 +823,6 @@ const goToWrite = async () => {
 }
 
 function handleGoToWrite() {
-  console.log('🖱 點擊撰寫書評')
-  console.log('🧪 isReady:', isReady.value)
-  console.log('🧪 isLoggedIn:', isLoggedIn.value)
-
   if (!isReady.value) {
     alert('請稍候，資料尚在初始化中')
     return
@@ -838,8 +832,6 @@ function handleGoToWrite() {
     showLoginPrompt.value = true
     return
   }
-
-  console.log('📘 條件 OK，準備進入撰寫書評')
   goToWrite()
 }
 
@@ -892,15 +884,11 @@ const sortedBookReviews = computed(() => {
 })
 
 watch(isLoggedIn, (val) => {
-  console.log('🔍 isLoggedIn 狀態變化:', val)
 })
 
 onMounted(async () => {
-  console.log('📌 onMounted 執行')
-
   const token = localStorage.getItem('jwt_token')
   await fetchRandomBooks()
-  console.log('📦 取得 token:', token)
 
   if (!token) {
     console.warn('❌ 沒有 token，略過會員初始化')
@@ -910,17 +898,12 @@ onMounted(async () => {
 
   try {
     const decoded = jwtDecode(token)
-    console.log('🔓 解析 token 成功:', decoded)
-
     email.value = decoded?.sub || ''
-    console.log('📧 解出 email:', email.value)
-
     if (email.value) {
       const encodedEmail = encodeURIComponent(email.value)
       const res = await $fetch(`http://localhost:8080/api/book-comments/user-id-by-email/${encodedEmail}`)
       userId.value = res
       isLoggedIn.value = true
-      console.log('🆔 成功取得 userId:', userId.value)
     } else {
       console.warn('⚠️ token 中沒有 email')
     }
@@ -933,6 +916,5 @@ onMounted(async () => {
   }
 
   isReady.value = true
-  console.log('✅ 初始化完成 isReady = true')
 })
 </script>
