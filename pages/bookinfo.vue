@@ -54,6 +54,10 @@
       </div>
     </div>
   </div>
+
+  <!-- 自訂提示視窗 -->
+  <CustomAlert :show="customAlert.show" :title="customAlert.title" :message="customAlert.message"
+    :items="customAlert.items" @close="closeAlert" />
 </template>
 
 <script setup>
@@ -61,11 +65,31 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useHead } from '#imports'
 import { reservationAPI, bookAPI } from '~/utils/api'
+import CustomAlert from '~/components/CustomAlert.vue'
 
 const route = useRoute()
 const router = useRouter()
 
 const book = ref({})
+
+// 自訂提示視窗
+const customAlert = ref({
+  show: false,
+  title: '',
+  message: '',
+  items: [],
+})
+
+const showAlert = (title, message, items = []) => {
+  customAlert.value.title = title
+  customAlert.value.message = message
+  customAlert.value.items = items
+  customAlert.value.show = true
+}
+
+const closeAlert = () => {
+  customAlert.value.show = false
+}
 
 onMounted(async () => {
   const isbn = route.query.isbn
@@ -139,7 +163,7 @@ const addToReservationList = async () => {
   const authToken = localStorage.getItem('authToken')
 
   if (!storedUser && !jwtToken && !authToken) {
-    alert('請先登入會員才能使用預約功能')
+    showAlert('登入提醒', '請先登入會員才能使用預約功能')
     router.push('/login')
     return
   }
@@ -153,7 +177,7 @@ const addToReservationList = async () => {
     // 檢查書籍是否可預約
     if (!book.value.is_available) {
       console.error('書籍不可預約：', book.value)
-      alert('此書籍目前不可預約')
+      showAlert('預約失敗', '此書籍目前不可預約')
       return
     }
 
@@ -176,7 +200,7 @@ const addToReservationList = async () => {
 
     if (response.data && response.data.success) {
       console.log('成功加入預約清單！')
-      alert('已成功加入預約清單！')
+      showAlert('預約成功', '已成功加入預約清單！')
 
       // 移除跳轉邏輯，只顯示成功訊息
       // 用戶可以繼續瀏覽書籍詳情或手動返回
@@ -193,7 +217,7 @@ const addToReservationList = async () => {
         message: cleanErrorMessage,
         response: response.data
       })
-      alert(`加入失敗：${cleanErrorMessage}`)
+      showAlert('加入失敗', cleanErrorMessage)
     }
   } catch (error) {
     console.error('加入預約清單失敗：', error)
@@ -205,11 +229,11 @@ const addToReservationList = async () => {
     })
 
     if (error.response?.status === 409) {
-      alert('此書籍已在預約清單中')
+      showAlert('重複預約', '此書籍已在預約清單中')
     } else if (error.response?.data?.message) {
-      alert(`加入失敗：${error.response.data.message}`)
+      showAlert('加入失敗', error.response.data.message)
     } else {
-      alert('加入預約清單失敗，請稍後再試')
+      showAlert('系統錯誤', '加入預約清單失敗，請稍後再試')
     }
   }
 }
