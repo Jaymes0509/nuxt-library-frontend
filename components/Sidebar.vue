@@ -35,6 +35,8 @@
 <script setup>
 import { useAuth } from '~/composables/useAuth'
 import { computed, reactive, ref } from 'vue'
+import { generateLink } from '@/composables/useNavigation'
+
 
 const { user } = useAuth()
 
@@ -64,13 +66,13 @@ const menuItems = computed(() => {
                 { label: '本館位置', href: '/location' }
             ]
         },
-        {
-            label: '活動消息',
-            children: [
-                { label: '最新活動', href: '#' },
-                { label: '活動報名', href: '#' }
-            ]
-        },
+        // {
+        //     label: '活動消息',
+        //     children: [
+        //         { label: '最新活動', href: '#' },
+        //         { label: '活動報名', href: '#' }
+        //     ]
+        // },
         {
             label: '館藏查詢',
             children: [
@@ -124,32 +126,32 @@ const menuItems = computed(() => {
     return items
 })
 
-function generateLink(href) {
-    // 檢查哪些頁面需要 reset query（有 step 流程）
-    const pagesNeedReset = ['/card-application', '/seat-reservation', '/book-recommendation']
+// function generateLink(href) {
+//     // 檢查哪些頁面需要 reset query（有 step 流程）
+//     const pagesNeedReset = ['/card-application', '/seat-reservation', '/book-recommendation']
 
-    // 若 href 是物件，合併 query
-    if (typeof href === 'object' && href.path && pagesNeedReset.includes(href.path)) {
-        return {
-            ...href,
-            query: {
-                ...(href.query || {}),
-                reset: 'true'
-            }
-        }
-    }
+//     // 若 href 是物件，合併 query
+//     if (typeof href === 'object' && href.path && pagesNeedReset.includes(href.path)) {
+//         return {
+//             ...href,
+//             query: {
+//                 ...(href.query || {}),
+//                 reset: 'true'
+//             }
+//         }
+//     }
 
-    // 若 href 是字串
-    if (typeof href === 'string' && pagesNeedReset.includes(href)) {
-        return {
-            path: href,
-            query: { reset: 'true' }
-        }
-    }
+//     // 若 href 是字串
+//     if (typeof href === 'string' && pagesNeedReset.includes(href)) {
+//         return {
+//             path: href,
+//             query: { reset: 'true' }
+//         }
+//     }
 
-    // 若本來就是帶 query 的 object，就保留它
-    return href
-}
+//     // 若本來就是帶 query 的 object，就保留它
+//     return href
+// }
 
 </script>
 
