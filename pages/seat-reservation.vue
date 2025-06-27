@@ -39,12 +39,21 @@
 <script setup>
 import { ref } from 'vue'
 import { useFetch } from '#app'
+import { useStepReset } from '@/composables/useStepReset'
 
 const selectedDate = ref('')
 const selectedSeat = ref(null)
 const selectedSlot = ref(null)
 const step = ref(1)
-const userId = ref(125) // 實際整合時請改為動態取得登入者 ID
+const userId = ref(126) // 實際整合時請改為動態取得登入者 ID
+
+useStepReset(step, resetForm)
+
+function resetForm() {
+    selectedSeat.value = null
+    selectedSlot.value = ''
+    selectedDate.value = ''
+}
 
 const handleNextStep = async () => {
     const slotLabel = `${selectedSlot.value.start} - ${selectedSlot.value.end}`

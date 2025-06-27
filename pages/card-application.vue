@@ -142,6 +142,7 @@
                     <div class="form-group">
                         <ButtonsBackButton :step="step" @update:step="step = $event" />
                         <button type="submit">送出申請</button>
+                        <button type="button" @click="resetForm" class="reset-button">🔁 重新填寫</button>
                     </div>
                 </form>
 
@@ -170,21 +171,18 @@
 import { ref, reactive, watch } from 'vue'
 import { parseISO, isAfter } from 'date-fns'
 import { useNavigation } from '@/composables/useNavigation'
+import { useRoute, useRouter } from 'vue-router'
+import { useStepReset } from '@/composables/useStepReset'
 
 const { goHome } = useNavigation()
 
-const loading = ref(false)
+const route = useRoute()
+const router = useRouter()
 
-const delayedGoHome = () => {
-    loading.value = true
-    setTimeout(() => {
-        goHome()
-    }, 3000)
-}
+const loading = ref(false)
 
 const step = ref(1)
 const agreed = ref(false)
-const alreadyApplied = ref(false)
 
 const form = reactive({
     name: '',
@@ -349,6 +347,47 @@ const submitForm = async () => {
         }
     }
 }
+
+// 使用 useStepReset composable
+useStepReset(step, resetForm)
+function resetForm() {
+    Object.assign(form, {
+        name: '',
+        gender: '',
+        idNumber: '',
+        birthDate: '',
+        nationality: '',
+        education: '',
+        occupation: '',
+        addressCounty: '',
+        addressTown: '',
+        addressZip: '',
+        addressDetail: '',
+        email: '',
+        phone: '',
+        password: ''
+    })
+}
+
+
+// onMounted(() => {
+//     // 第一次載入時觸發
+//     if (route.query.reset === 'true') {
+//         step.value = 1
+//         resetForm()
+//         router.replace({ path: route.path })
+//     }
+// })
+
+// 後續點 Sidebar 同路徑再次跳轉也能 reset
+watch(() => route.query.reset, (val) => {
+    if (val === 'true') {
+        step.value = 1
+        resetForm()
+        router.replace({ path: route.path })
+    }
+})
+
 
 </script>
 
