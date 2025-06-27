@@ -1,11 +1,6 @@
 <template>
-  <div class="page-container">
-    <!-- <div v-if="step" class="text-left">
-      <button class="back-button" @click="step = null">
-        ← 返回功能總覽
-      </button>
-    </div> -->
-
+  <LoginRequiredPrompt v-if="showLoginPrompt" />
+  <div v-else class="page-container">
     <!-- 第一層 -->
     <div v-if="!step">
       <div style="margin-bottom: 2.5rem; border-bottom: 1px solid #ccc; padding-bottom: 1rem;">
@@ -27,11 +22,6 @@
           <div class="feature-card-title">閱讀書評</div>
           <div class="feature-card-text">查看其他讀者對書籍的評價與感想</div>
         </div>
-      </div>
-
-      <div class="login-buttons">
-        <button class="login" @click="simulateLogin">模擬登入會員</button>
-        <button class="logout" @click="simulateLogout">模擬登出會員</button>
       </div>
     </div>
 
@@ -230,7 +220,6 @@
 </template>
 
 <style scoped>
-/* 頁面主容器樣式 */
 .page-container {
   background-color: white;
   padding: 2rem;
@@ -238,7 +227,6 @@
   text-align: center;
 }
 
-/* 返回按鈕固定於右下 */
 .back-button {
   position: fixed;
   right: 1rem;
@@ -256,7 +244,6 @@
   background-color: #ebf8ff;
 }
 
-/* 功能標題與圖示 */
 .feature-header {
   display: flex;
   justify-content: center;
@@ -276,7 +263,6 @@
   padding-left: 0.75rem;
 }
 
-/* 功能選單卡片 */
 .feature-card {
   width: 18rem;
   padding: 1.5rem;
@@ -314,24 +300,6 @@
   color: #374151;
 }
 
-/* 模擬登入登出按鈕 */
-.login-buttons button {
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  color: white;
-  margin-top: 0.5rem;
-  width: 200px;
-}
-
-.login-buttons .login {
-  background-color: #16a34a;
-}
-
-.login-buttons .logout {
-  background-color: #4b5563;
-}
-
-/* 書籍選擇與評論卡片 */
 .book-card {
   border: 1px solid #ccc;
   border-radius: 0.5rem;
@@ -368,7 +336,6 @@
   text-decoration: underline;
 }
 
-/* 表單欄位與標籤 */
 .form-group {
   margin-bottom: 1rem;
   text-align: left;
@@ -387,15 +354,6 @@ input[type="text"] {
   padding: 0.5rem 0.75rem;
   border: 1px solid #ccc;
   border-radius: 0.375rem;
-}
-
-/* 書評排序與按鈕 */
-.sort-bar {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  margin-bottom: 1rem;
-  gap: 0.5rem;
 }
 
 .review-actions {
@@ -420,7 +378,6 @@ input[type="text"] {
   text-decoration: underline;
 }
 
-/* 分頁控制 */
 .pagination {
   display: flex;
   justify-content: center;
@@ -441,57 +398,27 @@ input[type="text"] {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.sort-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 1rem;
+  gap: 0.5rem;
+}
 </style>
+
 
 <script setup>
 import { ref, computed, onMounted, toRaw, nextTick } from 'vue'
 import { jwtDecode } from 'jwt-decode'
+const showLoginPrompt = ref(false)
 
 /* 🔐 使用者身份 */
 const email = ref('')
 const userId = ref(null)
 const isLoggedIn = ref(false)
 const isReady = ref(false)
-
-onMounted(async () => {
-  console.log('📌 onMounted 執行')
-
-  const token = localStorage.getItem('jwt_token')
-  console.log('📦 取得 token:', token)
-
-  if (!token) {
-    console.warn('❌ 沒有 token，略過會員初始化')
-    isReady.value = true
-    return
-  }
-
-  try {
-    const decoded = jwtDecode(token)
-    console.log('🔓 解析 token 成功:', decoded)
-
-    email.value = decoded?.sub || ''
-    console.log('📧 解出 email:', email.value)
-
-    if (email.value) {
-      const encodedEmail = encodeURIComponent(email.value)
-      const res = await $fetch(`http://localhost:8080/api/book-comments/user-id-by-email/${encodedEmail}`)
-      userId.value = res
-      isLoggedIn.value = true
-      console.log('🆔 成功取得 userId:', userId.value)
-    } else {
-      console.warn('⚠️ token 中沒有 email')
-    }
-
-    await fetchReviewableBooks()
-    await fetchMyReviews()
-    await enrichReviewsWithLikes()
-  } catch (err) {
-    console.error('❌ token 解析或 $fetch 失敗:', err)
-  }
-
-  isReady.value = true
-  console.log('✅ 初始化完成 isReady = true')
-})
 
 /* 📄 畫面狀態控制 */
 const step = ref(null)
@@ -876,8 +803,6 @@ const goToEditReviews = async () => {
 }
 
 const goToWrite = async () => {
-  console.log('📝 嘗試撰寫，登入狀態:', isLoggedIn.value)
-
   // 等待初始化完成
   if (!isReady.value) {
     alert('資料尚未初始化完成，請稍候再試')
@@ -898,28 +823,16 @@ const goToWrite = async () => {
 }
 
 function handleGoToWrite() {
-  console.log('🖱 點擊撰寫書評')
-  console.log('🧪 isReady:', isReady.value)
-  console.log('🧪 isLoggedIn:', isLoggedIn.value)
-
   if (!isReady.value) {
     alert('請稍候，資料尚在初始化中')
     return
   }
 
   if (!isLoggedIn.value) {
-    alert('請先登入會員')
+    showLoginPrompt.value = true
     return
   }
-
-  console.log('📘 條件 OK，準備進入撰寫書評')
   goToWrite()
-}
-
-
-
-const returnToPrevious = () => {
-  step.value = previousStep.value || null
 }
 
 const returnToPreviousStepAndReset = async () => {
@@ -971,7 +884,37 @@ const sortedBookReviews = computed(() => {
 })
 
 watch(isLoggedIn, (val) => {
-  console.log('🔍 isLoggedIn 狀態變化:', val)
 })
 
+onMounted(async () => {
+  const token = localStorage.getItem('jwt_token')
+  await fetchRandomBooks()
+
+  if (!token) {
+    console.warn('❌ 沒有 token，略過會員初始化')
+    isReady.value = true
+    return
+  }
+
+  try {
+    const decoded = jwtDecode(token)
+    email.value = decoded?.sub || ''
+    if (email.value) {
+      const encodedEmail = encodeURIComponent(email.value)
+      const res = await $fetch(`http://localhost:8080/api/book-comments/user-id-by-email/${encodedEmail}`)
+      userId.value = res
+      isLoggedIn.value = true
+    } else {
+      console.warn('⚠️ token 中沒有 email')
+    }
+
+    await fetchReviewableBooks()
+    await fetchMyReviews()
+    await enrichReviewsWithLikes()
+  } catch (err) {
+    console.error('❌ token 解析或 $fetch 失敗:', err)
+  }
+
+  isReady.value = true
+})
 </script>

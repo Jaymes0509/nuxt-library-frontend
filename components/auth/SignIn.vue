@@ -3,8 +3,8 @@ import { Loader2 } from 'lucide-vue-next'
 import PasswordInput from '@/components/PasswordInput.vue'
 import axios from 'axios'
 
-const email = ref('demo@gmail.com')
-const password = ref('password')
+const email = ref('')
+const password = ref('')
 const isLoading = ref(false)
 
 async function onSubmit(event: Event) {
@@ -30,11 +30,9 @@ async function onSubmit(event: Event) {
     })
     // 登入成功，儲存 token
     const token = res.data.token
+    const user = res.data.user
     localStorage.setItem('jwt_token', token)
-
-    console.log("*************************************************")
-    // alert('token: ' + token)
-    console.log("*************************************************")
+    localStorage.setItem('user', JSON.stringify(user))
 
     // 跳轉到首頁或會員頁
     window.location.href = '/' // 或用 navigateTo('/')

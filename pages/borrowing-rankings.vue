@@ -27,31 +27,47 @@
           }}
         </h2>
         <ol class="ranking-list">
-          <li v-for="(book, index) in topBooks(type, true)" :key="book.bookId + '-' + type"
-            class="ranking-item consistent-height">
-            <div class="left-part">
-              <div class="ranking-index">NO.{{ index + 1 }}</div>
-              <img :src="book.cover || defaultCover" alt="封面" class="cover" />
-            </div>
-            <div class="book-info">
-              <div class="book-title" :title="book.title">{{ book.title || '' }}</div>
-              <div class="book-author">作者：{{ book.author || '' }}</div>
-              <div class="book-stat">
-                <template v-if="type === 'rating'">
-                  <div>
-                    平均評分：<span>
-                      {{ book.averageRating !== undefined && book.averageRating !== null ? book.averageRating.toFixed(2)
-                        : '無評分' }}
-                    </span>
-                  </div>
-                </template>
-                <template v-else>
-                  {{ type === 'reservation' ? '預約次數：' : '借閱次數：' }}
-                  <span class="stat-count">{{ book.statCount || '' }}</span>
-                </template>
+          <li v-for="(book, index) in topBooks(type, true)"
+            :key="book.bookId ? book.bookId + '-' + type : 'empty-' + index" class="ranking-item consistent-height">
+            <template v-if="book.bookId">
+              <!-- 正常書卡 -->
+              <div class="left-part">
+                <div class="ranking-index">NO.{{ index + 1 }}</div>
+                <img :src="book.cover || defaultCover" alt="封面" class="cover" />
               </div>
-            </div>
+              <div class="book-info">
+                <div class="book-title" :title="book.title">{{ book.title || '' }}</div>
+                <div class="book-author">作者：{{ book.author || '' }}</div>
+                <div class="book-stat">
+                  <template v-if="type === 'rating'">
+                    <div>
+                      平均評分：<span>
+                        {{ book.averageRating !== undefined && book.averageRating !== null ?
+                          book.averageRating.toFixed(2)
+                          : '無評分' }}
+                      </span>
+                    </div>
+                  </template>
+                  <template v-else>
+                    {{ type === 'reservation' ? '預約次數：' : '借閱次數：' }}
+                    <span class="stat-count">{{ book.statCount || '' }}</span>
+                  </template>
+                </div>
+              </div>
+            </template>
+
+            <template v-else>
+              <!-- 空卡片 -->
+              <div class="left-part">
+                <div class="ranking-index">NO.{{ index + 1 }}</div>
+                <div class="cover empty-cover">無資料</div>
+              </div>
+              <div class="book-info empty-info">
+                <div class="book-title">（空）</div>
+              </div>
+            </template>
           </li>
+
         </ol>
       </div>
     </div>
@@ -120,10 +136,21 @@
                 {{ step === 'borrow' ? '借閱次數：' : step === 'reservation' ? '預約次數：' : '' }}
                 <span class="stat-count">{{ book.statCount || 0 }}</span>
               </template>
+              <!-- ✅ 書籍簡介（適用於三種排行榜） -->
+              <div class="book-description" v-if="book.description">
+                <strong>簡介：</strong>
+                <p :class="{ truncated: !expandedIndexSet.has(index) }">
+                  {{ book.description }}
+                </p>
+                <button class="toggle-button" @click="toggleExpand(index)">
+                  {{ expandedIndexSet.has(index) ? '收起' : '顯示更多' }}
+                </button>
+              </div>
             </div>
           </div>
         </li>
       </ol>
+
 
       <!-- 分頁與每頁顯示設定 -->
       <div class="pagination">
@@ -139,6 +166,10 @@
 </template>
 
 <style scoped>
+.rankings-container {
+  padding: 0 2rem;
+}
+
 .back-button {
   padding: 0.2rem 0.6rem;
   font-size: 1.1rem;
@@ -155,24 +186,8 @@
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
 }
 
-.rankings-container {
-  padding: 0 2rem;
-}
-
 .center {
   text-align: center;
-}
-
-.inline {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.search-bar {
-  text-align: center;
-  margin-bottom: 1rem;
 }
 
 .summary-cards {
@@ -231,7 +246,7 @@
   display: flex;
   align-items: flex-start;
   gap: 1rem;
-  min-height: 140px;
+  min-height: 160px;
   padding: 0.5rem 0;
   border-bottom: 1px solid #ccc;
 }
@@ -245,18 +260,17 @@
   box-sizing: border-box;
 }
 
-
-.ranking-index {
-  font-weight: bold;
-  width: 3rem;
-}
-
 .left-part {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 80px;
+}
+
+.ranking-index {
+  font-weight: bold;
+  width: 3rem;
 }
 
 .cover {
@@ -268,6 +282,18 @@
   border-radius: 4px;
 }
 
+.cover.empty-cover {
+  width: 60px;
+  height: 90px;
+  background-color: #f5f5f5;
+  border: 1px dashed #ccc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #888;
+}
+
 .book-info {
   flex: 1;
   overflow: hidden;
@@ -275,6 +301,10 @@
   line-height: 1.6;
 }
 
+.book-info.empty-info {
+  opacity: 0.6;
+  font-style: italic;
+}
 
 .book-title {
   font-weight: bold;
@@ -290,7 +320,6 @@
   box-sizing: border-box;
   color: #222;
 }
-
 
 .book-title:hover {
   position: relative;
@@ -318,6 +347,42 @@
   color: #444;
 }
 
+.stat-count {
+  font-weight: bold;
+  margin-left: 0.2rem;
+}
+
+.detail-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.subtitle {
+  font-size: 1.4rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.filters {
+  margin-bottom: 1.5rem;
+}
+
+.inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.label {
+  font-size: 1rem;
+  line-height: 2.2rem;
+  height: 2.2rem;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .select {
   padding: 0.4rem 0.6rem;
   font-size: 1rem;
@@ -329,12 +394,79 @@
   vertical-align: middle;
 }
 
-.label {
-  font-size: 1rem;
-  line-height: 2.2rem;
-  height: 2.2rem;
-  display: inline-block;
-  vertical-align: middle;
+.search-bar {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.detailed-list {
+  padding: 0;
+  list-style: none;
+}
+
+.detail-card {
+  background-color: #f5f8ff;
+  border: 1px solid #d0d0d0;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 1px 2px 4px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.3s ease;
+  min-height: 240px;
+  display: flex;
+  align-items: flex-start;
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.detail-card .book-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.4;
+  margin-bottom: 0.4rem;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.detail-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.book-description {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #333;
+  line-height: 1.5;
+}
+
+.book-description p.truncated {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+
+.book-description p {
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  line-height: 1.6;
+}
+
+.toggle-button {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.9rem;
+  margin-top: 0.2rem;
+}
+
+.toggle-button:hover {
+  text-decoration: underline;
 }
 
 .pagination {
@@ -365,41 +497,12 @@
   color: white;
   border-color: #007bff;
 }
-
-.detail-card {
-  background-color: #f5f8ff;
-  border: 1px solid #d0d0d0;
-  border-radius: 10px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 1px 2px 4px rgba(0, 0, 0, 0.08);
-  transition: box-shadow 0.3s ease;
-}
-
-.detail-card .book-title {
-  font-size: 1.5rem;
-  /* 想更大就調整這個值，例如 1.5rem */
-  font-weight: 700;
-  line-height: 1.4;
-  margin-bottom: 0.4rem;
-}
-
-
-.detail-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.detail-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 2rem;
-}
 </style>
+
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import axios from 'axios'
-
 const api = axios.create({
   baseURL: 'http://localhost:8080' // 🔧 請改成你的後端位置
 })
@@ -409,14 +512,7 @@ const rankedReserveBooks = ref([])
 const rankedBorrowBooks = ref([])
 const rankedRatingBooks = ref([])
 const rankedBooks = ref([])
-const defaultCover = 'https://via.placeholder.com/80x120.png?text=No+Cover'
-
-const sortOptions = [
-  { label: '預約次數', value: 'reserve' },
-  { label: '借閱次數', value: 'borrow' },
-  { label: '評分高低', value: 'rating' }
-]
-
+const defaultCover = 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png'
 const selectedPeriod = ref('all')
 const selectedCategory = ref('')
 const selectedYear = ref(new Date().getFullYear())
@@ -426,6 +522,15 @@ const currentPage = ref(1)
 const pageSize = 20
 const totalItems = ref(0)
 const totalPages = ref(1)
+const expandedIndexSet = ref(new Set())
+
+function toggleExpand(index) {
+  if (expandedIndexSet.value.has(index)) {
+    expandedIndexSet.value.delete(index)
+  } else {
+    expandedIndexSet.value.add(index)
+  }
+}
 
 const bookCategories = [
   '總類', '哲學類', '宗教類', '科學類', '應用科學類', '社會科學類',
@@ -473,10 +578,6 @@ async function fetchRankings() {
       params.keyword = null // 一定要補這行
     }
 
-    console.log('step:', step.value)
-    console.log('currentPage:', currentPage.value)
-    console.log('params:', params)
-
     const res = await api.get('/api/rankings/detail', { params })
 
     // 後端回傳的是 Page 格式
@@ -494,24 +595,33 @@ function topBooks(type, isSummary = false) {
     ? type === 'reservation' ? rankedReserveBooks.value
       : type === 'borrow' ? rankedBorrowBooks.value
         : rankedRatingBooks.value
-    : rankedBooks.value
+    : rankedBooks.value;
 
-  list.forEach(book => book.statCount = Number(book.statCount))
+  list.forEach(book => book.statCount = Number(book.statCount));
 
-  return list
-    .filter(book => {
-      if (!isSummary && step.value !== type) return false
+  const filtered = list.filter(book => {
+    if (!isSummary && step.value !== type) return false;
 
-      // 總覽也要過濾掉不該出現的 0 值
-      if (type === 'reservation' || type === 'borrow') {
-        return book.statCount > 0
-      } else if (type === 'rating') {
-        return book.averageRating > 0
-      }
-      return true
-    })
+    // 總覽與詳細都過濾掉統計值為 0 的書
+    if (type === 'reservation' || type === 'borrow') {
+      return book.statCount > 0;
+    } else if (type === 'rating') {
+      return book.averageRating > 0;
+    }
+    return true;
+  });
+
+  // 補空白卡片（僅限總覽）
+  if (isSummary) {
+    const padded = [...filtered];
+    while (padded.length < 10) {
+      padded.push({}); // 用 {} 當作空卡片，前端會自動判斷無 bookId
+    }
+    return padded;
+  }
+
+  return filtered;
 }
-
 
 
 function goBackToSummary() {
@@ -531,7 +641,6 @@ function goBackToSummary() {
 // })
 
 watch([selectedPeriod, selectedCategory, selectedYear, selectedMonth, searchKeyword], () => {
-  console.log('🎯 篩選條件變更，重新查詢')
   currentPage.value = 1
   fetchRankings()
 })
