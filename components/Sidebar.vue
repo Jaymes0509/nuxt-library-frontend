@@ -14,7 +14,8 @@
 
                         <ul v-if="item.children && open[item.label]" class="submenu">
                             <li v-for="child in item.children" :key="child.label">
-                                <NuxtLink v-if="child.href" :to="child.href" :title="child.label" class="submenu-link">
+                                <NuxtLink v-if="child.href" :to="generateLink(child.href)" :title="child.label"
+                                    class="submenu-link">
                                     {{ child.label }}
                                 </NuxtLink>
                             </li>
@@ -122,6 +123,34 @@ const menuItems = computed(() => {
     }
     return items
 })
+
+function generateLink(href) {
+    // 檢查哪些頁面需要 reset query（有 step 流程）
+    const pagesNeedReset = ['/card-application', '/seat-reservation', '/book-recommendation']
+
+    // 若 href 是物件，合併 query
+    if (typeof href === 'object' && href.path && pagesNeedReset.includes(href.path)) {
+        return {
+            ...href,
+            query: {
+                ...(href.query || {}),
+                reset: 'true'
+            }
+        }
+    }
+
+    // 若 href 是字串
+    if (typeof href === 'string' && pagesNeedReset.includes(href)) {
+        return {
+            path: href,
+            query: { reset: 'true' }
+        }
+    }
+
+    // 若本來就是帶 query 的 object，就保留它
+    return href
+}
+
 </script>
 
 <style scoped>
