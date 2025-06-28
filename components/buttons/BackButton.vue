@@ -29,5 +29,6 @@ const goBack = () => {
     border: 1px solid #999;
     border-radius: 6px;
     cursor: pointer;
+    font-size: large
 }
 </style>

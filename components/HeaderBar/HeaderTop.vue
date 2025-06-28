@@ -16,13 +16,13 @@
       </slot>
 
       <!-- 漢堡選單按鈕 -->
-      <button class="menu-toggle" @click="toggleMenu" aria-label="選單">
+      <!-- <button class="menu-toggle" @click="toggleMenu" aria-label="選單">
         <svg class="menu-toggle-svg" width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
           <rect x="3" y="6" width="22" height="4" rx="2" fill="#111" />
           <rect x="3" y="12" width="22" height="4" rx="2" fill="#111" />
           <rect x="3" y="18" width="22" height="4" rx="2" fill="#111" />
         </svg>
-      </button>
+      </button> -->
 
       <!-- 遮罩，選單展開時顯示，點擊可關閉選單 -->
       <div v-if="isMenuOpen" class="menu-backdrop" @click="closeMenu"></div>
@@ -76,12 +76,6 @@
         </div>
       </div>
 
-      <!-- <div class="icons">
-        <img src="/yt.png" alt="YouTube" />
-        <img src="/line.png" alt="Line" />
-        <img src="/ig.png" alt="Instagram" />
-        <img src="/fb.png" alt="Facebook" />
-      </div> -->
       <!-- 語言切換選單 -->
       <div v-if="!isMobile" class="top-right">
         <div>

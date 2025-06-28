@@ -33,14 +33,17 @@
                         </li>
                     </ol>
 
-                    <label class="consent">
+                    <!-- <label class="consent">
                         <input type="checkbox" v-model="agreed" />
                         我已閱讀並同意以上聲明
-                    </label>
+                    </label> -->
 
-                    <button :disabled="!agreed" @click="step = 2" class="start-button">
+                    <FormsConsentCheckbox v-model="agreed" />
+
+
+                    <ButtonsStartForm :disabled="!agreed" @next="step = 2">
                         開始申請網路辦證
-                    </button>
+                    </ButtonsStartForm>
                 </div>
 
                 <!-- ✅ 步驟二：申請表單 -->
@@ -141,8 +144,8 @@
 
                     <div class="form-group">
                         <ButtonsBackButton :step="step" @update:step="step = $event" />
-                        <button type="submit">送出申請</button>
-                        <button type="button" @click="resetForm" class="reset-button">🔁 重新填寫</button>
+                        <ButtonsSubmitButton>送出申請</ButtonsSubmitButton>
+                        <ButtonsResetButton @reset="resetForm" />
                     </div>
                 </form>
 
@@ -170,11 +173,9 @@
 <script setup>
 import { ref, reactive, watch } from 'vue'
 import { parseISO, isAfter } from 'date-fns'
-import { useNavigation } from '@/composables/useNavigation'
 import { useRoute, useRouter } from 'vue-router'
 import { useStepReset } from '@/composables/useStepReset'
 
-const { goHome } = useNavigation()
 
 const route = useRoute()
 const router = useRouter()
@@ -535,32 +536,6 @@ a:hover {
     text-decoration: none;
 }
 
-.consent {
-    display: block;
-    margin: 1rem auto;
-    font-weight: bold;
-    text-align: center;
-    width: fit-content;
-}
-
-.start-button {
-    display: block;
-    margin: 0 auto 2rem;
-    background-color: orange;
-    color: black;
-    padding: 12px 16px;
-    border: 1px dashed #333;
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
-}
-
-.start-button:disabled {
-    background-color: #ccc;
-    color: #666;
-    cursor: not-allowed;
-}
-
 .form {
     display: block;
     flex-direction: column;
@@ -694,20 +669,6 @@ input {
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 6px;
-}
-
-button[type='submit'] {
-    background-color: #007bff;
-    color: white;
-    padding: 10px;
-    border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    cursor: pointer;
-}
-
-button[type='submit']:hover {
-    background-color: #0056b3;
 }
 
 .success-step {

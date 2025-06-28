@@ -94,6 +94,8 @@ html.accessible-mode .lang-menu {
   margin-left: 1.3rem;
   margin-top: 0;
 }
+
+
 html.accessible-mode .dropdown-item {
   /* background-color: #111 !important;
   border-radius: 0.5rem;
@@ -103,8 +105,67 @@ html.accessible-mode .dropdown-item {
   /* margin-left: 1rem; */
 }
 
+html.accessible-mode input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+}
+
+html.accessible-mode input[type="date"] {
+  font-size: 18px;
+  padding: 10px;
+  height: 44px;
+}
+
+html.accessible-mode .time-option {
+  font-size: 25px;
+  padding: 10px 12px;
+}
+
+html.accessible-mode .time-option input[type="radio"] {
+  transform: scale(1.5); /* 放大按鈕 */
+  margin-right: 8px;
+}
+
+html.accessible-mode .start-button,
+html.accessible-mode .confirm-button {
+  color: white;
+}
 html.accessible-mode button:hover {
   color: yellow;
+}
+
+html.accessible-mode .back-button,
+html.accessible-mode .reset-button,
+html.accessible-mode .next-button {
+    font-size: larger;
+}
+
+html.accessible-mode label,
+html.accessible-mode input,
+/* html.accessible-mode textarea, */
+html.accessible-mode .title1,
+html.accessible-mode .title2,
+html.accessible-mode .value {
+    font-size: larger;
+    text-wrap: nowrap;
+    margin-left: 1.5rem;
+}
+
+html.accessible-mode .form-label-reason textarea {
+    padding-right: 3rem;
+}
+
+html.accessible-mode .recommend-count .value {
+    font-size: 2rem;
+}
+
+html.accessible-mode .captcha-row button {
+    font-size: larger;
+    color: white;
+}
+
+html.accessible-mode .captcha-row button:hover {
+    color: yellow;
 }
 
 /* 預約清單和預約記錄頁面的按鈕hover效果保持原來的顏色 */

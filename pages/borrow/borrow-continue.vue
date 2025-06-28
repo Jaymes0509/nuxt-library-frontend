@@ -5,7 +5,7 @@
         <h1 class="history-title">借閱續借</h1>
 
         <!-- 登入檢查 -->
-        <LoginRequiredPrompt v-if="!isLoggedIn" />
+        <LoginRequiredPrompt v-if="!isLoggedIn" message="您需要登入才能使用續借功能" />
 
         <!-- 借閱續借內容（只有登入後才顯示） -->
         <div v-else class="history-main">
