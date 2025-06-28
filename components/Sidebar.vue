@@ -59,11 +59,11 @@ const menuItems = computed(() => {
         {
             label: '認識本館',
             children: [
-                { label: '本館簡介', href: '/about' },
-                { label: '服務對象', href: '/audience' },
+                { label: '本館簡介', href: '/introduction/about' },
+                { label: '服務對象', href: '/introduction/audience' },
                 { label: '空間設施', href: '#' },
-                { label: '開放時間', href: '/opening-hours' },
-                { label: '本館位置', href: '/location' }
+                { label: '開放時間', href: '/introduction/opening-hours' },
+                { label: '本館位置', href: '/introduction/location' }
             ]
         },
         // {
@@ -89,25 +89,25 @@ const menuItems = computed(() => {
         {
             label: '讀者服務',
             children: [
-                { label: '借書查詢', href: '/borrow-search' },
-                { label: '我要借書', href: '/borrow-record' },
-                { label: '我要續借', href: '/borrow-continue' }
+                { label: '借書查詢', href: '/borrow/borrow-search' },
+                { label: '我要借書', href: '/borrow/borrow-record' },
+                { label: '我要續借', href: '/borrow/borrow-continue' }
 
             ]
         },
         {
             label: '申請服務',
             children: [
-                { label: '借閱證申請', href: '/card-application' },
-                { label: '自習座位預約', href: '/seat-reservation' },
-                { label: '書籍薦購', href: '/book-recommendation' }
+                { label: '借閱證申請', href: '/application/card-application' },
+                { label: '自習座位預約', href: '/application/seat-reservation' },
+                { label: '書籍薦購', href: '/application/book-recommendation' }
             ]
         },
         {
             label: '排行榜 & 評論',
             children: [
-                { label: '借閱排行榜', href: '/borrowing-rankings' },
-                { label: '讀者書評', href: '/book-review' }
+                { label: '借閱排行榜', href: '/ranking/borrowing-rankings' },
+                { label: '讀者書評', href: '/ranking/book-review' }
             ]
         }
     ]
@@ -116,10 +116,12 @@ const menuItems = computed(() => {
         items.push({
             label: '管理者專區',
             children: [
-                { label: '管理者專區', href: '/manager' },
+                { label: '管理者專區', href: '/manager/manager' },
                 { label: '書籍管理', href: '/manager/books' },
                 { label: '帳號管理', href: '/manager/accounts' },
-                { label: '違規紀錄', href: '/manager/violations' }
+                { label: '違規紀錄', href: '/manager/violations' },
+                { label: '意見回覆', href: '/manager/feedback' },
+                { label: '座位管理', href: '/manager/seat-management' }
             ]
         })
     }

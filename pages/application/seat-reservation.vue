@@ -1,6 +1,7 @@
 <template>
     <div class="scroll-wrapper">
-        <div class="library-card">
+        <LoginRequiredPrompt v-if="!isLoggedIn" message="您需要登入才能預約座位" />
+        <div v-else class="library-card">
             <div class="title-row">
                 <img src="/images/libraryCard.jpg" alt="借閱證圖片" />
                 <h1>自習座位預約</h1>
@@ -40,15 +41,59 @@
 import { ref } from 'vue'
 import { useFetch } from '#app'
 import { useStepReset } from '@/composables/useStepReset'
+import { eventBus } from '@/utils/event-bus'
 
+// 登入狀態檢查
+const isLoggedIn = ref(false)
+const jwt = ref(localStorage.getItem("jwt_token"))
 const selectedDate = ref('')
 const selectedSeat = ref(null)
 const selectedSlot = ref(null)
 const step = ref(1)
-const userId = ref(126) // 實際整合時請改為動態取得登入者 ID
+const userId = ref(null)
+// const userId = ref(126) // 實際整合時請改為動態取得登入者 ID
+
+// 檢查登入狀態
+const checkLoginStatus = () => {
+    // 檢查 localStorage 中的用戶資訊
+    const storedUser = localStorage.getItem('user')
+    const jwtToken = localStorage.getItem('jwt_token')
+    const authToken = localStorage.getItem('authToken')
+
+    console.log('=== 登入狀態檢查 ===')
+    console.log('storedUser:', storedUser)
+    console.log('jwtToken:', jwtToken)
+    console.log('authToken:', authToken)
+
+    if (storedUser) {
+        try {
+            const user = JSON.parse(storedUser)
+            userId.value = user.userId || user.id || null
+            console.log('✅ 登入 userId:', user.userId)
+            isLoggedIn.value = true
+            console.log('✅ 用戶已登入：', user)
+        } catch (e) {
+            console.error('❌ 解析用戶資訊失敗：', e)
+            isLoggedIn.value = false
+        }
+    } else if (jwtToken || authToken) {
+        // 如果有 token 但沒有用戶資訊，也視為已登入
+        isLoggedIn.value = true
+        console.log('✅ 檢測到登入 token')
+    } else {
+        isLoggedIn.value = false
+        console.log('❌ 用戶未登入')
+    }
+
+    console.log('最終登入狀態：', isLoggedIn.value)
+    console.log('==================')
+}
+
+onMounted(() => {
+    checkLoginStatus() //  頁面載入時執行登入狀態檢查
+})
 
 useStepReset(step, resetForm)
-
 function resetForm() {
     selectedSeat.value = null
     selectedSlot.value = ''
@@ -59,7 +104,10 @@ const handleNextStep = async () => {
     const slotLabel = `${selectedSlot.value.start} - ${selectedSlot.value.end}`
     const { data, error } = await useFetch('http://localhost:8080/api/seats/reservations/check', {
         method: 'GET',
-        query: { userId: userId.value, date: selectedDate.value, timeSlot: slotLabel }
+        query: { userId: userId.value, date: selectedDate.value, timeSlot: slotLabel },
+        headers: {
+            Authorization: `Bearer ${jwt.value}`
+        }
     })
 
     if (error.value) return alert('❌ 檢查預約時發生錯誤')
@@ -77,6 +125,9 @@ const handleConfirmSeat = async (seatLabel) => {
             seatLabel,
             reservationDate: selectedDate.value,
             timeSlot: `${selectedSlot.value.start} - ${selectedSlot.value.end}`
+        },
+        headers: {
+            Authorization: `Bearer ${jwt.value}`
         }
     })
 
@@ -102,12 +153,20 @@ const cancelReservation = async () => {
             date: selectedDate.value,
             timeSlot: selectedSlot.value.enum
         },
+        headers: {
+            Authorization: `Bearer ${jwt.value}`
+        }
     });
 
     if (res.error.value) {
         alert('❌ 取消預約失敗：' + res.error.value.message);
     } else {
         alert('✅ 預約已取消');
+
+        // 通知 manager 的 seat-management.vue 自動刷新
+        console.log('🚨 發出 reservation-cancelled')
+        eventBus.emit('reservation-cancelled')
+        // 清空畫面
         step.value = 1;
         selectedSeat.value = null;
         selectedSlot.value = '';
@@ -118,13 +177,14 @@ const cancelReservation = async () => {
 
 <style scoped>
 .cancel-btn {
-    background-color: #e74c3c;
+    background-color: coral;
     color: white;
     padding: 10px 16px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     font-size: 16px;
+    margin-bottom: 5rem;
 }
 
 .cancel-btn:hover {
@@ -268,152 +328,6 @@ a:hover {
     text-decoration: none;
 }
 
-.consent {
-    display: block;
-    margin: 1rem auto;
-    font-weight: bold;
-    text-align: center;
-    width: fit-content;
-}
-
-.start-button {
-    display: block;
-    margin: 0 auto 2rem;
-    background-color: orange;
-    color: black;
-    padding: 12px 16px;
-    border: 1px dashed #333;
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
-}
-
-.start-button:disabled {
-    background-color: #ccc;
-    color: #666;
-    cursor: not-allowed;
-}
-
-.form {
-    display: block;
-    flex-direction: column;
-    /* gap: 50px; */
-    /* background-color: #0056b3; */
-}
-
-
-.form-group {
-    display: flex;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    /* 控制每列之間的間距 */
-    flex-wrap: wrap;
-    /* 小螢幕時可換行 */
-}
-
-.form-group label {
-    min-width: 120px;
-    /* 統一 label 寬度，可依需求調整 */
-    font-weight: bold;
-    margin-right: 12px;
-    text-align: right;
-}
-
-.form-group input,
-.form-group select {
-    flex: 1;
-    padding: 8px;
-    font-size: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    min-width: 200px;
-}
-
-.education-row {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 1.5rem;
-}
-
-.form-label {
-    width: 80px;
-    font-weight: bold;
-    margin-top: 0.3rem;
-}
-
-.gender-radio {
-    display: flex;
-    /* gap: 2rem; */
-    min-width: 100px;
-    font-weight: bold
-}
-
-.education-options {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(200px, 1fr));
-    /* 三欄排版 */
-    gap: 1rem 2rem;
-}
-
-.education-options label {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    gap: 6px;
-}
-
-.address-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8PX;
-    margin-bottom: 0.5rem;
-}
-
-.address-row select,
-.address-row input {
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 1rem;
-    min-width: 140px;
-}
-
-.address-detail {
-    display: flex;
-    /* width: fit-content; */
-    width: 100%;
-    /* margin-left: 0; */
-    padding-left: 130px;
-    /* 避免被頂住，408 = 200 + 200 + 8 */
-}
-
-.address-detail input {
-    width: 100%;
-    max-width: calc(3 * 200px + 16px);
-    /* 假設前面三個欄位每個200px，中間gap為8px*2 */
-    padding: 8px;
-    font-size: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-}
-
-.password-wrapper {
-    display: flex;
-    align-items: center;
-}
-
-.password-wrapper input {
-    flex: 1;
-}
-
-.password-wrapper button {
-    margin-left: 0.5rem;
-    background: none;
-    font-size: xx-large;
-    border: none;
-    cursor: pointer;
-}
-
 
 label {
     display: block;
@@ -441,15 +355,6 @@ button[type='submit'] {
 
 button[type='submit']:hover {
     background-color: #0056b3;
-}
-
-.back-button {
-    margin: 1rem;
-    padding: 8px 14px;
-    background-color: lightgray;
-    border: 1px solid #999;
-    border-radius: 6px;
-    cursor: pointer;
 }
 
 .success-step {

@@ -1,6 +1,7 @@
 <template>
     <div class="scroll-wrapper">
-        <div class="feedback">
+        <LoginRequiredPrompt v-if="!isLoggedIn" message="您需要登入才能推薦書籍" />
+        <div v-else class="feedback">
             <div class="title-row">
                 <img src="/images/libraryCard.jpg" alt="借閱證圖片" />
                 <h1>書籍薦購</h1>
@@ -22,14 +23,11 @@
                     <li>審核納入採購清單的書籍，將依照採購時程購置入館，感謝您的耐心等候~</li>
                 </ol>
 
-                <label class="consent">
-                    <input type="checkbox" v-model="agreed" @change="console.log('agreed:', agreed)" />
-                    我已閱讀並同意以上聲明
-                </label>
+                <FormsConsentCheckbox v-model="agreed" />
 
-                <button :disabled="!agreed" @click="step = 2" class="start-button">
+                <ButtonsStartForm :disabled="!agreed" @next="step = 2">
                     前往推薦
-                </button>
+                </ButtonsStartForm>
             </div>
 
             <!-- ✅ 步驟二：填寫表單 -->
@@ -45,9 +43,10 @@
                         <div class="title2">尚可推薦冊數</div>
                         <div class="value">{{ count.remaining }}</div>
                     </div>
-                    <div v-if="count.remaining === 0" class="form-block-message">
-                        您已達推薦上限，無法再推薦更多書籍。
-                    </div>
+
+                </div>
+                <div v-if="count.remaining === 0" class="form-block-message">
+                    您已達推薦上限，無法再推薦更多書籍。
                 </div>
 
                 <form @submit.prevent="submitForm" class="form">
@@ -96,8 +95,8 @@
 
                     <div class="form-group-buttons">
                         <ButtonsBackButton :step="step" @update:step="step = $event" />
-                        <button type="submit">送出推薦</button>
-                        <button type="button" @click="resetForm" class="reset-button">🔁 重新填寫</button>
+                        <ButtonsSubmitButton>送出推薦</ButtonsSubmitButton>
+                        <ButtonsResetButton @reset="resetForm" />
                     </div>
                 </form>
             </div>
@@ -134,16 +133,54 @@ const form = reactive({
     reason: '',
     captcha: ''
 })
+
+// 登入狀態檢查
+const isLoggedIn = ref(false)
 const count = reactive({ used: 0, remaining: 5 })
 const loadingCount = ref(true)
-const jwt = useCookie('jwt_token')?.value
+const jwt = ref(localStorage.getItem("jwt_token"))
 const captchaUrl = ref(getCaptchaUrl());
+
+// 檢查登入狀態
+const checkLoginStatus = () => {
+    // 檢查 localStorage 中的用戶資訊
+    const storedUser = localStorage.getItem('user')
+    const jwtToken = localStorage.getItem('jwt_token')
+    const authToken = localStorage.getItem('authToken')
+
+    console.log('=== 登入狀態檢查 ===')
+    console.log('storedUser:', storedUser)
+    console.log('jwtToken:', jwtToken)
+    console.log('authToken:', authToken)
+
+    if (storedUser) {
+        try {
+            const user = JSON.parse(storedUser)
+            isLoggedIn.value = true
+            console.log('✅ 用戶已登入：', user)
+        } catch (e) {
+            console.error('❌ 解析用戶資訊失敗：', e)
+            isLoggedIn.value = false
+        }
+    } else if (jwtToken || authToken) {
+        // 如果有 token 但沒有用戶資訊，也視為已登入
+        isLoggedIn.value = true
+        console.log('✅ 檢測到登入 token')
+    } else {
+        isLoggedIn.value = false
+        console.log('❌ 用戶未登入')
+    }
+
+    console.log('最終登入狀態：', isLoggedIn.value)
+    console.log('==================')
+}
+
 
 const fetchCount = async () => {
     loadingCount.value = true
     const { data } = await useFetch('http://localhost:8080/api/recommendations/count', {
         headers: {
-            Authorization: `Bearer ${jwt}`
+            Authorization: `Bearer ${jwt.value}`
         }
     })
     if (data.value) {
@@ -154,6 +191,7 @@ const fetchCount = async () => {
 }
 
 onMounted(() => {
+    checkLoginStatus()
     fetchCount()
 })
 
@@ -172,7 +210,7 @@ function resetForm() {
     form.isbn = '';
     form.author = '';
     form.publisher = '';
-    form.publishYear === '' ? null : parseInt(form.publishYear);
+    form.publishYear = '';
     form.reason = '';
     form.captcha = '';
     refreshCaptcha();
@@ -181,6 +219,7 @@ function resetForm() {
 const submitted = ref(false)
 
 const submitForm = async () => {
+    const jwt = ref(localStorage.getItem("jwt_token"))  // 或你實際存的 key 名稱
     if (!form.captcha) {
         alert("請輸入驗證碼");
         return;
@@ -199,9 +238,12 @@ const submitForm = async () => {
                 isbn: form.isbn,
                 author: form.author,
                 publisher: form.publisher,
-                publishYear: form.publishYear,
+                publishYear: form.publishYear ? Number(form.publishYear) : null,
                 reason: form.reason,
                 captcha: form.captcha
+            },
+            headers: {
+                Authorization: `Bearer ${jwt.value}`
             },
             credentials: 'include'
         });
@@ -355,14 +397,6 @@ a {
 
 a:hover {
     text-decoration: none;
-}
-
-.consent {
-    display: block;
-    margin: 1rem auto;
-    font-weight: bold;
-    text-align: center;
-    width: fit-content;
 }
 
 .start-button {
@@ -582,29 +616,6 @@ input {
     font-size: 1rem;
 }
 
-button[type='submit'] {
-    background-color: #007bff;
-    color: white;
-    padding: 10px;
-    border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    cursor: pointer;
-}
-
-button[type='submit']:hover {
-    background-color: #0056b3;
-}
-
-.back-button {
-    margin: 1rem;
-    padding: 8px 14px;
-    background-color: lightgray;
-    border: 1px solid #999;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
 .captcha-row {
     display: flex;
     align-items: center;
@@ -647,16 +658,6 @@ button[type='submit']:hover {
     width: 100px;
 }
 
-
-.reset-button {
-    margin: 1rem;
-    padding: 8px 14px;
-    background-color: lightgray;
-    border: 1px solid #999;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
 .success-step {
     text-align: center;
     padding: 40px 20px;
@@ -687,34 +688,5 @@ button[type='submit']:hover {
 .success {
     color: green;
     font-weight: bold;
-}
-
-html.accessible-mode label,
-html.accessible-mode input,
-/* html.accessible-mode textarea, */
-html.accessible-mode .back-button,
-html.accessible-mode .reset-button,
-html.accessible-mode .title1,
-html.accessible-mode .title2,
-html.accessible-mode .value {
-    font-size: larger;
-    text-wrap: nowrap;
-}
-
-html.accessible-mode .form-label-reason textarea {
-    padding-right: 3rem;
-}
-
-html.accessible-mode .recommend-count .value {
-    font-size: 2rem;
-}
-
-html.accessible-mode .captcha-row button {
-    font-size: larger;
-    color: white;
-}
-
-html.accessible-mode .captcha-row button:hover {
-    color: yellow;
 }
 </style>

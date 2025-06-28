@@ -4,9 +4,9 @@ import { useRouter } from 'vue-router'
 // composables/useNavigation.js
 export function generateLink(href) {
   const pagesNeedReset = [
-    '/card-application',
-    '/seat-reservation',
-    '/book-recommendation',
+    '/application/card-application',
+    '/application/seat-reservation',
+    '/application/book-recommendation',
     '/feedback'
   ]
 

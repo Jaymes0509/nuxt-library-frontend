@@ -5,7 +5,7 @@
         <h1 class="history-title">借書清單</h1>
 
         <!-- 登入檢查 -->
-        <LoginRequiredPrompt v-if="!isLoggedIn" />
+        <LoginRequiredPrompt v-if="!isLoggedIn" message="您需要登入才能使用借書功能" />
 
         <!-- 借書清單內容（只有登入後才顯示） -->
         <div v-else class="history-main">

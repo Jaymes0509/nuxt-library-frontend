@@ -23,7 +23,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import HeaderBar from '@/components/HeaderBar/index.vue'
+import HeaderBar from '@/components/HeaderBar'
 import FooterBar from '@/components/FooterBar.vue'
 import Sidebar from '@/components/Sidebar.vue'
 import MemberLoginButton from '@/components/MemberLoginButton.vue'
