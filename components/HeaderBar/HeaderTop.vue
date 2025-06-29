@@ -318,7 +318,7 @@ const closeMenu = () => {
 let links = [
   { label: '首頁', href: '/' },
   { label: '網站導覽', href: '' },
-  { label: '開放時間', href: '/opening-hours' },
+  { label: '開放時間', href: '/introduction/opening-hours' },
   { label: '意見信箱', href: '/feedback' },
   { label: '無障礙專區', href: '' }]
 
