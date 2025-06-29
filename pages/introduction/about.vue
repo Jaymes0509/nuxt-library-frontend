@@ -72,5 +72,6 @@
     font-size: 1.1rem;
     color: #333;
     margin-bottom: 2rem;
+    line-height: 2;
 }
 </style>

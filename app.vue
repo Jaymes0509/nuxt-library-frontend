@@ -84,4 +84,31 @@ const route = useRoute()
 .footer--collapsed {
    margin-left: 0;
 }
+
+@media screen and (max-width: 1024px) {
+   .content-body {
+      flex-direction: column;
+   }
+
+   .main-container {
+      margin-left: 0 !important;
+      width: 100%;
+   }
+
+   .footer-container {
+      margin-left: 0 !important;
+      width: 100%;
+   }
+
+   .main-container> :first-child {
+      padding: 10px;
+   }
+}
+
+@media screen and (max-width: 1024px) {
+   .sidebar {
+      width: 100%;
+      max-width: 100%;
+   }
+}
 </style>

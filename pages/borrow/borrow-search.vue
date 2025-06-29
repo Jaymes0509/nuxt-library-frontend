@@ -313,7 +313,7 @@ onMounted(async () => {
 // 修改後的導航到書籍詳情頁方法
 const navigateToBookDetail = async (book) => {
   router.push({
-    path: '/borrow-bookinfo',
+    path: '/borrow/borrow-bookinfo',
     query: {
       id: book.id || book.bookId,
       title: book.title,
@@ -630,7 +630,7 @@ const goToPage = (page) => {
 
 // 導航到借書清單
 const goToBorrowList = () => {
-  router.push('/borrow-record');
+  router.push('/borrow/borrow-record');
 };
 
 watch(itemsPerPage, () => {

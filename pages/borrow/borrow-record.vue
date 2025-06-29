@@ -341,7 +341,7 @@ const toggleSelectAll = () => {
 // ===== 導航函數 =====
 const viewBookDetail = (book) => {
   router.push({
-    path: '/borrow-bookinfo',
+    path: '/borrow/borrow-bookinfo',
     query: {
       id: book.id,
       isbn: book.isbn,
@@ -359,7 +359,7 @@ const viewBookDetail = (book) => {
 }
 
 const goToSearch = () => {
-  router.push('/borrow-search')
+  router.push('/borrow/borrow-search')
 }
 
 const batchBorrow = async () => {
