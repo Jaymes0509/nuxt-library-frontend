@@ -95,6 +95,10 @@ html.accessible-mode .lang-menu {
   margin-top: 0;
 }
 
+html.accessible-mode .menu-item,
+html.accessible-mode .submenu-link {
+  font-size: larger;
+}
 
 html.accessible-mode .dropdown-item {
   /* background-color: #111 !important;
@@ -105,7 +109,8 @@ html.accessible-mode .dropdown-item {
   /* margin-left: 1rem; */
 }
 
-html.accessible-mode input[type="checkbox"] {
+html.accessible-mode input[type="checkbox"],
+html.accessible-mode input[type="text"] {
   width: 24px;
   height: 24px;
 }
@@ -127,16 +132,21 @@ html.accessible-mode .time-option input[type="radio"] {
 }
 
 html.accessible-mode .start-button,
-html.accessible-mode .confirm-button {
+html.accessible-mode .confirm-button,
+html.accessible-mode .btn-secondary,
+html.accessible-mode .stats-refresh-btn,
+html.accessible-mode .back-btn{
   color: white;
 }
-html.accessible-mode button:hover {
+html.accessible-mode button:hover,
+html.accessible-mode .btn-secondary:hover {
   color: yellow;
 }
 
 html.accessible-mode .back-button,
 html.accessible-mode .reset-button,
-html.accessible-mode .next-button {
+html.accessible-mode .next-button,
+html.accessible-mode .btn {
     font-size: larger;
 }
 
@@ -150,6 +160,30 @@ html.accessible-mode .value {
     text-wrap: nowrap;
     margin-left: 1.5rem;
 }
+
+html.accessible-mode .search {
+  width:10%;
+  margin-right: 0;
+}
+
+html.accessible-mode .search-input {
+  font-size: 1.2rem;
+  margin-left: 0;
+  padding-left: 0rem;
+}
+
+html.accessible-mode .search-icon {
+  width: 0.8rem;
+  height: 1rem;
+  background-color: transparent !important;
+}
+
+html.accessible-mode .login-status {
+  width: 10%;
+  text-wrap: nowrap;
+}
+
+html.accessible-mode .
 
 html.accessible-mode .form-label-reason textarea {
     padding-right: 3rem;
@@ -206,6 +240,7 @@ html.accessible-mode option,
 html.accessible-mode span {
   color: initial !important;
 }
+
 
 
 

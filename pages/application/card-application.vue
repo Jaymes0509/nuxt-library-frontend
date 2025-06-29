@@ -82,13 +82,12 @@
 
                     <div class="form-group education-row">
                         <label class="form-label">學歷：</label>
-                        <div class="education-options">
-                            <label v-for="edu in educationOptions" :key="edu.value">
-                                <input type="radio" :value="edu.value" v-model="form.education" name="education"
-                                    required />
+                        <select v-model="form.education" required>
+                            <option disabled value="">請選擇學歷</option>
+                            <option v-for="edu in filteredEducationOptions" :key="edu.value" :value="edu.value">
                                 {{ edu.label }}
-                            </label>
-                        </div>
+                            </option>
+                        </select>
                     </div>
 
 
@@ -96,7 +95,9 @@
                         <label class="form-label">職業：</label>
                         <select v-model="form.occupation" required>
                             <option disabled value="">請選擇職業</option>
-                            <option v-for="job in occupations" :key="job" :value="job">{{ job }}</option>
+                            <option v-for="job in filteredOccupations" :key="job" :value="job">
+                                {{ job }}
+                            </option>
                         </select>
                     </div>
 
@@ -171,7 +172,7 @@
     </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed, onMounted } from 'vue'
 import { parseISO, isAfter } from 'date-fns'
 import { useRoute, useRouter } from 'vue-router'
 import { useStepReset } from '@/composables/useStepReset'
@@ -181,7 +182,6 @@ const route = useRoute()
 const router = useRouter()
 
 const loading = ref(false)
-
 const step = ref(1)
 const agreed = ref(false)
 
@@ -202,8 +202,130 @@ const form = reactive({
     password: '',
 })
 
-const birthDateError = ref('')
 const today = new Date()
+const birthDateError = ref('')
+
+watch(() => form.birthDate, (newDate) => {
+    if (!newDate) {
+        birthDateError.value = '請選擇出生日期'
+    } else if (isAfter(parseISO(newDate), today)) {
+        birthDateError.value = '出生日期不能是未來'
+    } else {
+        birthDateError.value = ''
+    }
+})
+
+const age = computed(() => {
+    if (!form.birthDate) return null;
+    const birth = new Date(form.birthDate);
+    const now = new Date();
+    let age = now.getFullYear() - birth.getFullYear();
+    const monthDiff = now.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
+        age--;
+    }
+    return age;
+});
+
+const educationOptions = [
+    { value: '學齡前', label: '學齡前 Preschool' },
+    { value: '國小', label: '國小 Elementary' },
+    { value: '國中 (初中)', label: '國中 (初中) Junior High School' },
+    { value: '高中 (高職)', label: '高中 (高職) Senior High School' },
+    { value: '專科', label: '專科 Junior College' },
+    { value: '大學', label: '大學 University/College' },
+    { value: '碩士', label: '碩士 Master' },
+    { value: '博士', label: '博士 Doctor' },
+    { value: '其他', label: '其他 Other' }
+]
+
+const filteredEducationOptions = computed(() => {
+    if (age.value === null) return []
+
+    const all = educationOptions.map(e => e.value)
+    const result = new Set()
+
+    if (age.value < 6) {
+        result.add('學齡前')
+    } else if (age.value < 12) {
+        result.add('學齡前')
+        result.add('國小')
+    } else if (age.value < 15) {
+        result.add('學齡前')
+        result.add('國小')
+        result.add('國中 (初中)')
+    } else if (age.value < 18) {
+        result.add('學齡前')
+        result.add('國小')
+        result.add('國中 (初中)')
+        result.add('高中 (高職)')
+        result.add('專科')
+    } else if (age.value < 21) {
+        result.add('學齡前')
+        result.add('國小')
+        result.add('國中 (初中)')
+        result.add('高中 (高職)')
+        result.add('專科')
+        result.add('大學')
+    } else {
+        // 21 歲以上可選全部
+        return educationOptions
+    }
+
+    return educationOptions.filter(e => result.has(e.value))
+})
+
+
+watch([age, () => form.education], () => {
+    const valid = filteredEducationOptions.value.map(e => e.value)
+    if (!valid.includes(form.education)) {
+        form.education = ''
+    }
+})
+
+const occupations = [
+    '本國學生;僑生 Domestic Student / Overseas Chinese student',
+    '外籍學生 Foreign student',
+    '中小學教師 Primary or secondary school teacher',
+    '大專教師',
+    '公務員 Civil servant',
+    '軍警人員 Military Personnel / Police',
+    '自由業 Freelancer',
+    '新聞業 Journalist',
+    '文化業 Cultural worker',
+    '農林漁牧業 Agricultural, forestry, fishing or animal husbandry worker',
+    '工業 Industrial worker',
+    '商 Business worker',
+    '醫藥業 Medical worker',
+    '社會團體 Social group member',
+    '社會工作者 Social Worker',
+    '宗教事業 Religious Worker',
+    '交通事業 Transport workers',
+    '家庭管理 Domestic worker',
+    '退休人員 Retired',
+    '職業(無) Not Employed'
+]
+
+const filteredOccupations = computed(() => {
+    if (age.value <= 15) {
+        return occupations.filter(o =>
+            o.startsWith('本國學生;僑生') || o.startsWith('外籍學生') || o.startsWith('職業(無)')
+        )
+    }
+    return occupations
+})
+
+watch([age, () => form.occupation], () => {
+    if (age.value <= 15) {
+        if (
+            !form.occupation.startsWith('本國學生;僑生') &&
+            !form.occupation.startsWith('外籍學生') &&
+            !form.occupation.startsWith('職業(無)')
+        ) {
+            form.occupation = ''
+        }
+    }
+})
 
 const countries = [
     "中華民國 Republic of China",
@@ -232,52 +354,8 @@ const countries = [
     "其他 Other"
 ]
 
-const educationOptions = [
-    { value: '學齡前', label: '學齡前 Preschool' },
-    { value: '國小', label: '國小 Elementary' },
-    { value: '國中 (初中)', label: '國中 (初中) Junior High School' },
-    { value: '高中 (高職)', label: '高中 (高職) Senior High School' },
-    { value: '專科', label: '專科 Junior College' },
-    { value: '大學', label: '大學 University/College' },
-    { value: '碩士', label: '碩士 Master' },
-    { value: '博士', label: '博士 Doctor' },
-    { value: '其他', label: '其他 Other' }
-]
-
-const occupations = [
-    '本國學生;僑生 Domestic Student / Overseas Chinese student',
-    '外籍學生 Foreign student',
-    '中小學教師 Primary or secondary school teacher',
-    '大專教師',
-    '公務員 Civil servant',
-    '軍警人員 Military Personnel / Police',
-    '自由業 Freelancer',
-    '新聞業 Journalist',
-    '文化業 Cultural worker',
-    '農林漁牧業 Agricultural, forestry, fishing or animal husbandry worker',
-    '工業 Industrial worker',
-    '商 Business worker',
-    '醫藥業 Medical worker',
-    '社會團體 Social group member',
-    '社會工作者 Social Worker',
-    '宗教事業 Religious Worker',
-    '交通事業 Transport workers',
-    '家庭管理 Domestic worker',
-    '退休人員 Retired',
-    '職業(無) Not Employed'
-]
-
-watch(() => form.birthDate, (newDate) => {
-    if (!newDate) {
-        birthDateError.value = '請選擇出生日期'
-    } else if (isAfter(parseISO(newDate), today)) {
-        birthDateError.value = '出生日期不能是未來'
-    } else {
-        birthDateError.value = ''
-    }
-})
-
 const counties = ref([])
+const towns = ref([])
 
 onMounted(async () => {
     try {
@@ -289,7 +367,6 @@ onMounted(async () => {
     }
 })
 
-const towns = ref([])
 
 watch(() => form.addressCounty, async (newCounty) => {
     if (!newCounty) return
@@ -323,7 +400,6 @@ watch(() => form.addressTown, async (newTown) => {
 })
 
 const showPassword = ref(false)
-
 const submitted = ref(false)
 
 const submitForm = async () => {
@@ -371,15 +447,6 @@ function resetForm() {
 }
 
 
-// onMounted(() => {
-//     // 第一次載入時觸發
-//     if (route.query.reset === 'true') {
-//         step.value = 1
-//         resetForm()
-//         router.replace({ path: route.path })
-//     }
-// })
-
 // 後續點 Sidebar 同路徑再次跳轉也能 reset
 watch(() => route.query.reset, (val) => {
     if (val === 'true') {
@@ -388,7 +455,6 @@ watch(() => route.query.reset, (val) => {
         router.replace({ path: route.path })
     }
 })
-
 
 </script>
 

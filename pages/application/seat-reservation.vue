@@ -15,18 +15,29 @@
                 }}
             </h1>
 
+            <!-- Step 1 -->
             <div v-if="step === 1">
                 <SeatDatePicker v-model="selectedDate" />
                 <br>
                 <SeatTimeSlot v-model="selectedSlot" :selected-date="selectedDate" />
                 <ButtonsNextButton :disabled="!selectedDate || !selectedSlot?.start" @next="handleNextStep" />
+
+                <!-- 我的預約按鈕 -->
+                <div style="text-align: center; margin-top: 20px;">
+                    <button v-if="hasReservation" @click="handleMyReservationClick" class="summary-btn">
+                        📌 我的座位預約
+                    </button>
+                </div>
             </div>
 
+
+            <!-- Step 2 -->
             <div v-if="step === 2">
                 <ButtonsBackButton :step="step" @update:step="step = $event" />
                 <SeatMap :selectedDate="selectedDate" :selectedSlot="selectedSlot" @confirm="handleConfirmSeat" />
             </div>
 
+            <!-- Step 3 預約完成 -->
             <SeatReservationSummary v-if="step === 3" :selectedDate="selectedDate"
                 :selectedSlot="`${selectedSlot.start} - ${selectedSlot.end}`" :selectedSeat="selectedSeat" />
 
@@ -38,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useFetch } from '#app'
 import { useStepReset } from '@/composables/useStepReset'
 import { eventBus } from '@/utils/event-bus'
@@ -52,6 +63,8 @@ const selectedSlot = ref(null)
 const step = ref(1)
 const userId = ref(null)
 // const userId = ref(126) // 實際整合時請改為動態取得登入者 ID
+const existingReservation = ref(null)
+const hasReservation = ref(false)
 
 // 檢查登入狀態
 const checkLoginStatus = () => {
@@ -89,8 +102,40 @@ const checkLoginStatus = () => {
     console.log('==================')
 }
 
+const fetchExistingReservation = async () => {
+    if (!userId.value) return
+    const { data } = await useFetch('http://localhost:8080/api/seats/reservations/upcoming', {
+        method: 'GET',
+        query: { userId: userId.value },
+        headers: {
+            Authorization: `Bearer ${jwt.value}`
+        }
+    })
+    if (data.value) {
+        existingReservation.value = data.value
+        hasReservation.value = true
+    } else {
+        existingReservation.value = null
+        hasReservation.value = false
+    }
+}
+
+const goToSummaryFromExisting = () => {
+    if (!existingReservation.value) return
+    selectedDate.value = existingReservation.value.reservationDate
+    selectedSeat.value = existingReservation.value.seatLabel
+    if (existingReservation.value.timeSlot) {
+        const [start, end] = existingReservation.value.timeSlot.split(' - ')
+        selectedSlot.value = { start, end }
+        step.value = 3
+    } else {
+        alert('❌ 無法讀取預約的時段資訊')
+    }
+}
+
 onMounted(() => {
     checkLoginStatus() //  頁面載入時執行登入狀態檢查
+    fetchExistingReservation()
 })
 
 useStepReset(step, resetForm)
@@ -98,6 +143,8 @@ function resetForm() {
     selectedSeat.value = null
     selectedSlot.value = ''
     selectedDate.value = ''
+    existingReservation.value = null
+    hasReservation.value = false
 }
 
 const handleNextStep = async () => {
@@ -141,6 +188,7 @@ const handleConfirmSeat = async (seatLabel) => {
         }
     } else {
         step.value = 3
+        fetchExistingReservation()
     }
 }
 
@@ -151,7 +199,7 @@ const cancelReservation = async () => {
             userId: userId.value,
             seatLabel: selectedSeat.value,
             date: selectedDate.value,
-            timeSlot: selectedSlot.value.enum
+            timeSlot: `${selectedSlot.value.start} - ${selectedSlot.value.end}`
         },
         headers: {
             Authorization: `Bearer ${jwt.value}`
@@ -168,11 +216,15 @@ const cancelReservation = async () => {
         eventBus.emit('reservation-cancelled')
         // 清空畫面
         step.value = 1;
-        selectedSeat.value = null;
-        selectedSlot.value = '';
-        selectedDate.value = '';
+        resetForm()
     }
 };
+
+const handleMyReservationClick = async () => {
+    await fetchExistingReservation()
+    goToSummaryFromExisting()
+}
+
 </script>
 
 <style scoped>
