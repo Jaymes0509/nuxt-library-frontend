@@ -11,16 +11,15 @@
 <style scoped>
 .footer {
   width: 100%;
-  /* 填滿寬度 */
-  height: 100%;
-  /* 填滿父容器高度 */
+  height: 60px;
   background-color: #003366;
   color: white;
   text-align: center;
   display: flex;
-  /* 加強文字置中 */
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  position: relative;
+  bottom: 0;
 }
 </style>

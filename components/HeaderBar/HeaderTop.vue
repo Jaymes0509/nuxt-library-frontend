@@ -45,16 +45,6 @@
           </li>
         </ul>
         <div v-if="isMobile" class="mobile-extra">
-          <div>
-            <button @click="toggleDropdown" class="lang-btn" title="語言">🌐 語言</button>
-            <ul v-if="showDropdown" class="lang-menu">
-              <li v-for="lang in languages" :key="lang.code" :title="lang.label">
-                <a href="#" class="dropdown-item" @click.prevent="selectLang(lang.code)">
-                  {{ lang.label }}
-                </a>
-              </li>
-            </ul>
-          </div>
           <div class="search">
             <input type="text" v-model="query" placeholder="站內搜尋" class="search-input" @keyup.enter="submitSearch" />
             <button class="search-icon" @click="submitSearch">🔍</button>
@@ -72,6 +62,7 @@
                 <button @click="logout" class="user-menu-item">🚪 登出</button>
               </div>
             </div>
+            <NuxtLink v-else to="/login" class="login-btn">登入</NuxtLink>
           </div>
         </div>
       </div>
@@ -84,17 +75,6 @@
       </div> -->
       <!-- 語言切換選單 -->
       <div v-if="!isMobile" class="top-right">
-        <div>
-          <button @click="toggleDropdown" class="lang-btn" title="語言">🌐 語言</button>
-          <ul v-if="showDropdown" class="lang-menu">
-            <li v-for="lang in languages" :key="lang.code" :title="lang.label">
-              <a href="#" class="dropdown-item" @click.prevent="selectLang(lang.code)">
-                {{ lang.label }}
-              </a>
-            </li>
-          </ul>
-        </div>
-
         <div class="search">
           <input type="text" v-model="query" placeholder="站內搜尋" class="search-input" @keyup.enter="submitSearch" />
           <button class="search-icon" @click="submitSearch">
@@ -119,6 +99,7 @@
             </div>
           </div>
         </div>
+        <NuxtLink v-else to="/login" class="login-btn">登入</NuxtLink>
       </div>
 
       <!-- <div class="search">
@@ -163,31 +144,31 @@ const resetIdleTimer = () => {
 
 const activityEvents = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart']
 
-const toggleDropdown = () => {
-  showDropdown.value = !showDropdown.value
-  // 關閉用戶選單
-  showUserMenu.value = false
-}
+// const toggleDropdown = () => {
+//   showDropdown.value = !showDropdown.value
+//   // 關閉用戶選單
+//   showUserMenu.value = false
+// }
 
 const toggleUserMenu = () => {
   showUserMenu.value = !showUserMenu.value
   console.log('showUserMenu:', showUserMenu.value)
-  showDropdown.value = false
+  // showDropdown.value = false
 }
 
 // 點擊外部區域關閉選單
 const closeMenus = (event) => {
   const target = event.target
   const isUserInfo = target.closest('.user-info')
-  const isLangMenu = target.closest('.lang-btn, .lang-menu')
+  // const isLangMenu = target.closest('.lang-btn, .lang-menu')
 
   if (!isUserInfo) {
     showUserMenu.value = false
   }
 
-  if (!isLangMenu) {
-    showDropdown.value = false
-  }
+  // if (!isLangMenu) {
+  //   showDropdown.value = false
+  // }
 }
 
 // 檢查登入狀態
@@ -232,16 +213,16 @@ const logout = () => {
   router.push('/')
 }
 
-const languages = [
-  { code: 'zh-tw', label: '繁體中文' },
-  { code: 'en', label: 'English' },
-  { code: 'ja', label: '日本語' }
-]
+// const languages = [
+//   { code: 'zh-tw', label: '繁體中文' },
+//   { code: 'en', label: 'English' },
+//   { code: 'ja', label: '日本語' }
+// ]
 
-function selectLang(code) {
-  // 暫時移除 i18n 功能
-  showDropdown.value = false
-}
+// function selectLang(code) {
+//   // 暫時移除 i18n 功能
+//   showDropdown.value = false
+// }
 
 defineProps({
   title: {
@@ -455,9 +436,7 @@ const submitSearch = () => {
   font-size: 1.25rem;
 }
 
-.lang-btn {
-  /* position: relative; */
-  /* display: inline-block; */
+/* .lang-btn {
   background: none;
   border: none;
   cursor: pointer;
@@ -469,8 +448,6 @@ const submitSearch = () => {
   list-style: none;
   position: absolute;
   margin-top: 6px;
-  /* left: 70%;
-   */
   transform: translateX(-10%);
   flex-direction: column;
   background: white;
@@ -488,14 +465,9 @@ const submitSearch = () => {
 
 .dropdown-item {
   display: block;
-  /* width: 100%; */
   text-align: center;
   left: 0;
-  /* ✅ 文字置中 */
-  /* margin: 0 auto; */
-  /* ✅ 居中用於防止預設 left-align */
   color: black;
-  /* 依你的設計調整顏色 */
   padding: 8px 12px;
   font-size: 1.25rem;
   text-decoration: none;
@@ -508,7 +480,7 @@ const submitSearch = () => {
 
 .dropdown-item:active {
   background-color: tomato;
-}
+} */
 
 .search {
   display: flex;
@@ -733,7 +705,7 @@ const submitSearch = () => {
     width: 60px;
   }
 
-  .lang-menu {
+  /* .lang-menu {
     position: static;
     margin-top: 0.5rem;
     width: 100%;
@@ -741,7 +713,7 @@ const submitSearch = () => {
 
   .dropdown-item {
     padding: 12px;
-  }
+  } */
 
   .separator {
     display: none !important;

@@ -32,7 +32,7 @@
         <img src="/fb.png" alt="Facebook" />
       </div> -->
         <!-- 語言切換選單 -->
-        <div>
+        <!-- <div>
           <button @click="toggleDropdown" class="lang-btn" title="語言">🌐 語言</button>
           <ul v-if="showDropdown" class="lang-menu">
             <li v-for="lang in languages" :key="lang.code" :title="lang.label">
@@ -41,7 +41,7 @@
               </a>
             </li>
           </ul>
-        </div>
+        </div> -->
 
         <div class="search">
           <input type="text" placeholder="站內搜尋" />
@@ -52,36 +52,26 @@
   </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 // import { useI18n } from 'vue-i18n'
 
 // const { locale, t } = useI18n()
-const showDropdown = ref(false)
+// const showDropdown = ref(false)
 
-const toggleDropdown = () => {
-  showDropdown.value = !showDropdown.value
-}
+// const toggleDropdown = () => {
+//   showDropdown.value = !showDropdown.value
+// }
 
 // const selectLang = (code) => {
 //   locale.value = code
 //   showDropdown.value = false
 // }
 
-const languages = [
-  { code: 'zh-tw', label: '繁體中文' },
-  { code: 'en', label: 'English' },
-  { code: 'ja', label: '日本語' }
-]
-defineProps({
-  title: {
-    type: String,
-    default: '圖書館'
-  },
-  subtitle: {
-    type: String,
-    default: 'LIBRARY'
-  }
-})
+// const languages = [
+//   { code: 'zh-tw', label: '繁體中文' },
+//   { code: 'en', label: 'English' },
+//   { code: 'ja', label: '日本語' }
+// ]
 
 const isAccessible = ref(false)
 
@@ -112,6 +102,17 @@ let links = [
   { label: '開放時間', href: '/opening-hours' },
   { label: '意見信箱', href: '/feedback' },
   { label: '無障礙專區', href: '' }]
+
+defineProps({
+  title: {
+    type: String,
+    default: '圖書館'
+  },
+  subtitle: {
+    type: String,
+    default: 'LIBRARY'
+  }
+})
 </script>
 
 <style scoped>
@@ -227,7 +228,7 @@ let links = [
   margin-left: 0.5rem;
 } */
 
-.lang-btn {
+/* .lang-btn {
   background: none;
   border: none;
   cursor: pointer;
@@ -237,14 +238,18 @@ let links = [
 
 .lang-menu {
   position: absolute;
+  top: 100%;
+  left: 0;
   margin-top: 6px;
-  /* top: 100%; */
   flex-direction: column;
   background: white;
   border: 1px solid #ccc;
+  border-radius: 4px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   z-index: 20;
   min-width: 95px;
+  list-style: none;
+  padding: 0;
 }
 
 .dropdown-item {
@@ -260,7 +265,7 @@ let links = [
 
 .dropdown-item:active {
   background-color: tomato;
-}
+} */
 
 .search {
   display: flex;
