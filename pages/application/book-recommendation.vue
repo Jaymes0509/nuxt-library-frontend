@@ -8,8 +8,9 @@
             </div>
             <h1 class="section-title"> {{
                 step === 1 ? '使用說明' :
-                    step === 2 ? '推薦表單填寫' :
-                        '表單送出成功'
+                    step === 2 ? '推薦清單' :
+                        step === 3 ? '推薦表單填寫' :
+                            '表單送出成功'
             }}</h1>
 
             <!-- 步驟一：使用聲明 -->
@@ -25,13 +26,32 @@
 
                 <FormsConsentCheckbox v-model="agreed" />
 
-                <ButtonsStartForm :disabled="!agreed" @next="step = 2">
+                <ButtonsStartForm :disabled="!agreed" @next="handleNextStep">
                     前往推薦
                 </ButtonsStartForm>
+
+                <!-- 查看推薦清單按鈕與列表 -->
+                <button @click="handleViewList" class="view-my-list-btn">
+                    👀 查看我的薦購清單
+                </button>
             </div>
 
-            <!-- ✅ 步驟二：填寫表單 -->
-            <div v-if="step === 2">
+            <!-- 步驟二：顯示清單 -->
+            <div v-if="step === 2" class="my-recommend-list">
+                <h3>📑 我的薦購清單</h3>
+                <div v-if="loadingList">載入中...</div>
+                <ul v-else>
+                    <li v-for="item in myList" :key="item.title + item.createdAt" class="list-item">
+                        <strong>{{ item.title }}</strong>（ISBN: {{ item.isbn }}）<br />
+                        推薦原因：{{ item.reason }}<br />
+                        狀態：{{ statusLabel(item.status) }} ｜ 日期：{{ new Date(item.createdAt).toLocaleString() }}
+                    </li>
+                </ul>
+                <ButtonsBackButton :step="step" @update:step="step = 1" />
+            </div>
+
+            <!-- 步驟三：填寫表單 -->
+            <div v-if="step === 3">
 
                 <!-- 推薦冊數顯示區塊 -->
                 <div v-if="!loadingCount" class="recommend-count">
@@ -94,15 +114,15 @@
                     </div>
 
                     <div class="form-group-buttons">
-                        <ButtonsBackButton :step="step" @update:step="step = $event" />
+                        <ButtonsBackButton :step="step" @update:step="step = 1" />
                         <ButtonsSubmitButton>送出推薦</ButtonsSubmitButton>
                         <ButtonsResetButton @reset="resetForm" />
                     </div>
                 </form>
             </div>
 
-            <!-- 步驟三：成功畫面 -->
-            <div v-if="step === 3" class="success-step">
+            <!-- 步驟四：成功畫面 -->
+            <div v-if="step === 4" class="success-step">
                 <h2>✅ 送出成功！</h2>
                 <p>感謝您的推薦，本館將受理與審核，敬請耐心等候，謝謝!</p>
                 <div v-if="loading" class="loading-spinner"></div>
@@ -110,7 +130,6 @@
 
                 <ButtonsGoHome v-if="!loading" />
             </div>
-
         </div>
     </div>
 </template>
@@ -123,6 +142,7 @@ import { useStepReset } from '@/composables/useStepReset'
 const step = ref(1)
 const agreed = ref(false)
 const loading = ref(false)
+const isViewingList = ref(false)
 
 const form = reactive({
     title: '',
@@ -190,6 +210,43 @@ const fetchCount = async () => {
     loadingCount.value = false
 }
 
+const myList = ref([])
+const showList = ref(false)
+const loadingList = ref(false)
+
+const handleNextStep = () => {
+    if (agreed.value) {
+        step.value = 3
+    } else {
+        alert("請先勾選同意條款")
+    }
+}
+
+const handleViewList = async () => {
+    step.value = 2
+    loadingList.value = true
+    try {
+        const { data } = await useFetch('http://localhost:8080/api/recommendations/my-list', {
+            headers: { Authorization: `Bearer ${jwt.value}` }
+        })
+        myList.value = data.value || []
+    } catch (err) {
+        alert('❌ 無法載入您的薦購清單')
+        console.error(err)
+    } finally {
+        loadingList.value = false
+    }
+}
+
+const statusLabel = (status) => {
+    switch (status) {
+        case 'PENDING': return '⏳ 審核中'
+        case 'APPROVED': return '✅ 已通過'
+        case 'REJECTED': return '❌ 已退回'
+        default: return status
+    }
+}
+
 onMounted(() => {
     checkLoginStatus()
     fetchCount()
@@ -251,7 +308,7 @@ const submitForm = async () => {
         await fetchCount(); //  更新推薦冊數
         alert("✅ 推薦成功！感謝您的建議");
         submitted.value = true;
-        step.value = 3;
+        step.value = 4;
 
     } catch (err) {
         // 回傳 400 會進來這裡
@@ -397,6 +454,45 @@ a {
 
 a:hover {
     text-decoration: none;
+}
+
+.view-my-list-btn {
+    display: block;
+    margin: 2rem auto;
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.my-recommend-list {
+    margin-top: 1rem;
+    background: lightgray;
+    padding: 1rem;
+    border-radius: 8px;
+    max-height: 800px;
+    overflow-y: auto;
+}
+
+.my-recommend-list h3 {
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    color: #333;
+    text-align: center;
+}
+
+.list-item {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.5rem;
+}
+
+.list-item:hover {
+    background-color: tomato;
 }
 
 .recommend-count {

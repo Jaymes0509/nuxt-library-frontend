@@ -104,7 +104,7 @@ const checkLoginStatus = () => {
 
 const fetchExistingReservation = async () => {
     if (!userId.value) return
-    const { data } = await useFetch('http://localhost:8080/api/seats/reservations/upcoming', {
+    const { data } = await useFetch('http://localhost:8080/api/seats/reservations/next', {
         method: 'GET',
         query: { userId: userId.value },
         headers: {
