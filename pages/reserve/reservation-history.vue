@@ -17,8 +17,6 @@
                                 <select v-model="itemsPerPage" class="history-select pretty-select-page">
                                     <option v-for="size in pageSizes" :key="size" :value="size">{{ size }} 筆</option>
                                 </select>
-                            </div>
-                            <div class="history-row">
                                 <span class="history-label">排序：</span>
                                 <select v-model="sortConfig.field" class="history-select pretty-select">
                                     <option value="title">書名</option>
@@ -39,6 +37,40 @@
                                 :class="['history-view-btn', viewMode === 'grid' ? 'history-view-btn-active' : '']">
                                 網格
                             </button>
+                        </div>
+                    </div>
+                    <!-- 預約狀態面板 -->
+                    <div class="reservation-stats-panel">
+                        <div class="stats-header">
+                            <h3 class="stats-title">預約狀態</h3>
+                            <button class="stats-refresh-btn" @click="fetchReservations">🔄 重新整理</button>
+                        </div>
+                        <div class="stats-content">
+                            <div class="stats-item">
+                                <span class="stats-label">待領取：</span>
+                                <span class="stats-value stats-pending">{{ stats.pending }} 本</span>
+                            </div>
+                            <div class="stats-item">
+                                <span class="stats-label">已領取：</span>
+                                <span class="stats-value stats-completed">{{ stats.completed }} 本</span>
+                            </div>
+                            <div class="stats-item">
+                                <span class="stats-label">已取消：</span>
+                                <span class="stats-value stats-cancelled">{{ stats.cancelled }} 本</span>
+                            </div>
+                            <div class="stats-item">
+                                <span class="stats-label">剩餘可預約：</span>
+                                <span class="stats-value stats-warning">{{ stats.remaining }} 本</span>
+                            </div>
+                        </div>
+                        <div class="stats-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" :style="{ width: progressPercentage + '%' }"></div>
+                            </div>
+                            <span class="progress-text">{{ stats.total }} / 10</span>
+                        </div>
+                        <div v-if="stats.total >= 10" class="stats-warning-message">
+                            ⚠️ 您已達到預約上限，無法再進行新的預約
                         </div>
                     </div>
 
@@ -322,6 +354,34 @@ const reservationBooks = ref([])
 const selectedBooks = ref([])
 const loading = ref(false)
 const error = ref(null)
+
+// 預約狀態統計
+const stats = computed(() => {
+    const pending = reservationBooks.value.filter(book =>
+        book.status === 'pending' || book.status === 'PENDING'
+    ).length
+    const completed = reservationBooks.value.filter(book =>
+        book.status === 'completed' || book.status === 'COMPLETED'
+    ).length
+    const cancelled = reservationBooks.value.filter(book =>
+        book.status === 'cancelled' || book.status === 'CANCELLED'
+    ).length
+    const total = pending + completed + cancelled
+    const remaining = Math.max(0, 10 - total)
+
+    return {
+        pending,
+        completed,
+        cancelled,
+        total,
+        remaining
+    }
+})
+
+// 進度條百分比
+const progressPercentage = computed(() => {
+    return Math.min(100, (stats.value.total / 10) * 100)
+})
 
 // 檢查登入狀態
 const checkLoginStatus = () => {
@@ -1375,5 +1435,149 @@ function handleRowClick(reservationId) {
 .batch-btn-reserve:hover:not(:disabled) {
     background: #1d4ed8;
     border-color: #1d4ed8;
+}
+
+/* 預約狀態面板樣式 */
+.reservation-stats-panel {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(229, 231, 235, 0.4);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 16px 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 100%;
+}
+
+.stats-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.stats-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+.stats-refresh-btn {
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.stats-refresh-btn:hover {
+    background: #1d4ed8;
+}
+
+.stats-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.stats-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(249, 250, 251, 0.8);
+    border-radius: 6px;
+    border: 1px solid rgba(229, 231, 235, 0.4);
+}
+
+.stats-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.stats-value {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.stats-pending {
+    color: #f59e0b;
+}
+
+.stats-completed {
+    color: #10b981;
+}
+
+.stats-cancelled {
+    color: #ef4444;
+}
+
+.stats-warning {
+    color: #dc2626;
+}
+
+.stats-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 6px;
+    background: rgba(229, 231, 235, 0.6);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #059669);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 0.85rem;
+    color: #6b7280;
+    font-weight: 500;
+    min-width: 50px;
+    text-align: right;
+}
+
+.stats-warning-message {
+    background: rgba(254, 226, 226, 0.8);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: #dc2626;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .stats-content {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .stats-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .stats-refresh-btn {
+        align-self: flex-end;
+    }
 }
 </style>
