@@ -491,7 +491,7 @@ function submitSearch() {
 /* .dropdown-item:active {
   background-color: tomato;
 } */
-*/ .search {
+.search {
   display: flex;
   align-items: center;
   border-bottom: 1px solid #444;
