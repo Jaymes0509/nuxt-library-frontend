@@ -48,17 +48,19 @@ async function handleReservationCancelled() {
 }
 
 async function loadSeats() {
-    // 查詢所有座位
     const res = await fetch('http://localhost:8080/api/seats/status')
     const allSeats = await res.json()
     console.log('🪑 所有座位:', allSeats)
 
-    // 查詢有未來預約的座位 seatLabel 陣列
     const reservedRes = await fetch('http://localhost:8080/api/seats/reservations/upcoming')
     const reservedLabels = await reservedRes.json()
     console.log('📌 有預約的座位:', reservedLabels)
 
-    // 合併資料，加上 hasReservation 屬性
+    if (!Array.isArray(reservedLabels)) {
+        console.error('❌ 預期 reservedLabels 應該是陣列，實際為:', reservedLabels)
+        return
+    }
+
     seats.value = allSeats.map(seat => ({
         ...seat,
         hasReservation: reservedLabels.includes(seat.seatLabel)

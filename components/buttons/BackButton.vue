@@ -31,4 +31,8 @@ const goBack = () => {
     cursor: pointer;
     font-size: large
 }
+
+.back-button:hover {
+    background-color: tomato
+}
 </style>

@@ -50,7 +50,7 @@
                 <form v-if="step === 2" @submit.prevent="submitForm" class="form">
                     <div class="form-group">
                         <label class="form-label">姓名：</label>
-                        <input v-model="form.name" required />
+                        <input v-model="form.name" autocomplete="on" required />
                     </div>
 
                     <div class="form-group">
@@ -413,6 +413,7 @@ const submitForm = async () => {
 
         submitted.value = true
         step.value = 3 // 顯示申請成功畫面
+        clearSavedForm() //  清除儲存資料
     } catch (error) {
         // 偵測是否為重複身分證或 email 錯誤
         const message = error?.data || error?.message || '申請失敗'
@@ -444,6 +445,7 @@ function resetForm() {
         phone: '',
         password: ''
     })
+    clearSavedForm() // 同時清除記憶資料
 }
 
 
@@ -455,6 +457,54 @@ watch(() => route.query.reset, (val) => {
         router.replace({ path: route.path })
     }
 })
+
+
+
+const FORM_STORAGE_KEY = 'libraryCardFormData'
+const STEP2_FLAG_KEY = 'hasEnteredStep2Once'
+
+//  表單變更時，自動儲存到 localStorage（僅限 step 2）
+watch(
+    form,
+    (newVal) => {
+        if (step.value === 2) {
+            localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(newVal))
+        }
+    },
+    { deep: true }
+)
+
+//  每次進入頁面就檢查（尤其是從其他頁跳回）
+watch(step, (newStep) => {
+    if (newStep === 2) {
+        const hasShown = sessionStorage.getItem(STEP2_FLAG_KEY)
+        const saved = localStorage.getItem(FORM_STORAGE_KEY)
+
+        if (!hasShown && saved) {
+            const shouldLoad = window.confirm('⚠️ 偵測到您有尚未完成的申請資料，要載入上次填寫的內容嗎？')
+            if (shouldLoad) {
+                try {
+                    const parsed = JSON.parse(saved)
+                    Object.assign(form, parsed)
+                } catch (e) {
+                    console.error('⚠️ 載入失敗：', e)
+                }
+            } else {
+                localStorage.removeItem(FORM_STORAGE_KEY)
+            }
+
+            sessionStorage.setItem(STEP2_FLAG_KEY, 'true')
+        }
+    }
+})
+
+
+
+function clearSavedForm() {
+    localStorage.removeItem(FORM_STORAGE_KEY)
+    sessionStorage.removeItem(STEP2_FLAG_KEY)
+}
+
 
 </script>
 
