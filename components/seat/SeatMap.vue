@@ -406,4 +406,12 @@ async function handleClick(label) {
     height: 100%;
     transform-origin: center center;
 }
+
+html.accessible-mode .door-label {
+    top: 0.6rem;
+}
+
+html.accessible-mode .confirm-button {
+    color: white;
+}
 </style>

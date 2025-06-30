@@ -88,7 +88,9 @@
           <label class="label">書籍分類：</label>
           <select v-model="selectedCategory" class="select">
             <option value="">全部分類</option>
-            <option v-for="cat in bookCategories" :key="cat" :value="cat">{{ cat }}</option>
+            <option v-for="cat in bookCategories" :key="cat.value" :value="cat.value">
+              {{ cat.label }}
+            </option>
           </select>
 
           <label class="label">時間篩選：</label>
@@ -108,9 +110,9 @@
         </div>
 
         <!-- 搜尋輸入框移至下方獨立列 -->
-        <div class="search-bar">
+        <!-- <div class="search-bar">
           <input type="text" v-model="searchKeyword" placeholder="輸入書名搜尋" class="select" style="width: 440px" />
-        </div>
+        </div> -->
       </div>
 
       <!-- 書籍清單 -->
@@ -499,9 +501,8 @@
 }
 </style>
 
-
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import axios from 'axios'
 const api = axios.create({
   baseURL: 'http://localhost:8080' // 🔧 請改成你的後端位置
@@ -533,8 +534,16 @@ function toggleExpand(index) {
 }
 
 const bookCategories = [
-  '總類', '哲學類', '宗教類', '科學類', '應用科學類', '社會科學類',
-  '史地類：中國史地', '史地類：世界史地', '語言文學類', '藝術類'
+  { label: '總類', value: 1 },
+  { label: '哲學類', value: 2 },
+  { label: '宗教類', value: 3 },
+  { label: '科學類', value: 4 },
+  { label: '應用科學類', value: 5 },
+  { label: '社會科學類', value: 6 },
+  { label: '史地類：中國史地', value: 7 },
+  { label: '史地類：世界史地', value: 8 },
+  { label: '語言文學類', value: 9 },
+  { label: '藝術類', value: 10 }
 ]
 
 const years = Array.from({ length: new Date().getFullYear() - 2020 + 1 }, (_, i) => 2020 + i)
@@ -563,7 +572,7 @@ async function fetchRankings() {
     }
 
     if (selectedCategory.value) {
-      params.category = selectedCategory.value
+      params.categoryId = selectedCategory.value
     }
     if (selectedPeriod.value === 'year' && selectedYear.value) {
       params.year = selectedYear.value
@@ -635,11 +644,6 @@ function goBackToSummary() {
   step.value = 'summary'
 }
 
-
-// const totalPages = computed(() => {
-//   return Math.ceil(rankedBooks.value.length / pageSize.value) || 1
-// })
-
 watch([selectedPeriod, selectedCategory, selectedYear, selectedMonth, searchKeyword], () => {
   currentPage.value = 1
   fetchRankings()
@@ -657,6 +661,5 @@ watch(currentPage, () => {
 onMounted(async () => {
   await fetchRankings()
 })
-
 
 </script>

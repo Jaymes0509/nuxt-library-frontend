@@ -25,13 +25,27 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { eventBus } from '@/utils/event-bus'
 
 const seats = ref([])
 
-onMounted(async () => {
-    await loadSeats()
+onMounted(() => {
+    loadSeats()
+
+    // 監聽全域事件「reservation-cancelled」
+    eventBus.on('reservation-cancelled', handleReservationCancelled)
 })
+
+onUnmounted(() => {
+    // 離開頁面時解除監聽，避免記憶體洩漏
+    eventBus.off('reservation-cancelled', handleReservationCancelled)
+})
+
+async function handleReservationCancelled() {
+    console.log('📢 收到 reservation-cancelled 事件 → 重新加載座位')
+    await loadSeats()
+}
 
 async function loadSeats() {
     // 查詢所有座位

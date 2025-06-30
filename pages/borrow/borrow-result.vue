@@ -14,12 +14,14 @@
             <div class="result-summary">
               <div v-if="success" class="success-icon">
                 <svg class="success-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div v-else class="error-icon">
                 <svg class="error-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <h2 class="result-status">{{ success ? '借書成功！' : '借書失敗' }}</h2>
@@ -147,7 +149,7 @@ const getBookAuthor = (bookId) => {
 
 // 導航函數
 const goToBorrowSearch = () => {
-  router.push('/borrow-search')
+  router.push('/borrow/borrow-search')
 }
 
 const goToBorrowManagement = () => {
@@ -164,19 +166,19 @@ onMounted(() => {
   if (route.query.success) {
     success.value = route.query.success === 'true'
   }
-  
+
   if (route.query.duration) {
     duration.value = route.query.duration
   }
-  
+
   if (route.query.location) {
     location.value = route.query.location
   }
-  
+
   if (route.query.method) {
     method.value = route.query.method
   }
-  
+
   if (route.query.books) {
     try {
       books.value = JSON.parse(route.query.books)
@@ -184,7 +186,7 @@ onMounted(() => {
       console.error('解析書籍資料失敗:', error)
     }
   }
-  
+
   if (route.query.results) {
     try {
       results.value = JSON.parse(route.query.results)
@@ -532,27 +534,27 @@ onMounted(() => {
   .borrow-info-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .book-result-item {
     flex-direction: column;
     gap: 12px;
   }
-  
+
   .book-status {
     text-align: left;
   }
-  
+
   .statistics {
     flex-direction: column;
     gap: 16px;
   }
-  
+
   .result-btn-area {
     flex-direction: column;
   }
-  
+
   .result-btn {
     width: 100%;
   }
 }
-</style> 
+</style>

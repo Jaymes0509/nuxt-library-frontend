@@ -45,8 +45,18 @@
           </li>
         </ul>
         <div v-if="isMobile" class="mobile-extra">
+          <!-- <div>
+            <button @click="toggleDropdown" class="lang-btn" title="語言">🌐 語言</button>
+            <ul v-if="showDropdown" class="lang-menu">
+              <li v-for="lang in languages" :key="lang.code" :title="lang.label">
+                <a href="#" class="dropdown-item" @click.prevent="selectLang(lang.code)">
+                  {{ lang.label }}
+                </a>
+              </li>
+            </ul>
+          </div> -->
           <div class="search">
-            <input type="text" v-model="query" placeholder="站內搜尋" class="search-input" @keyup.enter="submitSearch" />
+            <input type="text" v-model="keyword" placeholder="站內搜尋" class="search-input" @keyup.enter="submitSearch" />
             <button class="search-icon" @click="submitSearch">🔍</button>
           </div>
           <div class="login-status">
@@ -67,49 +77,43 @@
         </div>
       </div>
 
-      <!-- <div class="icons">
-        <img src="/yt.png" alt="YouTube" />
-        <img src="/line.png" alt="Line" />
-        <img src="/ig.png" alt="Instagram" />
-        <img src="/fb.png" alt="Facebook" />
-      </div> -->
       <!-- 語言切換選單 -->
-      <div v-if="!isMobile" class="top-right">
-        <div class="search">
-          <input type="text" v-model="query" placeholder="站內搜尋" class="search-input" @keyup.enter="submitSearch" />
-          <button class="search-icon" @click="submitSearch">
-            🔍
-          </button>
-        </div>
+      <!-- <div v-if="!isMobile" class="top-right">
+        <div>
+          <button @click="toggleDropdown" class="lang-btn" title="語言">🌐 語言</button>
+          <ul v-if="showDropdown" class="lang-menu">
+            <li v-for="lang in languages" :key="lang.code" :title="lang.label">
+              <a href="#" class="dropdown-item" @click.prevent="selectLang(lang.code)">
+                {{ lang.label }}
+              </a>
+            </li>
+          </ul>
+        </div> -->
 
-        <!-- 登入狀態顯示器 -->
-        <div class="login-status" v-if="isLoggedIn">
-          <div class="user-info" @click="toggleUserMenu" :aria-expanded="showUserMenu">
-            <img src="/public/images/user.png" alt="User Icon" class="user-avatar-img" />
-            <span class="user-name">{{ userInfo.name || '會員' }}</span>
-            <span class="user-menu-arrow">{{ showUserMenu ? '▲' : '▼' }}</span>
-            <div v-if="showUserMenu" class="user-menu" @click.stop>
-              <div class="user-menu-header">
-                <span class="user-role">{{ userInfo.role === 'admin' ? '管理員' : '一般會員' }}</span>
-              </div>
-              <NuxtLink :to="`/member/${userInfo.id}`" class="user-menu-item">👤 個人資訊</NuxtLink>
-              <button @click="logout" class="user-menu-item">
-                🚪 登出
-              </button>
-            </div>
-          </div>
-        </div>
-        <NuxtLink v-else to="/login" class="login-btn">登入</NuxtLink>
+      <div class="search">
+        <input type="text" v-model="keyword" placeholder="站內搜尋" class="search-input" @keyup.enter="submitSearch" />
+        <button class="search-icon" @click="submitSearch">
+          🔍
+        </button>
       </div>
 
-      <!-- <div class="search">
-      <input type="text" v-model="query" placeholder="站內搜尋" class="search-input" @keyup.enter="submitSearch" />
-      <button class="search-icon" @click="submitSearch">
-        🔍
-      </button>
-    </div> -->
-
-      <!-- <NuxtLink to="/login" class="login-btn">登入</NuxtLink> -->
+      <!-- 登入狀態顯示器 -->
+      <div class="login-status" v-if="isLoggedIn">
+        <div class="user-info" @click="toggleUserMenu" :aria-expanded="showUserMenu">
+          <img src="/public/images/user.png" alt="User Icon" class="user-avatar-img" />
+          <span class="user-name">{{ userInfo.name || '會員' }}</span>
+          <span class="user-menu-arrow">{{ showUserMenu ? '▲' : '▼' }}</span>
+          <div v-if="showUserMenu" class="user-menu" @click.stop>
+            <div class="user-menu-header">
+              <span class="user-role">{{ userInfo.role === 'admin' ? '管理員' : '一般會員' }}</span>
+            </div>
+            <NuxtLink :to="`/member/${userInfo.id}`" class="user-menu-item">👤 個人資訊</NuxtLink>
+            <button @click="logout" class="user-menu-item">
+              🚪 登出
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </template>
 
@@ -160,15 +164,15 @@ const toggleUserMenu = () => {
 const closeMenus = (event) => {
   const target = event.target
   const isUserInfo = target.closest('.user-info')
-  // const isLangMenu = target.closest('.lang-btn, .lang-menu')
+  // // const isLangMenu = target.closest('.lang-btn, .lang-menu')
 
   if (!isUserInfo) {
     showUserMenu.value = false
   }
 
-  // if (!isLangMenu) {
-  //   showDropdown.value = false
-  // }
+  // // if (!isLangMenu) {
+  // //   showDropdown.value = false
+  // // }
 }
 
 // 檢查登入狀態
@@ -213,16 +217,16 @@ const logout = () => {
   router.push('/')
 }
 
-// const languages = [
-//   { code: 'zh-tw', label: '繁體中文' },
-//   { code: 'en', label: 'English' },
-//   { code: 'ja', label: '日本語' }
-// ]
+// // const languages = [
+// //   { code: 'zh-tw', label: '繁體中文' },
+// //   { code: 'en', label: 'English' },
+// //   { code: 'ja', label: '日本語' }
+// // ]
 
-// function selectLang(code) {
-//   // 暫時移除 i18n 功能
-//   showDropdown.value = false
-// }
+// // function selectLang(code) {
+// //   // 暫時移除 i18n 功能
+// //   showDropdown.value = false
+// // }
 
 defineProps({
   title: {
@@ -315,17 +319,17 @@ const closeMenu = () => {
 let links = [
   { label: '首頁', href: '/' },
   { label: '網站導覽', href: '' },
-  { label: '開放時間', href: '/opening-hours' },
+  { label: '開放時間', href: '/introduction/opening-hours' },
   { label: '意見信箱', href: '/feedback' },
   { label: '無障礙專區', href: '' }]
 
-const query = ref('')
 const router = useRouter()
+const keyword = ref('')
 
-const submitSearch = () => {
-  if (query.value.trim()) {
-    router.push(`/search?q=${encodeURIComponent(query.value.trim())}`)
-  }
+function submitSearch() {
+  const trimmed = keyword.value.trim()
+  if (!trimmed) return
+  router.push(`/search?keyword=${encodeURIComponent(trimmed)}`)
 }
 </script>
 
@@ -437,17 +441,20 @@ const submitSearch = () => {
 }
 
 /* .lang-btn {
+  position: relative;
+  display: inline-block;
   background: none;
   border: none;
   cursor: pointer;
   font-size: 1.25rem;
   padding: 4px 8px;
-}
+} */
 
-.lang-menu {
+/* .lang-menu {
   list-style: none;
   position: absolute;
   margin-top: 6px;
+
   transform: translateX(-10%);
   flex-direction: column;
   background: white;
@@ -456,37 +463,40 @@ const submitSearch = () => {
   z-index: 20;
   min-width: 95px;
   padding: 0;
-}
+} */
 
-.lang-btn:hover {
+/* .lang-btn:hover {
   background-color: lightgray;
   border-radius: 3rem;
-}
+} */
 
-.dropdown-item {
+/* .dropdown-item {
   display: block;
+  width: 100%;
   text-align: center;
   left: 0;
+  
+  margin: 0 auto;
   color: black;
   padding: 8px 12px;
   font-size: 1.25rem;
   text-decoration: none;
   border: none;
-}
-
-.dropdown-item:hover {
-  background-color: skyblue;
-}
-
-.dropdown-item:active {
-  background-color: tomato;
 } */
 
-.search {
+/* .dropdown-item:hover {
+  background-color: skyblue;
+} */
+
+/* .dropdown-item:active {
+  background-color: tomato;
+} */
+*/ .search {
   display: flex;
   align-items: center;
   border-bottom: 1px solid #444;
   padding: 4px;
+  width: 15%;
 }
 
 .search-input {
@@ -497,11 +507,6 @@ const submitSearch = () => {
   background: transparent;
   font-size: 1rem;
   width: 100%;
-}
-
-.search span {
-  margin-left: 0.5rem;
-  font-size: 1.25rem;
 }
 
 .login-btn,
@@ -585,17 +590,22 @@ const submitSearch = () => {
   }
 }
 
+/* 預設桌面版隱藏 menu-toggle */
+.menu-toggle {
+  display: none;
+}
+
 @media screen and (max-width: 767px) {
-  .menu-toggle {
+  /* .menu-toggle {
     display: none !important;
-  }
+  } */
 
   .menu-toggle {
     display: flex !important;
     position: fixed;
     top: 16px;
     right: 16px;
-    z-index: 10000;
+    z-index: 5000;
     background: transparent;
     border: none;
     padding: 0;
@@ -709,9 +719,9 @@ const submitSearch = () => {
     position: static;
     margin-top: 0.5rem;
     width: 100%;
-  }
+  } */
 
-  .dropdown-item {
+  /* .dropdown-item {
     padding: 12px;
   } */
 
@@ -866,12 +876,12 @@ const submitSearch = () => {
 .user-menu-item {
   width: 100%;
   padding: 6px 12px;
-  background: #2563eb;
+  background: white;
   border: none;
   text-align: center;
   cursor: pointer;
   font-size: 0.8rem;
-  color: #fff;
+  color: black;
   border-radius: 6px;
   transition: background 0.2s;
   display: flex;

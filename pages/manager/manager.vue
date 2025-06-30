@@ -25,6 +25,16 @@ const router = useRouter()
                         違規紀錄
                     </button>
                 </NuxtLink>
+                <NuxtLink to="/manager/feedback">
+                    <button class="px-6 py-3 bg-primary text-white rounded-lg shadow hover:bg-primary/80 transition">
+                        意見回覆
+                    </button>
+                </NuxtLink>
+                <NuxtLink to="/manager/seat-management">
+                    <button class="px-6 py-3 bg-primary text-white rounded-lg shadow hover:bg-primary/80 transition">
+                        座位管理
+                    </button>
+                </NuxtLink>
             </div>
             <NuxtPage />
         </div>
