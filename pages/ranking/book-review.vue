@@ -34,7 +34,8 @@
 
     <div v-if="step === 'write' && actionMode === null">
       <h2 class="feature-card-title" style="margin-bottom: 1rem;">請選擇操作類型</h2>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; max-width: 960px; margin: 0 auto;">
+      <div
+        style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; max-width: 860px; width: 100%; margin: 0 auto; padding: 0 2rem;">
         <div class="book-card" @click="actionMode = 'new'">
           <h3 class="book-title">✍ 撰寫新的書評</h3>
           <p class="book-author">針對您尚未評論過的書籍新增書評</p>
@@ -106,35 +107,38 @@
     </div>
 
     <!-- 第二層 閱讀書評 -->
-    <div v-if="step === 'read'" style="max-width: 960px; margin: 0 auto; text-align: left;">
+    <div v-if="step === 'read'" style="max-width: 768px; margin: 0 auto; text-align: left;">
       <button v-if="step === 'read'" @click="step = null" class="back-button">
         ← 返回
       </button>
 
-      <div class="form-group"
-        style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-bottom: 1.5rem;">
-        <label>分類：</label>
-        <select v-model="categoryFilter">
-          <option value="">全部</option>
-          <option value="總類">總類</option>
-          <option value="哲學類">哲學類</option>
-          <option value="宗教類">宗教類</option>
-          <option value="科學類">科學類</option>
-          <option value="應用科學類">應用科學類</option>
-          <option value="社會科學類">社會科學類</option>
-          <option value="史地類：中國史地">史地類：中國史地</option>
-          <option value="史地類：世界史地">史地類：世界史地</option>
-          <option value="語言文學類">語言文學類</option>
-          <option value="藝術類">藝術類</option>
-        </select>
-
-        <label>搜尋書名：</label>
-        <input v-model="searchKeyword" type="text" placeholder="輸入書名關鍵字" />
+      <!-- ✅ 替換後：雙欄排列 -->
+      <div class="form-group dual-column" style="margin-bottom: 1.5rem;">
+        <div class="form-item">
+          <label>分類：</label>
+          <select v-model="categoryFilter" class="form-control">
+            <option value="">全部</option>
+            <option value="總類">總類</option>
+            <option value="哲學類">哲學類</option>
+            <option value="宗教類">宗教類</option>
+            <option value="科學類">科學類</option>
+            <option value="應用科學類">應用科學類</option>
+            <option value="社會科學類">社會科學類</option>
+            <option value="史地類：中國史地">史地類：中國史地</option>
+            <option value="史地類：世界史地">史地類：世界史地</option>
+            <option value="語言文學類">語言文學類</option>
+            <option value="藝術類">藝術類</option>
+          </select>
+        </div>
+        <div class="form-item">
+          <label>搜尋書名：</label>
+          <input v-model="searchKeyword" type="text" placeholder="輸入書名關鍵字" class="form-control" />
+        </div>
       </div>
 
       <h2 class="feature-card-title">搜尋結果</h2>
       <div v-if="searchedBooks.length === 0" class="book-author">找不到符合條件的書籍</div>
-      <div v-for="book in searchedBooks" :key="book.id" class="book-card">
+      <div v-for="book in searchedBooks" :key="book.id" class="recommend-card">
         <h3 class="book-title">{{ book.title }}</h3>
         <p class="book-author">作者：{{ book.author }}</p>
         <button class="book-link" @click="viewBookReviews(book)">查看書評</button>
@@ -146,24 +150,25 @@
         <button :disabled="currentPage === searchPageInfo.totalPages" @click="() => currentPage++">下一頁</button>
       </div>
 
+      <hr class="section-divider" />
       <h2 class="feature-card-title" style="margin-top: 2rem;">隨機推薦書籍</h2>
       <div v-if="randomBooks.length === 0" class="book-author">目前沒有隨機書籍</div>
-      <div v-for="book in randomBooks" :key="book.id" class="book-card">
+      <div v-for="book in randomBooks" :key="book.id" class="recommend-card">
         <h3 class="book-title">{{ book.title }}</h3>
         <p class="book-author">作者：{{ book.author }}</p>
         <button class="book-link" @click="viewBookReviews(book)">查看書評</button>
       </div>
     </div>
 
+
     <!-- 第四層 單本書的所有書評 -->
     <div v-if="step === 'bookReviews'" style="max-width: 768px; margin: 0 auto; text-align: left;">
       <button class="back-button" @click="returnToPreviousStepAndReset">← 返回上一層</button>
       <h2 class="feature-card-title" style="margin-top: 1rem;">{{ selectedBook.title }} 的書評</h2>
 
-      <div class="form-group"
-        style="display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
-        <label>排序：</label>
-        <select v-model="sortReviewOption">
+      <div class="review-sort-bar">
+        <label for="sortReviewOption">排序：</label>
+        <select id="sortReviewOption" v-model="sortReviewOption">
           <option value="latest">最新時間</option>
           <option value="likes">點讚數</option>
         </select>
@@ -221,7 +226,6 @@
 
 <style scoped>
 .page-container {
-  background-color: white;
   padding: 2rem;
   width: 100%;
   text-align: center;
@@ -301,6 +305,7 @@
 }
 
 .book-card {
+  background-color: rgba(255, 255, 255, 0.7);
   border: 1px solid #ccc;
   border-radius: 0.5rem;
   padding: 1rem;
@@ -406,8 +411,62 @@ input[type="text"] {
   margin-bottom: 1rem;
   gap: 0.5rem;
 }
-</style>
 
+.recommend-card {
+  background-color: rgba(255, 255, 255, 0.7);
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  box-sizing: border-box;
+  max-width: 768px;
+  width: 100%;
+  overflow: hidden;
+  word-wrap: break-word;
+}
+
+.recommend-card .book-title {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.dual-column {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  align-items: center;
+}
+
+.form-item {
+  flex: 1 1 300px;
+  min-width: 250px;
+  max-width: 360px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+.review-sort-bar {
+  max-width: 768px;
+  width: 100%;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.review-sort-bar select {
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 0.375rem;
+}
+</style>
 
 <script setup>
 import { ref, computed, onMounted, toRaw, nextTick } from 'vue'
@@ -683,6 +742,7 @@ const deleteReview = async review => {
 const enrichReviewsWithLikes = async () => {
   for (const review of allReviews.value) {
     const commentId = review.commentId || review.id
+    console.log('📌 檢查 commentId 與 userId:', commentId, userId.value)
 
     try {
       const res1 = await fetch(`http://localhost:8080/api/comment/${commentId}/like-count`)
@@ -694,7 +754,10 @@ const enrichReviewsWithLikes = async () => {
     if (userId.value) {
       try {
         const res2 = await fetch(`http://localhost:8080/api/comment/${commentId}/liked?userId=${userId.value}`)
-        review.liked = await res2.json()
+        const likedResult = await res2.json()
+        // ✅ 防錯：處理 true、false 或 { liked: true } 形式
+        review.liked = likedResult === true || likedResult.liked === true
+        console.log(`👍 書評 ${commentId} 使用者是否點讚：`, review.liked)
       } catch {
         review.liked = false
       }
