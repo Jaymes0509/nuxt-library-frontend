@@ -180,14 +180,15 @@ async function saveMemberDetail() {
     max-width: 700px;
     min-width: 320px;
     margin: 32px auto 0 auto;
-    padding: 32px 24px 100px 24px;
+    padding: 32px 24px 80px 24px;
     background: #fff;
     border-radius: 18px;
     box-shadow: 0 2px 12px #0001;
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-height: 80vh;
+    max-height: 80vh;
+    overflow-y: auto;
     box-sizing: border-box;
     flex: 1 0 auto;
 }
@@ -246,6 +247,8 @@ async function saveMemberDetail() {
     align-items: center;
     margin-bottom: 10px;
     font-size: 1rem;
+    flex-wrap: wrap;
+    gap: 8px 0;
 }
 
 .card-content .info-row span,
@@ -255,7 +258,8 @@ async function saveMemberDetail() {
     font-weight: 500;
 }
 
-.card-content input {
+.card-content input,
+.card-content select {
     flex: 1;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
@@ -263,15 +267,6 @@ async function saveMemberDetail() {
     font-size: 1rem;
     margin-left: 8px;
     background: #f9fafb;
-}
-
-.card-content .edit-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-    font-size: 1rem;
-    flex-wrap: wrap;
-    gap: 8px 0;
 }
 
 .card-content .edit-row input {
@@ -292,6 +287,7 @@ async function saveMemberDetail() {
     width: 100%;
     justify-content: space-between;
     margin-top: 12px;
+    margin-bottom: 0;
 }
 
 .save-btn,
@@ -348,14 +344,21 @@ async function saveMemberDetail() {
     margin-left: 0;
 }
 
+.address-row input:last-of-type {
+    flex: 1 1 200px;
+    max-width: none;
+}
+
 @media (max-width: 600px) {
     .member-center {
         max-width: 100vw;
         min-width: 0;
-        padding: 12px 2vw 100px 2vw;
+        padding: 12px 2vw 80px 2vw;
         border-radius: 0;
         box-shadow: none;
         margin: 0;
+        max-height: calc(100vh - 120px);
+        overflow-y: auto;
     }
 
     .card {
