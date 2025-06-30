@@ -13,17 +13,17 @@
         <div class="card-header-wrapper">
           <button class="card-header" @click="step = type">
             {{
-              type === 'reservation' ? '預約次數' :
-                type === 'borrow' ? '借閱次數' :
-                  '評分高低'
+              type === 'reservation' ? '🔍 查看詳細' :
+                type === 'borrow' ? '🔍 查看詳細' :
+                  '🔍 查看詳細'
             }}
           </button>
         </div>
         <h2 class="card-title">
           {{
-            type === 'reservation' ? '預約次數排行榜(總和)' :
-              type === 'borrow' ? '借閱次數排行榜(總和)' :
-                '評分高低排行榜(總和)'
+            type === 'reservation' ? '✨ 最受矚目' :
+              type === 'borrow' ? '📖 最常翻閱' :
+                '🏆 口碑精選'
           }}
         </h2>
         <ol class="ranking-list">
@@ -47,10 +47,6 @@
                           : '無評分' }}
                       </span>
                     </div>
-                  </template>
-                  <template v-else>
-                    {{ type === 'reservation' ? '預約次數：' : '借閱次數：' }}
-                    <span class="stat-count">{{ book.statCount || '' }}</span>
                   </template>
                 </div>
               </div>
@@ -76,9 +72,9 @@
     <div v-else class="detail-container">
       <h2 class="subtitle center">
         {{
-          step === 'borrow' ? '📘 借閱排行榜詳細' :
-            step === 'reservation' ? '📗 預約排行榜詳細' :
-              '📙 評分排行榜詳細'
+          step === 'borrow' ? '📖 最常翻閱詳細榜單' :
+            step === 'reservation' ? '✨ 最受矚目詳細榜單' :
+              '🏆 口碑精選詳細榜單'
         }}
       </h2>
 
@@ -108,11 +104,6 @@
             <option v-for="month in months" :key="month" :value="month">{{ month }} 月</option>
           </select>
         </div>
-
-        <!-- 搜尋輸入框移至下方獨立列 -->
-        <!-- <div class="search-bar">
-          <input type="text" v-model="searchKeyword" placeholder="輸入書名搜尋" class="select" style="width: 440px" />
-        </div> -->
       </div>
 
       <!-- 書籍清單 -->
@@ -132,12 +123,9 @@
                   <span>{{ book.averageRating !== undefined && book.averageRating !== null ?
                     book.averageRating.toFixed(1) : '無評分' }}</span>
                 </div>
-                <div>評論數：<span>{{ book.statCount ?? 0 }}</span></div>
+                <!-- <div>評論數：<span>{{ book.statCount ?? 0 }}</span></div> -->
               </template>
-              <template v-else>
-                {{ step === 'borrow' ? '借閱次數：' : step === 'reservation' ? '預約次數：' : '' }}
-                <span class="stat-count">{{ book.statCount || 0 }}</span>
-              </template>
+
               <!-- ✅ 書籍簡介（適用於三種排行榜） -->
               <div class="book-description" v-if="book.description">
                 <strong>簡介：</strong>
@@ -152,7 +140,6 @@
           </div>
         </li>
       </ol>
-
 
       <!-- 分頁與每頁顯示設定 -->
       <div class="pagination">
@@ -194,14 +181,19 @@
 
 .summary-cards {
   display: flex;
-  justify-content: space-between;
-  gap: 1.5rem;
-  margin-bottom: 3rem;
+  justify-content: center;
+  /* ✅ 重點：置中排列 */
   flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 2rem auto;
+  max-width: 1080px;
+  /* ✅ 最大寬度避免全螢幕撐太開 */
+  padding: 0 1rem;
+  /* ✅ 小螢幕保留左右內距 */
 }
 
 .grouped-card {
-  background-color: #f9f9f9;
+  background-color: rgba(255, 255, 255, 0.7);
   border: 2px solid #ddd;
   padding: 1.5rem;
   border-radius: 0.75rem;
@@ -407,7 +399,7 @@
 }
 
 .detail-card {
-  background-color: #f5f8ff;
+  background-color: rgba(255, 255, 255, 0.7);
   border: 1px solid #d0d0d0;
   border-radius: 10px;
   padding: 1rem;
