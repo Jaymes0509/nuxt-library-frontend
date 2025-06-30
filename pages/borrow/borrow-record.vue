@@ -5,7 +5,7 @@
         <h1 class="history-title">借書清單</h1>
 
         <!-- 登入檢查 -->
-        <LoginRequiredPrompt v-if="!isLoggedIn" />
+        <LoginRequiredPrompt v-if="!isLoggedIn" message="您需要登入才能使用借書功能" />
 
         <!-- 借書清單內容（只有登入後才顯示） -->
         <div v-else class="history-main">
@@ -341,7 +341,7 @@ const toggleSelectAll = () => {
 // ===== 導航函數 =====
 const viewBookDetail = (book) => {
   router.push({
-    path: '/borrow-bookinfo',
+    path: '/borrow/borrow-bookinfo',
     query: {
       id: book.id,
       isbn: book.isbn,
@@ -359,7 +359,7 @@ const viewBookDetail = (book) => {
 }
 
 const goToSearch = () => {
-  router.push('/borrow-search')
+  router.push('/borrow/borrow-search')
 }
 
 const batchBorrow = async () => {

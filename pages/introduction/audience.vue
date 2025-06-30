@@ -5,10 +5,10 @@
                 <img src="public\images\audience.png" alt="讀者" />
                 <h1>服務對象</h1>
             </div>
-            <img src="https://images.unsplash.com/photo-1576164285450-6d26c5b1a2a6?q=80&w=2071&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="圖書館讀者" />
+            <img src="https://images.unsplash.com/photo-1576164285450-6d26c5b1a2a6?q=80&w=2071&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                alt="圖書館讀者" />
             <p class="description">
-                國立公共資訊圖書館創立於1955年，為全國指標性圖書館之一，致力於推廣閱讀、資訊素養教育與數位服務。
-                館藏豐富多元，涵蓋圖書、期刊、報紙、視聽資料與數位資源，提供市民終身學習與知識探索的空間。
+                本圖書館平台服務對象包括 一般民眾、在學學生與教師、兒童與青少年、年長者及身心障礙者、研究人員，以及機關團體申請者。本館致力於打造一個兼具資訊豐富與友善互動的智慧圖書空間，滿足不同族群的閱讀與學習需求。
             </p>
 
             <!-- <img src="/images/library-building.jpg" alt="圖書館外觀" class="intro-image" /> -->
@@ -45,11 +45,11 @@
 }
 
 .audience img {
-  max-width: 800px;
-  width: 100%;
-  height: 70%;
-  margin: 1rem 0;
-  border-radius: 30px;
+    max-width: 800px;
+    width: 100%;
+    height: 70%;
+    margin: 1rem 0;
+    border-radius: 30px;
 }
 
 

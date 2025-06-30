@@ -44,7 +44,8 @@
 
       <!-- 動作區域 -->
       <div class="action-area">
-        <button class="reserve-btn" @click="addToBorrowList" :disabled="!book.is_available || isInBorrowList(book.bookId || book.id)"
+        <button class="reserve-btn" @click="addToBorrowList"
+          :disabled="!book.is_available || isInBorrowList(book.bookId || book.id)"
           :class="{ 'disabled': !book.is_available || isInBorrowList(book.bookId || book.id) }">
           {{ getBorrowButtonText() }}
         </button>
@@ -54,8 +55,7 @@
       </div>
     </div>
   </div>
-  <CustomAlert :show="customAlert.show" :title="customAlert.title" :message="customAlert.message"
-    @close="closeAlert" />
+  <CustomAlert :show="customAlert.show" :title="customAlert.title" :message="customAlert.message" @close="closeAlert" />
 </template>
 
 <script setup>
@@ -105,7 +105,7 @@ onMounted(async () => {
     console.log('URL 參數中的 imgUrl：', route.query.imgUrl)
 
     book.value = data
-    
+
     // 載入借書清單
     loadBorrowList()
   } catch (error) {
@@ -141,7 +141,7 @@ const loadBorrowList = () => {
   console.log('開始載入借書清單')
   const savedList = localStorage.getItem('borrowList')
   console.log('從 localStorage 讀取的原始資料:', savedList)
-  
+
   if (savedList) {
     try {
       borrowList.value = JSON.parse(savedList)
@@ -168,16 +168,16 @@ const isInBorrowList = (bookId) => {
     console.log('書籍ID為空，不在借書清單中')
     return false
   }
-  
+
   // 檢查借書清單是否為空
   if (!borrowList.value || borrowList.value.length === 0) {
     console.log('借書清單為空')
     return false
   }
-  
+
   // 轉換ID為字串進行比較，避免類型不匹配
   const targetId = String(bookId)
-  
+
   // 檢查是否有匹配的書籍
   const found = borrowList.value.some(book => {
     const bookIdStr = String(book.id)
@@ -185,7 +185,7 @@ const isInBorrowList = (bookId) => {
     console.log(`比較: ${bookIdStr} === ${targetId} = ${isMatch}`)
     return isMatch
   })
-  
+
   console.log(`書籍ID ${targetId} 在借書清單中: ${found}`)
   return found
 }
@@ -196,20 +196,20 @@ const getBorrowButtonText = () => {
   console.log('書籍資訊:', book.value)
   console.log('書籍ID:', book.value.id)
   console.log('書籍可用性:', book.value.is_available)
-  
+
   if (!book.value.is_available) {
     console.log('書籍不可借閱，返回「無法借閱」')
     return '無法借閱'
   }
-  
+
   const inList = isInBorrowList(book.value.bookId || book.value.id)
   console.log('是否在借書清單中:', inList)
-  
+
   if (inList) {
     console.log('返回「已加入借書清單」')
     return '已加入借書清單'
   }
-  
+
   console.log('返回「加入借書清單」')
   return '加入借書清單'
 }
@@ -217,7 +217,7 @@ const getBorrowButtonText = () => {
 const goBack = () => {
   // 如果來自借書清單，返回借書清單頁面
   if (route.query.from === 'borrow-list') {
-    router.push('/borrow-record')
+    router.push('/borrow/borrow-record')
     return
   }
 
@@ -225,7 +225,7 @@ const goBack = () => {
   const query = {
     q: route.query.returnQuery,
     page: route.query.returnPage,
-    from: 'borrow-bookinfo',
+    from: '/borrow/borrow-bookinfo',
     returnType: route.query.returnType
   }
 
@@ -235,7 +235,7 @@ const goBack = () => {
   if (route.query.yearTo) query.yearTo = route.query.yearTo
 
   router.push({
-    path: '/borrow-search',
+    path: '/borrow/borrow-search',
     query
   })
 }
@@ -444,4 +444,4 @@ useHead({
 .back-btn:hover {
   background-color: #cbd5e0;
 }
-</style> 
+</style>
