@@ -14,7 +14,8 @@
 
                         <ul v-if="item.children && open[item.label]" class="submenu">
                             <li v-for="child in item.children" :key="child.label">
-                                <NuxtLink v-if="child.href" :to="child.href" :title="child.label" class="submenu-link">
+                                <NuxtLink v-if="child.href" :to="generateLink(child.href)" :title="child.label"
+                                    class="submenu-link">
                                     {{ child.label }}
                                 </NuxtLink>
                             </li>
@@ -34,6 +35,8 @@
 <script setup>
 import { useAuth } from '~/composables/useAuth'
 import { computed, reactive, ref } from 'vue'
+import { generateLink } from '@/composables/useNavigation'
+
 
 const { user } = useAuth()
 
@@ -56,20 +59,20 @@ const menuItems = computed(() => {
         {
             label: '認識本館',
             children: [
-                { label: '本館簡介', href: '/about' },
-                { label: '服務對象', href: '/audience' },
+                { label: '本館簡介', href: '/introduction/about' },
+                { label: '服務對象', href: '/introduction/audience' },
                 { label: '空間設施', href: '#' },
-                { label: '開放時間', href: '/opening-hours' },
-                { label: '本館位置', href: '/location' }
+                { label: '開放時間', href: '/introduction/opening-hours' },
+                { label: '本館位置', href: '/introduction/location' }
             ]
         },
-        {
-            label: '活動消息',
-            children: [
-                { label: '最新活動', href: '#' },
-                { label: '活動報名', href: '#' }
-            ]
-        },
+        // {
+        //     label: '活動消息',
+        //     children: [
+        //         { label: '最新活動', href: '#' },
+        //         { label: '活動報名', href: '#' }
+        //     ]
+        // },
         {
             label: '館藏查詢',
             children: [
@@ -86,26 +89,25 @@ const menuItems = computed(() => {
         {
             label: '讀者服務',
             children: [
-                { label: '借書查詢', href: '/borrow-search' },
-                { label: '我要借書', href: '/borrow-record' },
-                { label: '我要續借', href: '/borrow-continue' }
+                { label: '借書查詢', href: '/borrow/borrow-search' },
+                { label: '我要借書', href: '/borrow/borrow-record' },
+                { label: '我要續借', href: '/borrow/borrow-continue' }
 
             ]
         },
         {
             label: '申請服務',
             children: [
-                { label: '借閱證申請', href: '/card-application' },
-                { label: '自習座位預約', href: 'seat-reservation' },
-                { label: '場地租借', href: '#' },
-                { label: '書籍薦購', href: '#' }
+                { label: '借閱證申請', href: '/application/card-application' },
+                { label: '自習座位預約', href: '/application/seat-reservation' },
+                { label: '書籍薦購', href: '/application/book-recommendation' }
             ]
         },
         {
             label: '排行榜 & 評論',
             children: [
-                { label: '借閱排行榜', href: '/borrowing-rankings' },
-                { label: '讀者書評', href: '/book-review' }
+                { label: '借閱排行榜', href: '/ranking/borrowing-rankings' },
+                { label: '讀者書評', href: '/ranking/book-review' }
             ]
         }
     ]
@@ -114,15 +116,45 @@ const menuItems = computed(() => {
         items.push({
             label: '管理者專區',
             children: [
-                { label: '管理者專區', href: '/manager' },
+                { label: '管理者專區', href: '/manager/manager' },
                 { label: '書籍管理', href: '/manager/books' },
                 { label: '帳號管理', href: '/manager/accounts' },
-                { label: '違規紀錄', href: '/manager/violations' }
+                { label: '違規紀錄', href: '/manager/violations' },
+                { label: '意見回覆', href: '/manager/feedback' },
+                { label: '座位管理', href: '/manager/seat-management' }
             ]
         })
     }
     return items
 })
+
+// function generateLink(href) {
+//     // 檢查哪些頁面需要 reset query（有 step 流程）
+//     const pagesNeedReset = ['/card-application', '/seat-reservation', '/book-recommendation']
+
+//     // 若 href 是物件，合併 query
+//     if (typeof href === 'object' && href.path && pagesNeedReset.includes(href.path)) {
+//         return {
+//             ...href,
+//             query: {
+//                 ...(href.query || {}),
+//                 reset: 'true'
+//             }
+//         }
+//     }
+
+//     // 若 href 是字串
+//     if (typeof href === 'string' && pagesNeedReset.includes(href)) {
+//         return {
+//             path: href,
+//             query: { reset: 'true' }
+//         }
+//     }
+
+//     // 若本來就是帶 query 的 object，就保留它
+//     return href
+// }
+
 </script>
 
 <style scoped>

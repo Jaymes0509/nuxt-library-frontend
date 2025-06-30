@@ -258,9 +258,11 @@ const reservationList = ref([])
 onMounted(async () => {
     // 取得目前用戶的預約清單
     try {
-        const response = await reservationAPI.getReservationList(1)
+        // 不傳入 userId，讓後端從 token 中獲取用戶資訊
+        const response = await reservationAPI.getReservationList()
         reservationList.value = response.data || []
     } catch (e) {
+        console.log('載入預約清單失敗，使用空清單：', e)
         reservationList.value = []
     }
 })

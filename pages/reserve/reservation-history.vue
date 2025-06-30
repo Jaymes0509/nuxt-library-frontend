@@ -17,8 +17,6 @@
                                 <select v-model="itemsPerPage" class="history-select pretty-select-page">
                                     <option v-for="size in pageSizes" :key="size" :value="size">{{ size }} 筆</option>
                                 </select>
-                            </div>
-                            <div class="history-row">
                                 <span class="history-label">排序：</span>
                                 <select v-model="sortConfig.field" class="history-select pretty-select">
                                     <option value="title">書名</option>
@@ -39,6 +37,40 @@
                                 :class="['history-view-btn', viewMode === 'grid' ? 'history-view-btn-active' : '']">
                                 網格
                             </button>
+                        </div>
+                    </div>
+                    <!-- 預約狀態面板 -->
+                    <div class="reservation-stats-panel">
+                        <div class="stats-header">
+                            <h3 class="stats-title">預約狀態</h3>
+                            <button class="stats-refresh-btn" @click="fetchReservations">🔄 重新整理</button>
+                        </div>
+                        <div class="stats-content">
+                            <div class="stats-item">
+                                <span class="stats-label">待領取：</span>
+                                <span class="stats-value stats-pending">{{ stats.pending }} 本</span>
+                            </div>
+                            <div class="stats-item">
+                                <span class="stats-label">已領取：</span>
+                                <span class="stats-value stats-completed">{{ stats.completed }} 本</span>
+                            </div>
+                            <div class="stats-item">
+                                <span class="stats-label">已取消：</span>
+                                <span class="stats-value stats-cancelled">{{ stats.cancelled }} 本</span>
+                            </div>
+                            <div class="stats-item">
+                                <span class="stats-label">剩餘可預約：</span>
+                                <span class="stats-value stats-warning">{{ stats.remaining }} 本</span>
+                            </div>
+                        </div>
+                        <div class="stats-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" :style="{ width: progressPercentage + '%' }"></div>
+                            </div>
+                            <span class="progress-text">{{ stats.total }} / 10</span>
+                        </div>
+                        <div v-if="stats.total >= 10" class="stats-warning-message">
+                            ⚠️ 您已達到預約上限，無法再進行新的預約
                         </div>
                     </div>
 
@@ -96,23 +128,28 @@
                                 <div>取書地點</div>
                                 <div>取書方式</div>
                                 <div>取書時間</div>
+                                <div>狀態</div>
                                 <div>操作</div>
                             </div>
                             <div class="history-grid-body">
                                 <div v-for="(reservation, index) in paginatedBooks" :key="index"
-                                    :class="['history-grid-row', { 'is-cancelled': reservation.status === 'cancelled' }]">
+                                    :class="['history-grid-row', { 'is-cancelled': reservation.status === 'cancelled' }]"
+                                    @click="handleRowClick(reservation.reservationId)">
                                     <div class="history-grid-checkbox">
                                         <input type="checkbox"
                                             :checked="selectedBooks.includes(reservation.reservationId)"
                                             @change="toggleSelectBook(reservation.reservationId)" class="batch-checkbox"
-                                            :disabled="reservation.status === 'cancelled'" />
+                                            :disabled="reservation.status === 'cancelled'" @click.stop />
                                     </div>
                                     <div class="history-grid-title-cell">{{ reservation.title }}</div>
                                     <div>{{ reservation.author }}</div>
                                     <div>{{ reservation.pickupLocation }}</div>
                                     <div>{{ reservation.pickupMethod }}</div>
                                     <div>{{ reservation.pickupTime }}</div>
-                                    <div class="history-grid-actions">
+                                    <div :class="['history-status', getStatusClass(reservation.status)]">
+                                        {{ getStatusText(reservation.status) }}
+                                    </div>
+                                    <div class="history-grid-actions" @click.stop>
                                         <button @click="viewBookDetail(reservation)"
                                             class="history-detail-btn">詳情</button>
                                         <button @click="handleCancel(reservation.reservationId)"
@@ -143,6 +180,9 @@
                                         <p>取書方式：{{ reservation.pickupMethod }}</p>
                                         <p>取書時間：{{ reservation.pickupTime }}</p>
                                         <p>預約日期：{{ reservation.reservationDate }}</p>
+                                    </div>
+                                    <div :class="['history-status', getStatusClass(reservation.status)]">
+                                        {{ getStatusText(reservation.status) }}
                                     </div>
                                     <div class="history-grid-actions">
                                         <button class="history-detail-btn"
@@ -280,11 +320,68 @@ function getDefaultCoverUrl(index) {
     return `https://via.placeholder.com/300x400/4ECDC4/FFFFFF?text=${encodeURIComponent('書籍封面')}`
 }
 
+// 狀態處理函數
+function getStatusText(status) {
+    const statusMap = {
+        'pending': '待領取',
+        'completed': '已領取',
+        'cancelled': '已取消',
+        'expired': '已過期',
+        'PENDING': '待領取',
+        'COMPLETED': '已領取',
+        'CANCELLED': '已取消',
+        'EXPIRED': '已過期'
+    }
+    return statusMap[status] || status
+}
+
+function getStatusClass(status) {
+    const statusClassMap = {
+        'pending': 'history-status-pending',
+        'completed': 'history-status-completed',
+        'cancelled': 'history-status-cancelled',
+        'expired': 'history-status-expired',
+        'PENDING': 'history-status-pending',
+        'COMPLETED': 'history-status-completed',
+        'CANCELLED': 'history-status-cancelled',
+        'EXPIRED': 'history-status-expired'
+    }
+    return statusClassMap[status] || 'history-status-pending'
+}
+
 // 預約記錄資料
 const reservationBooks = ref([])
 const selectedBooks = ref([])
 const loading = ref(false)
 const error = ref(null)
+
+// 預約狀態統計
+const stats = computed(() => {
+    const pending = reservationBooks.value.filter(book =>
+        book.status === 'pending' || book.status === 'PENDING'
+    ).length
+    const completed = reservationBooks.value.filter(book =>
+        book.status === 'completed' || book.status === 'COMPLETED'
+    ).length
+    const cancelled = reservationBooks.value.filter(book =>
+        book.status === 'cancelled' || book.status === 'CANCELLED'
+    ).length
+    const total = pending + completed + cancelled
+    const remaining = Math.max(0, 10 - total)
+
+    return {
+        pending,
+        completed,
+        cancelled,
+        total,
+        remaining
+    }
+})
+
+// 進度條百分比
+const progressPercentage = computed(() => {
+    return Math.min(100, (stats.value.total / 10) * 100)
+})
 
 // 檢查登入狀態
 const checkLoginStatus = () => {
@@ -345,23 +442,13 @@ async function fetchReservations() {
     try {
         console.log('開始載入預約歷史記錄...')
 
-        // 獲取當前登入用戶的 ID
-        const currentUserId = user.value?.user_id || user.value?.id || 1
-        console.log('當前用戶 ID：', currentUserId)
-
         let response
         try {
-            // 使用當前用戶的 ID 查詢預約記錄
-            response = await reservationAPI.getReservations(currentUserId)
+            // 不傳 userId，讓後端自動從 token 解析
+            response = await reservationAPI.getReservations()
         } catch (firstError) {
-            console.log('使用當前用戶 ID 失敗，嘗試不傳參數:', firstError)
-            try {
-                // 備用方案：不傳參數
-                response = await reservationAPI.getReservations()
-            } catch (secondError) {
-                console.log('所有方案都失敗:', secondError)
-                throw secondError
-            }
+            console.log('不傳 userId 失敗:', firstError)
+            throw firstError
         }
 
         console.log('API 回傳資料：', response.data)
@@ -579,6 +666,23 @@ onMounted(async () => {
         }
     }
 })
+
+// 新增：處理行點擊事件
+function handleRowClick(reservationId) {
+    // 檢查該預約是否已取消
+    const reservation = reservationBooks.value.find(r => r.reservationId === reservationId);
+    if (reservation && reservation.status === 'cancelled') {
+        return; // 已取消的預約不能選取
+    }
+
+    // 切換該行的選取狀態
+    const index = selectedBooks.value.indexOf(reservationId);
+    if (index === -1) {
+        selectedBooks.value.push(reservationId);
+    } else {
+        selectedBooks.value.splice(index, 1);
+    }
+}
 </script>
 
 <style scoped>
@@ -756,7 +860,7 @@ onMounted(async () => {
 
 .history-grid-header {
     display: grid;
-    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 200px;
+    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 1fr 200px;
     gap: 16px;
     padding: 16px 20px;
     background: rgba(243, 244, 246, 0.6);
@@ -780,12 +884,13 @@ onMounted(async () => {
 
 .history-grid-row {
     display: grid;
-    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 200px;
+    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 1fr 200px;
     gap: 16px;
     padding: 16px 20px;
     border-bottom: 1px solid rgba(229, 231, 235, 0.2);
     align-items: center;
     transition: background 0.2s;
+    cursor: pointer;
 }
 
 .history-grid-row:hover {
@@ -801,6 +906,40 @@ onMounted(async () => {
     color: #18181b;
     word-wrap: break-word;
     overflow-wrap: break-word;
+}
+
+/* 狀態樣式 */
+.history-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-align: center;
+    min-width: 80px;
+}
+
+.history-status-pending {
+    background: #fef3c7;
+    color: #d97706;
+    border: 1px solid #fbbf24;
+}
+
+.history-status-completed {
+    background: #d1fae5;
+    color: #059669;
+    border: 1px solid #34d399;
+}
+
+.history-status-cancelled {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #f87171;
+}
+
+.history-status-expired {
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
 }
 
 .history-detail-btn {
@@ -1036,6 +1175,16 @@ onMounted(async () => {
         justify-content: center;
     }
 
+    .batch-control-panel {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .batch-control-left,
+    .batch-control-right {
+        justify-content: center;
+    }
+
     .history-grid-header,
     .history-grid-row {
         grid-template-columns: 1fr 170px;
@@ -1046,10 +1195,12 @@ onMounted(async () => {
     .history-grid-header>div:nth-child(3),
     .history-grid-header>div:nth-child(4),
     .history-grid-header>div:nth-child(5),
+    .history-grid-header>div:nth-child(6),
     .history-grid-row>div:nth-child(2),
     .history-grid-row>div:nth-child(3),
     .history-grid-row>div:nth-child(4),
-    .history-grid-row>div:nth-child(5) {
+    .history-grid-row>div:nth-child(5),
+    .history-grid-row>div:nth-child(6) {
         display: none;
     }
 
@@ -1191,6 +1342,7 @@ onMounted(async () => {
     color: #9ca3af;
     background-color: #f9fafb;
     text-decoration: line-through;
+    cursor: not-allowed;
 }
 
 .is-cancelled .history-grid-title-cell,
@@ -1201,5 +1353,231 @@ onMounted(async () => {
 .history-cancel-btn:disabled {
     background: #9ca3af;
     cursor: not-allowed;
+}
+
+/* 批量操作面板樣式 */
+.batch-control-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(229, 231, 235, 0.4);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+}
+
+.batch-control-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.batch-control-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.batch-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    color: #222;
+    cursor: pointer;
+}
+
+.batch-info {
+    font-size: 0.95rem;
+    color: #4b5563;
+}
+
+.batch-warning {
+    font-size: 0.9rem;
+    color: #dc2626;
+    font-weight: 500;
+}
+
+.batch-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid;
+}
+
+.batch-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.batch-btn-remove {
+    background: #fff;
+    color: #dc2626;
+    border-color: #dc2626;
+}
+
+.batch-btn-remove:hover:not(:disabled) {
+    background: #dc2626;
+    color: #fff;
+}
+
+.batch-btn-reserve {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+
+.batch-btn-reserve:hover:not(:disabled) {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+/* 預約狀態面板樣式 */
+.reservation-stats-panel {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(229, 231, 235, 0.4);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 16px 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 100%;
+}
+
+.stats-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.stats-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+.stats-refresh-btn {
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.stats-refresh-btn:hover {
+    background: #1d4ed8;
+}
+
+.stats-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.stats-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(249, 250, 251, 0.8);
+    border-radius: 6px;
+    border: 1px solid rgba(229, 231, 235, 0.4);
+}
+
+.stats-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.stats-value {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.stats-pending {
+    color: #f59e0b;
+}
+
+.stats-completed {
+    color: #10b981;
+}
+
+.stats-cancelled {
+    color: #ef4444;
+}
+
+.stats-warning {
+    color: #dc2626;
+}
+
+.stats-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 6px;
+    background: rgba(229, 231, 235, 0.6);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #059669);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 0.85rem;
+    color: #6b7280;
+    font-weight: 500;
+    min-width: 50px;
+    text-align: right;
+}
+
+.stats-warning-message {
+    background: rgba(254, 226, 226, 0.8);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: #dc2626;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .stats-content {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .stats-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .stats-refresh-btn {
+        align-self: flex-end;
+    }
 }
 </style>

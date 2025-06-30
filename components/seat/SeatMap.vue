@@ -12,9 +12,7 @@
     </div>
 
     <div class="seat-map-wrapper">
-
         <div class="seat-map">
-
             <!-- 大門圖 -->
             <div class="main-door">
                 <div class="door-label">大門</div>
@@ -27,12 +25,14 @@
                 <img src="/images/door-icon.png" alt="門口" />
                 <div class="door-label">門口</div>
             </div>
+
             <!-- 廁所 -->
             <div v-for="(toilet, index) in toiletPositions" :key="'toilet-' + index" class="toilet-icon"
                 :style="{ top: toilet.top, left: toilet.left, right: toilet.right, bottom: toilet.bottom }">
                 <img src="/images/toilet-icon.png" alt="廁所" />
             </div>
 
+            <!-- 座位群組 -->
             <div v-for="(group, gIdx) in groupedSeats" :key="'group-' + gIdx" class="seat-group"
                 :style="getGroupStyle(gIdx)">
                 <div v-for="seatLabel in group" :key="seatLabel" class="seat-container"
@@ -51,40 +51,39 @@
     </div>
 </template>
 
-
-
 <script setup>
-import { ref, onMounted } from 'vue'
-import { SeatStatus } from '@/utils/seat-status'
+import { ref, onMounted, watch } from 'vue'
 
+// 定義 props
 const props = defineProps({
     selectedDate: String,
     selectedSlot: Object
 })
 
-const step = ref(2)
-
 const emit = defineEmits(['confirm'])
+
+const selectedSeat = ref('')
+const pending = ref(true)
+const statusMap = ref({})
 
 const confirmSeat = async () => {
     if (!selectedSeat.value) {
         alert('⚠️ 請先選擇一個座位再確認')
         return
     }
-    alert('✅ 點擊確認成功，選擇座位為：' + selectedSeat.value)
-    emit('confirm', selectedSeat.value) // 通知父元件座位編號
-    await refreshStatus() // 這行是關鍵，重新從後端載入座位狀態
+    alert('✅ 選擇座位為：' + selectedSeat.value)
+    emit('confirm', selectedSeat.value)
+    await refreshStatus()
 }
-const seats = ref(
-    Array.from({ length: 6 }, (_, rowIdx) => {
-        const rowChar = String.fromCharCode(65 + rowIdx) // A~F
-        return Array.from({ length: 10 }, (_, colIdx) => ({
-            label: `${rowChar}${colIdx + 1}`,
-            row: rowIdx,
-            col: colIdx
-        }))
-    }).flat()
-)
+
+const seats = ref(Array.from({ length: 6 }, (_, rowIdx) => {
+    const rowChar = String.fromCharCode(65 + rowIdx)
+    return Array.from({ length: 10 }, (_, colIdx) => ({
+        label: `${rowChar}${colIdx + 1}`,
+        row: rowIdx,
+        col: colIdx
+    }))
+}).flat())
 
 const groupedSeats = []
 for (let row = 0; row < 6; row += 2) {
@@ -98,25 +97,64 @@ for (let row = 0; row < 6; row += 2) {
     }
 }
 
-// 多個門口位置：可自由配置 top/left/right/bottom
 const doorPositions = [
-    { top: '-10px', right: '-20px' },     // 右上角
-    { top: '-10px', left: '-930px' }  // 左上角
+    { top: '-10px', right: '-20px' },
+    { top: '-10px', left: '-930px' }
 ]
 
 const toiletPositions = [
     { bottom: '250px', left: '0px' },
     { bottom: '250px', right: '0px' }
-];
+]
 
-const statusMap = ref({})
-const pending = ref(true)
-const selectedSeat = ref('') // 使用者點選的座位
+onMounted(refreshStatus)
+
+async function refreshStatus() {
+    pending.value = true
+
+    try {
+        // 基礎狀態 (AVAILABLE / BROKEN)
+        const baseStatusRes = await fetch('http://localhost:8080/api/seats/status')
+        const baseData = await baseStatusRes.json()
+
+        // 1. 先標出預設狀態（AVAILABLE / BROKEN）
+        const tempStatusMap = Object.fromEntries(baseData.map(s => [s.seatLabel, s.status]))
+
+        // 2. 再向後端查指定時段已被預約的座位（動態加上 RESERVED）
+        if (props.selectedDate && props.selectedSlot?.enum) {
+            const occupiedRes = await fetch(
+                `http://localhost:8080/api/seats/reservations/occupied?date=${props.selectedDate}&timeSlot=${props.selectedSlot.enum}`
+            )
+            const occupiedSeats = await occupiedRes.json()
+
+            for (const label of occupiedSeats) {
+                tempStatusMap[label] = 'RESERVED'
+            }
+        }
+
+        // 3. 更新前端狀態
+        statusMap.value = tempStatusMap
+
+    } catch (err) {
+        console.error('❌ 載入座位狀態失敗:', err)
+    } finally {
+        pending.value = false
+    }
+}
+
+// 監聽 props 的變化,  加上 watch() 來即時更新狀態圖(immediate: true 代表元件一掛載就會先執行一次)
+watch(
+    () => [props.selectedDate, props.selectedSlot],
+    () => {
+        refreshStatus()
+    },
+    { immediate: true }
+)
+
 
 function getSeatByLabel(label) {
     return seats.value.find(seat => seat.label === label) || {}
 }
-
 
 function getGroupStyle(index) {
     return {
@@ -126,34 +164,13 @@ function getGroupStyle(index) {
     }
 }
 
-onMounted(refreshStatus)
-
-async function refreshStatus() {
-    try {
-        const res = await fetch('http://localhost:8080/api/seats/status')
-        const data = await res.json()
-        statusMap.value = Object.fromEntries(data.map(s => [s.seatLabel, s.status]))
-        // console.log('statusMap keys:', Object.keys(statusMap.value))
-        console.log('🎯 從後端取得的座位狀態:', data)
-        console.log('📌 statusMap keys:', Object.keys(statusMap.value))
-    } catch (err) {
-        console.error('❌ 載入座位狀態失敗:', err)
-    } finally {
-        pending.value = false
-    }
-}
-
 function getSeatImage(label) {
     const status = statusMap.value[label.toUpperCase()]
     switch (status) {
-        case 'AVAILABLE':
-            return '/images/chair-available.png'
-        case 'RESERVED':
-            return '/images/chair-reserved.png'
-        case 'BROKEN':
-            return '/images/chair-broken.png'
-        default:
-            return '/images/chair-available.png'
+        case 'AVAILABLE': return '/images/chair-available.png'
+        case 'RESERVED': return '/images/chair-reserved.png'
+        case 'BROKEN': return '/images/chair-broken.png'
+        default: return '/images/chair-available.png'
     }
 }
 
@@ -170,53 +187,40 @@ function getContainerStyle(seat) {
 
 async function handleClick(label) {
     const seatKey = label.toUpperCase()
-    const seatStatusRaw = statusMap.value[seatKey]
+    const status = statusMap.value[seatKey]?.toUpperCase()
 
-    console.log('🪑 點擊座位:', label)
-    console.log('🧭 對應 key:', seatKey)
-    console.log('📦 查到狀態:', seatStatusRaw)
-
-    if (!seatStatusRaw) {
+    if (!status) {
         alert('❌ 無法取得座位狀態')
         return
     }
 
-    const status = seatStatusRaw.toUpperCase()
-
-    switch (status) {
-        case SeatStatus.BROKEN:
-            alert('🛠️ 此座位維修中，無法預約')
-            return
-
-        case SeatStatus.AVAILABLE:
-            try {
-
-                //  檢查是否已被其他人預約
-                const occupiedRes = await fetch(
-                    `http://localhost:8080/api/seats/reservations/occupied?date=${props.selectedDate}&timeSlot=${props.selectedSlot.enum}`
-                )
-
-                const occupiedSeats = await occupiedRes.json()
-
-                if (occupiedSeats.includes(seatKey)) {
-                    alert('❌ 此座位已被其他人預約')
-                    return
-                }
-
-                selectedSeat.value = label
-                alert('✅ 已選擇座位：' + label)
-
-            } catch (err) {
-                alert(`❌ 無法確認座位是否被預約：${err.message}`)
-            }
-            return
-
-        default:
-            alert('❌ 無效的座位狀態')
+    if (status === 'BROKEN') {
+        alert('🛠️ 此座位維修中，無法預約')
+        return
     }
-}
 
+    if (status === 'AVAILABLE') {
+        try {
+            const res = await fetch(
+                `http://localhost:8080/api/seats/reservations/occupied?date=${props.selectedDate}&timeSlot=${props.selectedSlot.enum}`
+            )
+            const occupiedSeats = await res.json()
+            if (occupiedSeats.includes(seatKey)) {
+                alert('❌ 此座位已被其他人預約')
+                return
+            }
+            selectedSeat.value = label
+            alert('✅ 已選擇座位：' + label)
+        } catch (err) {
+            alert(`❌ 無法確認座位是否被預約：${err.message}`)
+        }
+        return
+    }
+
+    alert('❌ 無效的座位狀態')
+}
 </script>
+
 
 
 <style scoped>
@@ -401,5 +405,13 @@ async function handleClick(label) {
     width: 100%;
     height: 100%;
     transform-origin: center center;
+}
+
+html.accessible-mode .door-label {
+    top: 0.6rem;
+}
+
+html.accessible-mode .confirm-button {
+    color: white;
 }
 </style>

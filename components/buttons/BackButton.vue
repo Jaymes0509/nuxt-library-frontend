@@ -29,5 +29,10 @@ const goBack = () => {
     border: 1px solid #999;
     border-radius: 6px;
     cursor: pointer;
+    font-size: large
+}
+
+.back-button:hover {
+    background-color: tomato
 }
 </style>

@@ -25,26 +25,42 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { eventBus } from '@/utils/event-bus'
 
 const seats = ref([])
 
-onMounted(async () => {
-    await loadSeats()
+onMounted(() => {
+    loadSeats()
+
+    // 監聽全域事件「reservation-cancelled」
+    eventBus.on('reservation-cancelled', handleReservationCancelled)
 })
 
+onUnmounted(() => {
+    // 離開頁面時解除監聽，避免記憶體洩漏
+    eventBus.off('reservation-cancelled', handleReservationCancelled)
+})
+
+async function handleReservationCancelled() {
+    console.log('📢 收到 reservation-cancelled 事件 → 重新加載座位')
+    await loadSeats()
+}
+
 async function loadSeats() {
-    // 查詢所有座位
     const res = await fetch('http://localhost:8080/api/seats/status')
     const allSeats = await res.json()
     console.log('🪑 所有座位:', allSeats)
 
-    // 查詢有未來預約的座位 seatLabel 陣列
     const reservedRes = await fetch('http://localhost:8080/api/seats/reservations/upcoming')
     const reservedLabels = await reservedRes.json()
     console.log('📌 有預約的座位:', reservedLabels)
 
-    // 合併資料，加上 hasReservation 屬性
+    if (!Array.isArray(reservedLabels)) {
+        console.error('❌ 預期 reservedLabels 應該是陣列，實際為:', reservedLabels)
+        return
+    }
+
     seats.value = allSeats.map(seat => ({
         ...seat,
         hasReservation: reservedLabels.includes(seat.seatLabel)

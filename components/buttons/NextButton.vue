@@ -14,7 +14,8 @@ const emit = defineEmits(['next'])
 
 <style>
 .next-button {
-    margin: 1rem;
+    margin-bottom: 1rem;
+    margin-left: 5rem;
     padding: 8px 14px;
     background-color: lightgray;
     border: 1px solid #999;

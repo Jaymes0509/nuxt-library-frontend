@@ -21,14 +21,11 @@
                     <li>請您於留言時提供正確之E-MAIL帳號、電話、真實姓名，俾系統自動回覆您信件收件編號及回覆內容亦將以E-MAIL的方式傳送給您。</li>
                 </ol>
 
-                <label class="consent">
-                    <input type="checkbox" v-model="agreed" />
-                    我已閱讀並同意以上聲明
-                </label>
+                <FormsConsentCheckbox v-model="agreed" />
 
-                <button :disabled="!agreed" @click="step = 2" class="start-button">
+                <ButtonsStartForm :disabled="!agreed" @next="step = 2">
                     前往意見留言
-                </button>
+                </ButtonsStartForm>
             </div>
 
             <!-- ✅ 步驟二：申請表單 -->
@@ -102,18 +99,11 @@
 
 <script setup>
 import { ref, reactive, watch } from 'vue'
-import { useNavigation } from '@/composables/useNavigation'
-
-const { goHome } = useNavigation()
+import { useRoute } from 'vue-router'
+import { watchEffect } from 'vue'
+import { useStepReset } from '@/composables/useStepReset'
 
 const loading = ref(false)
-
-const delayedGoHome = () => {
-    loading.value = true
-    setTimeout(() => {
-        goHome()
-    }, 3000)
-}
 
 const step = ref(1)
 const agreed = ref(false)
@@ -130,6 +120,17 @@ const form = reactive({
 
 const captchaUrl = ref(getCaptchaUrl());
 
+const route = useRoute()
+
+watchEffect(() => {
+    console.log('路由變化：', route.fullPath)
+    if (route.query.reset === 'true') {
+        step.value = 1
+        resetForm()
+    }
+})
+
+
 function getCaptchaUrl() {
     return `http://localhost:8080/api/captcha/m1?ts=${Date.now()}`; // 加上 timestamp 防止瀏覽器快取
 }
@@ -138,6 +139,8 @@ function refreshCaptcha() {
     captchaUrl.value = getCaptchaUrl();
 }
 
+// 使用 useStepReset composable
+useStepReset(step, resetForm)
 function resetForm() {
     form.name = '';
     form.cardNumber = '';
@@ -316,14 +319,6 @@ a {
 
 a:hover {
     text-decoration: none;
-}
-
-.consent {
-    display: block;
-    margin: 1rem auto;
-    font-weight: bold;
-    text-align: center;
-    width: fit-content;
 }
 
 .start-button {
@@ -634,10 +629,5 @@ button[type='submit']:hover {
 
 .already-applied-step button:hover {
     background-color: #fb8c00;
-}
-
-html.accessible-mode .back-button,
-.reset-button {
-    font-size: larger;
 }
 </style>
