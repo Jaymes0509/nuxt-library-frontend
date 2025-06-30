@@ -14,11 +14,7 @@
       <div :class="['footer-container', { 'footer--collapsed': !isSidebarOpen }]">
          <FooterBar />
       </div>
-
-      <!-- 讀者登入按鈕 -->
-      <MemberLoginButton v-if="route.path !== '/login'" />
    </div>
-
 </template>
 
 <script setup>
@@ -26,7 +22,6 @@ import { ref } from 'vue'
 import HeaderBar from '@/components/HeaderBar'
 import FooterBar from '@/components/FooterBar.vue'
 import Sidebar from '@/components/Sidebar.vue'
-import MemberLoginButton from '@/components/MemberLoginButton.vue'
 
 // 定義 sidebar 開關狀態
 const isSidebarOpen = ref(true)

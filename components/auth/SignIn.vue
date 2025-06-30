@@ -34,6 +34,7 @@ async function onSubmit(event: Event) {
     localStorage.setItem('jwt_token', token)
     localStorage.setItem('user', JSON.stringify(user))
 
+
     // 跳轉到首頁或會員頁
     window.location.href = '/' // 或用 navigateTo('/')
   } catch (err: any) {

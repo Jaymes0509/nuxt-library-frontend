@@ -78,7 +78,7 @@
                 </div>
               </div>
               <span class="progress-text">{{ reservationStats.totalActiveCount }} / {{ reservationStats.maxAllowed
-              }}</span>
+                }}</span>
             </div>
             <div v-if="!reservationStats.canReserve" class="stats-warning-message">
               ⚠️ 您已達到預約上限，無法再進行新的預約

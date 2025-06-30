@@ -72,6 +72,7 @@
                 <button @click="logout" class="user-menu-item">🚪 登出</button>
               </div>
             </div>
+            <NuxtLink v-else to="/login" class="login-btn">登入</NuxtLink>
           </div>
         </div>
       </div>
@@ -147,31 +148,31 @@ const resetIdleTimer = () => {
 
 const activityEvents = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart']
 
-const toggleDropdown = () => {
-  showDropdown.value = !showDropdown.value
-  // 關閉用戶選單
-  showUserMenu.value = false
-}
+// const toggleDropdown = () => {
+//   showDropdown.value = !showDropdown.value
+//   // 關閉用戶選單
+//   showUserMenu.value = false
+// }
 
 const toggleUserMenu = () => {
   showUserMenu.value = !showUserMenu.value
   console.log('showUserMenu:', showUserMenu.value)
-  showDropdown.value = false
+  // showDropdown.value = false
 }
 
 // 點擊外部區域關閉選單
 const closeMenus = (event) => {
   const target = event.target
   const isUserInfo = target.closest('.user-info')
-  // const isLangMenu = target.closest('.lang-btn, .lang-menu')
+  // // const isLangMenu = target.closest('.lang-btn, .lang-menu')
 
   if (!isUserInfo) {
     showUserMenu.value = false
   }
 
-  // if (!isLangMenu) {
-  //   showDropdown.value = false
-  // }
+  // // if (!isLangMenu) {
+  // //   showDropdown.value = false
+  // // }
 }
 
 // 檢查登入狀態
@@ -216,16 +217,16 @@ const logout = () => {
   router.push('/')
 }
 
-// const languages = [
-//   { code: 'zh-tw', label: '繁體中文' },
-//   { code: 'en', label: 'English' },
-//   { code: 'ja', label: '日本語' }
-// ]
+// // const languages = [
+// //   { code: 'zh-tw', label: '繁體中文' },
+// //   { code: 'en', label: 'English' },
+// //   { code: 'ja', label: '日本語' }
+// // ]
 
-// function selectLang(code) {
-//   // 暫時移除 i18n 功能
-//   showDropdown.value = false
-// }
+// // function selectLang(code) {
+// //   // 暫時移除 i18n 功能
+// //   showDropdown.value = false
+// // }
 
 defineProps({
   title: {
@@ -490,8 +491,7 @@ function submitSearch() {
 /* .dropdown-item:active {
   background-color: tomato;
 } */
-
-.search {
+*/ .search {
   display: flex;
   align-items: center;
   border-bottom: 1px solid #444;
